@@ -84,7 +84,7 @@ class _MyAppState extends State<MyApp> {
             onPressed: () {
               RadarFlutterPlugin.requestPermissions(true);
             },
-            child: Text("requestPermissions"),
+            child: Text("requestPermissions()"),
           ),
           RaisedButton(
             color: Colors.blueAccent,
