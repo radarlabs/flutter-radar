@@ -2,8 +2,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class RadarFlutterPlugin {
-  static const MethodChannel _channel =
-      const MethodChannel('radar_flutter_plugin');
+  static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
   static Function(Map result) _clientLocationHandler;
   static Function(Map result) _eventHandler;

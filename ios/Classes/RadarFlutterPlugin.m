@@ -13,7 +13,7 @@
 @implementation RadarFlutterPlugin
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"radar_flutter_plugin" binaryMessenger:[registrar messenger]];
+  FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar" binaryMessenger:[registrar messenger]];
   RadarFlutterPlugin *instance = [[RadarFlutterPlugin alloc] init];
   instance.channel = channel;
   [registrar addMethodCallDelegate:instance channel:channel];

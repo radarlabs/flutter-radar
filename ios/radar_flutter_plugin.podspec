@@ -1,17 +1,12 @@
-#
-# To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint radar_flutter_plugin.podspec' to validate before publishing.
-#
 Pod::Spec.new do |s|
-  s.name             = 'radar_flutter_plugin'
+  s.name             = 'flutter_radar'
   s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
-  s.description      = <<-DESC
-A new flutter plugin project.
+  s.summary          = 'Flutter package for Radar, the leading geofencing and location tracking platform'
+  s.description      = 'Flutter package for Radar, the leading geofencing and location tracking platform'
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Radar Labs, Inc.' => 'support@radar.io' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'

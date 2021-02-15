@@ -1,4 +1,4 @@
-group 'com.bg.radar_flutter_plugin'
+group 'io.radar.flutter'
 version '1.0'
 
 buildscript {

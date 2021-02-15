@@ -1,7 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.bg.radar_flutter_plugin">
-    <!-- <application tools:replace="android:name"
-    android:name="com.bg.radar_flutter_plugin_example"> -->
+  package="io.radar.flutter">
   <application>
     <receiver
       android:name="RadarFlutterPlugin$RadarFlutterReceiver"
@@ -11,6 +9,6 @@
           <action android:name="io.radar.sdk.RECEIVED" />
       </intent-filter>
     </receiver>
-    <service android:name="com.bg.radar_flutter_plugin.RadarForegroundService" android:foregroundServiceType="location" android:stopWithTask="true" />
+    <service android:name="io.radar.flutter.RadarForegroundService" android:foregroundServiceType="location" android:stopWithTask="true" />
   </application>
 </manifest>

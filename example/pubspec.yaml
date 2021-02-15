@@ -1,5 +1,5 @@
-name: radar_flutter_plugin_example
-description: Demonstrates how to use the radar_flutter_plugin plugin.
+name: flutter_radar_example
+description: Example app for flutter_radar
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -12,9 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  radar_flutter_plugin:
+  flutter_radar:
     # When depending on this package from a real application you should use:
-    #   radar_flutter_plugin: ^x.y.z
+    #   flutter_radar: ^x.y.z
     # See https://dart.dev/tools/pub/dependencies#version-constraints
     # The example app is bundled with the plugin so we use a path dependency on
     # the parent directory to use the current plugin's version.
