@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 
-class RadarFlutterPlugin {
+class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
   static Function(Map result) _clientLocationHandler;

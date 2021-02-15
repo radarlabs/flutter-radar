@@ -17,24 +17,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    RadarFlutterPlugin.setLogLevel('debug');
-    RadarFlutterPlugin.setUserId('flutter');
-    RadarFlutterPlugin.setDescription('Flutter');
-    RadarFlutterPlugin.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
+    Radar.setLogLevel('none');
+    Radar.setUserId('flutter');
+    Radar.setDescription('Flutter');
+    Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
 
-    RadarFlutterPlugin.onClientLocation((result) {
-      print(result);
+    Radar.onEvents((result) {
+      print('onEvents: $result');
     });
-    RadarFlutterPlugin.onEvents((result) {
-      print(result);
+    Radar.onClientLocation((result) {
+      print('onClientLocation: $result');
     });
-    RadarFlutterPlugin.onLocation((result) {
-      print(result);
+    Radar.onLocation((result) {
+      print('onLocation: $result');
     });
-    RadarFlutterPlugin.onError((result) {
-      print(result);
+    Radar.onError((result) {
+      print('onError: $result');
     });
-    RadarFlutterPlugin.startListeners();
+    Radar.onLog((result) {
+      print('onLog: $result');
+    });
+    Radar.startListeners();
   }
 
   @override
@@ -51,14 +54,14 @@ class _MyAppState extends State<MyApp> {
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.startTracking('responsive');
+              Radar.startTracking('responsive');
             },
-            child: Text("startTracking('responsive')"),
+            child: Text('startTracking(\'responsive\')'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.startTrackingCustom({
+              Radar.startTrackingCustom({
                 'desiredStoppedUpdateInterval': 60,
                 'fastestStoppedUpdateInterval': 60,
                 'desiredMovingUpdateInterval': 30,
@@ -72,49 +75,49 @@ class _MyAppState extends State<MyApp> {
                 'showBlueBar': true
               });
             },
-            child: Text("startTrackingCustom()"),
+            child: Text('startTrackingCustom()'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.stopTracking();
+              Radar.stopTracking();
             },
-            child: Text("stopTracking()"),
+            child: Text('stopTracking()'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.requestPermissions(true);
+              Radar.requestPermissions(true);
             },
-            child: Text("requestPermissions()"),
+            child: Text('requestPermissions()'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () async {
-              Map location = await RadarFlutterPlugin.getLocation('high');
+              Map location = await Radar.getLocation('high');
               print(location);
             },
-            child: Text("getLocation()"),
+            child: Text('getLocation()'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.startForegroundService({
-                "title": "Tracking",
-                "text": "Continuous tracking started",
-                "icon": "car_icon",
-                "importance": "2",
-                "id": "12555541"
+              Radar.startForegroundService({
+                'title': 'Tracking',
+                'text': 'Continuous tracking started',
+                'icon': 'car_icon',
+                'importance': '2',
+                'id': '12555541'
               });
             },
-            child: Text("startForegroundService(), Android only"),
+            child: Text('startForegroundService(), Android only'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              RadarFlutterPlugin.stopForegroundService();
+              Radar.stopForegroundService();
             },
-            child: Text("stopForegroundService(), Android only"),
+            child: Text('stopForegroundService(), Android only'),
           )
         ]),
       ),
@@ -157,7 +160,7 @@ class _PermissionsState extends State<Permissions> {
   }
 
   Future _getPermissionsStatus() async {
-    String permissionsString = await RadarFlutterPlugin.getPermissionsStatus();
+    String permissionsString = await Radar.getPermissionsStatus();
     setState(() {
       _permissionStatus = permissionsString;
     });
@@ -182,17 +185,17 @@ class _TrackOnceState extends State<TrackOnce> {
   }
 
   Future<void> _showTrackOnceDialog() async {
-    var trackResponse = await RadarFlutterPlugin.trackOnce();
+    var trackResponse = await Radar.trackOnce();
 
     Widget okButton = FlatButton(
-      child: Text("OK"),
+      child: Text('OK'),
       onPressed: () {
         Navigator.pop(context);
       },
     );
 
     AlertDialog alert = AlertDialog(
-      title: Text("flutter_radar_example"),
+      title: Text('flutter_radar_example'),
       content: Text(trackResponse['status']),
       actions: [
         okButton,
@@ -210,14 +213,14 @@ class _TrackOnceState extends State<TrackOnce> {
 
 showAlertDialog(BuildContext context, String text) {
   Widget okButton = FlatButton(
-    child: Text("OK"),
+    child: Text('OK'),
     onPressed: () {
       Navigator.of(context).pop();
     },
   );
 
   AlertDialog alert = AlertDialog(
-    title: Text("flutter_radar_example"),
+    title: Text('flutter_radar_example'),
     content: Text(text),
     actions: [
       okButton,
