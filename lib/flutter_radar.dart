@@ -5,15 +5,15 @@ class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
   static const EventChannel _eventsChannel =
-      const EventChannel('flutter_radar_onEvents');
+      const EventChannel('flutter_radar/events');
   static const EventChannel _locationChannel =
-      const EventChannel('flutter_radar_onLocation');
+      const EventChannel('flutter_radar/location');
   static const EventChannel _clientLocationChannel =
-      const EventChannel('flutter_radar_onClientLocation');
+      const EventChannel('flutter_radar/clientLocation');
   static const EventChannel _errorChannel =
-      const EventChannel('flutter_radar_onError');
+      const EventChannel('flutter_radar/error');
   static const EventChannel _logChannel =
-      const EventChannel('flutter_radar_onLog');
+      const EventChannel('flutter_radar/log');
 
   static Function(Map res) _eventsCallback;
   static Function(Map res) _locationCallback;

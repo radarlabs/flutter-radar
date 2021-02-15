@@ -81,7 +81,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     private static void initializeEventChannels(BinaryMessenger messenger) {
-        sEventsChannel = new EventChannel(messenger, "flutter_radar_onEvents");
+        sEventsChannel = new EventChannel(messenger, "flutter_radar/events");
         sEventsChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object listener, EventChannel.EventSink eventSink) {
@@ -94,7 +94,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         });
 
-        sLocationChannel = new EventChannel(messenger, "flutter_radar_onLocation");
+        sLocationChannel = new EventChannel(messenger, "flutter_radar/location");
         sLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object listener, EventChannel.EventSink eventSink) {
@@ -107,7 +107,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         });
 
-        sClientLocationChannel = new EventChannel(messenger, "flutter_radar_onClientLocation");
+        sClientLocationChannel = new EventChannel(messenger, "flutter_radar/clientLocation");
         sClientLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object listener, EventChannel.EventSink eventSink) {
@@ -120,7 +120,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         });
 
-        sErrorChannel = new EventChannel(messenger, "flutter_radar_onError");
+        sErrorChannel = new EventChannel(messenger, "flutter_radar/error");
         sErrorChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object listener, EventChannel.EventSink eventSink) {
@@ -133,7 +133,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         });
 
-        sLogChannel = new EventChannel(messenger, "flutter_radar_onLog");
+        sLogChannel = new EventChannel(messenger, "flutter_radar/log");
         sLogChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object listener, EventChannel.EventSink eventSink) {
@@ -181,11 +181,13 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public static void registerWith(Registrar registrar) {
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "radar_flutter_plugin");
         RadarFlutterPlugin plugin = new RadarFlutterPlugin();
+
+        MethodChannel channel = new MethodChannel(registrar.messenger(), "radar_flutter_plugin");
         channel.setMethodCallHandler(plugin);
         plugin.mContext = registrar.context();
         plugin.mActivity = registrar.activity();
+        
         initializeEventChannels(registrar.messenger());
     }
 
@@ -307,23 +309,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     private void setLogLevel(MethodCall call, Result result) {
-        String level = call.argument("logLevel");
-        switch (level) {
-            case "debug":
-                Radar.setLogLevel(Radar.RadarLogLevel.DEBUG);
-                break;
-            case "info":
-                Radar.setLogLevel(Radar.RadarLogLevel.INFO);
-                break;
-            case "warning":
-                Radar.setLogLevel(Radar.RadarLogLevel.WARNING);
-                break;
-            case "error":
-                Radar.setLogLevel(Radar.RadarLogLevel.ERROR);
-                break;
-            default:
-                Radar.setLogLevel(Radar.RadarLogLevel.NONE);
-                break;
+        String logLevel = call.argument("logLevel");
+        if (logLevel == null) {
+            Radar.setLogLevel(Radar.RadarLogLevel.NONE);
+        } else if (logLevel.equals("debug")) {
+            Radar.setLogLevel(Radar.RadarLogLevel.DEBUG);
+        } else if (logLevel.equals("info")) {
+            Radar.setLogLevel(Radar.RadarLogLevel.INFO);
+        } else if (logLevel.equals("warning")) {
+            Radar.setLogLevel(Radar.RadarLogLevel.WARNING);
+        } else if (logLevel.equals("error")) {
+            Radar.setLogLevel(Radar.RadarLogLevel.ERROR);
+        } else {
+            Radar.setLogLevel(Radar.RadarLogLevel.NONE);
         }
         result.success(true);
     }

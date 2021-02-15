@@ -6,17 +6,43 @@
 @interface RadarFlutterPlugin() <RadarDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
-@property (strong, readwrite) CLLocationManager *locationManager;
+@property (strong, nonatomic) RadarStreamHandler *eventsHandler;
+@property (strong, nonatomic) RadarStreamHandler *locationHandler;
+@property (strong, nonatomic) RadarStreamHandler *clientLocationHandler;
+@property (strong, nonatomic) RadarStreamHandler *errorHandler;
+@property (strong, nonatomic) RadarStreamHandler *logHandler;
+@property (strong, nonatomic) CLLocationManager *locationManager;
 
 @end
 
 @implementation RadarFlutterPlugin
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar" binaryMessenger:[registrar messenger]];
-  RadarFlutterPlugin *instance = [[RadarFlutterPlugin alloc] init];
-  instance.channel = channel;
-  [registrar addMethodCallDelegate:instance channel:channel];
+    RadarFlutterPlugin *instance = [[RadarFlutterPlugin alloc] init];
+
+    FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar" binaryMessenger:[registrar messenger]];
+    instance.channel = channel;
+    [registrar addMethodCallDelegate:instance channel:channel];
+    
+    FlutterEventChannel *eventsChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/events" binaryMessenger:[registrar messenger]];
+    instance.eventsHandler = [RadarStreamHandler new];
+    [eventsChannel setStreamHandler:instance.eventsHandler];
+    
+    FlutterEventChannel *locationChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/location" binaryMessenger:[registrar messenger]];
+    instance.locationHandler = [RadarStreamHandler new];
+    [locationChannel setStreamHandler:instance.locationHandler];
+
+    FlutterEventChannel *clientLocationChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/clientLocation" binaryMessenger:[registrar messenger]];
+    instance.clientLocationHandler = [RadarStreamHandler new];
+    [clientLocationChannel setStreamHandler:instance.clientLocationHandler];
+
+    FlutterEventChannel *errorChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/error" binaryMessenger:[registrar messenger]];
+    instance.errorHandler = [RadarStreamHandler new];
+    [errorChannel setStreamHandler:instance.errorHandler];
+    
+    FlutterEventChannel *logChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/log" binaryMessenger:[registrar messenger]];
+    instance.logHandler = [RadarStreamHandler new];
+    [logChannel setStreamHandler:instance.logHandler];
 }
 
 - (instancetype)init {
@@ -121,6 +147,8 @@
         [Radar setLogLevel:RadarLogLevelWarning];
     } else if ([logLevel isEqualToString:@"error"]) {
         [Radar setLogLevel:RadarLogLevelError];
+    } else {
+        [Radar setLogLevel:RadarLogLevelNone];
     }
     result(nil);
 }
@@ -674,29 +702,51 @@
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": [user dictionaryValue]};
-    [_channel invokeMethod:@"onEvents" arguments:dict];
+    if (self.eventsHandler && self.eventsHandler.sink) {
+        self.eventsHandler.sink(dict);
+    }
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    [_channel invokeMethod:@"onLocation" arguments:dict];
+    if (self.locationHandler && self.locationHandler.sink) {
+        self.locationHandler.sink(dict);
+    }
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForSource:source]};
-    [_channel invokeMethod:@"onClientLocation" arguments:dict];
+    if (self.clientLocationHandler && self.clientLocationHandler.sink) {
+        self.clientLocationHandler.sink(dict);
+    }
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    [_channel invokeMethod:@"onError" arguments:dict];
+    if (self.errorHandler && self.errorHandler.sink) {
+        self.errorHandler.sink(dict);
+    }
 }
 
 - (void)didLogMessage:(NSString *)message {
     NSDictionary *dict = @{@"message": message};
-    [_channel invokeMethod:@"onLog" arguments:dict];
+    if (self.logHandler && self.logHandler.sink) {
+        self.logHandler.sink(dict);
+    }
 }
 
 @end
 
+@implementation RadarStreamHandler
 
+- (FlutterError *)onListenWithArguments:(id)arguments eventSink:(FlutterEventSink)eventSink {
+  self.sink = eventSink;
+  return nil;
+}
+
+- (FlutterError *)onCancelWithArguments:(id)arguments {
+  self.sink = nil;
+  return nil;
+}
+
+@end

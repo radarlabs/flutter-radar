@@ -17,7 +17,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    Radar.setLogLevel('none');
+    Radar.setLogLevel('info');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
