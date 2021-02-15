@@ -134,6 +134,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getMetadata":
                     getMetadata(result);
                     break;
+                case "setAdIdEnabled":
+                    // do nothing
+                    break;
                 case "getLocation":
                     getLocation(call, result);
                     break;

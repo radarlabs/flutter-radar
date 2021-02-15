@@ -45,14 +45,20 @@ class _MyAppState extends State<MyApp> {
         title: const Text('flutter_radar_example'),
       ),
       body: Container(
-        child: Column(children: [
-          LocationPermissions(),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Permissions(),
           TrackOnce(),
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
-              // RadarFlutterPlugin.startTracking('continuous');
-              Map<String, dynamic> trackingOptions = {
+              RadarFlutterPlugin.startTracking('responsive');
+            },
+            child: Text("startTracking('responsive')"),
+          ),
+          RaisedButton(
+            color: Colors.blueAccent,
+            onPressed: () {
+              RadarFlutterPlugin.startTrackingCustom({
                 'desiredStoppedUpdateInterval': 180,
                 'desiredMovingUpdateInterval': 60,
                 'desiredSyncInterval': 50,
@@ -62,10 +68,9 @@ class _MyAppState extends State<MyApp> {
                 'sync': 'all',
                 'replay': 'none',
                 'showBlueBar': true
-              };
-              RadarFlutterPlugin.startTrackingCustom(trackingOptions);
+              });
             },
-            child: Text("startTracking()"),
+            child: Text("startTrackingCustom()"),
           ),
           RaisedButton(
             color: Colors.blueAccent,
@@ -92,9 +97,22 @@ class _MyAppState extends State<MyApp> {
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
+              RadarFlutterPlugin.startForegroundService({
+                "title": "Tracking",
+                "text": "Continuous tracking started",
+                "icon": "car_icon",
+                "importance": "2",
+                "id": "12555541"
+              });
+            },
+            child: Text("startForegroundService(), Android only"),
+          ),
+          RaisedButton(
+            color: Colors.blueAccent,
+            onPressed: () {
               RadarFlutterPlugin.stopForegroundService();
             },
-            child: Text("stopForegroundService()"),
+            child: Text("stopForegroundService(), Android only"),
           )
         ]),
       ),
@@ -102,13 +120,13 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class LocationPermissions extends StatefulWidget {
+class Permissions extends StatefulWidget {
   @override
-  _LocationPermissionsState createState() => _LocationPermissionsState();
+  _PermissionsState createState() => _PermissionsState();
 }
 
-class _LocationPermissionsState extends State<LocationPermissions> {
-  String _permissionStatus = 'Unknown';
+class _PermissionsState extends State<Permissions> {
+  String _permissionStatus = 'NOT_DETERMINED';
 
   @override
   void initState() {
@@ -119,10 +137,11 @@ class _LocationPermissionsState extends State<LocationPermissions> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           '$_permissionStatus',
-          style: TextStyle(fontSize: 30),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         RaisedButton(
           color: Colors.blueAccent,

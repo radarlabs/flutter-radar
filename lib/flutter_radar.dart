@@ -83,6 +83,14 @@ class RadarFlutterPlugin {
     return metadata;
   }
 
+  static Future setAdIdEnabled(bool enabled) async {
+    try {
+      await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<Map> getLocation([String accuracy]) async {
     try {
       final Map res =
@@ -122,11 +130,9 @@ class RadarFlutterPlugin {
     }
   }
 
-  static Future startTrackingCustom(
-      Map<String, dynamic> trackingOptions) async {
+  static Future startTrackingCustom(Map<String, dynamic> options) async {
     try {
-      await _channel.invokeMethod(
-          'startTrackingCustom', {'trackingOptions': trackingOptions});
+      await _channel.invokeMethod('startTrackingCustom', options);
     } on PlatformException catch (e) {
       print(e);
     }
@@ -145,11 +151,44 @@ class RadarFlutterPlugin {
     return isTracking;
   }
 
-  static Future setAdIdEnabled(bool enabled) async {
+  static Future startTrip(Map<String, dynamic> tripOptions) async {
     try {
-      await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});
+      await _channel.invokeMethod('startTrip', tripOptions);
     } on PlatformException catch (e) {
       print(e);
+    }
+  }
+
+  static Future<Map> getTripOptions() async {
+    final Map res = await _channel.invokeMethod('getTripOptions');
+    return res;
+  }
+
+  static Future completeTrip() async {
+    try {
+      await _channel.invokeMethod('completeTrip');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future cancelTrip() async {
+    try {
+      await _channel.invokeMethod('cancelTrip');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<Map> getContext(Map<String, dynamic> location) async {
+    try {
+      final Map res =
+          await _channel.invokeMethod('getContext', {'location': location});
+      return res;
+    } on PlatformException catch (e) {
+      print(e);
+      Map<String, String> err = {'error': e.code};
+      return err;
     }
   }
 
@@ -183,18 +222,6 @@ class RadarFlutterPlugin {
         'catgories': categories,
         'groups': groups
       });
-      return res;
-    } on PlatformException catch (e) {
-      print(e);
-      Map<String, String> err = {'error': e.code};
-      return err;
-    }
-  }
-
-  static Future<Map> getContext(Map<String, dynamic> location) async {
-    try {
-      final Map res =
-          await _channel.invokeMethod('getContext', {'location': location});
       return res;
     } on PlatformException catch (e) {
       print(e);
@@ -265,35 +292,6 @@ class RadarFlutterPlugin {
       print(e);
       Map<String, String> err = {'error': e.code};
       return err;
-    }
-  }
-
-  static Future<Map> getTripOptions() async {
-    final Map res = await _channel.invokeMethod('getTripOptions');
-    return res;
-  }
-
-  static Future startTrip(Map<String, dynamic> tripOptions) async {
-    try {
-      await _channel.invokeMethod('startTrip', tripOptions);
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future completeTrip() async {
-    try {
-      await _channel.invokeMethod('completeTrip');
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future cancelTrip() async {
-    try {
-      await _channel.invokeMethod('cancelTrip');
-    } on PlatformException catch (e) {
-      print(e);
     }
   }
 

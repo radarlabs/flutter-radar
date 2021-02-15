@@ -90,6 +90,10 @@
         [self ipGeocode:call withResult:result];
     } else if ([@"getDistance" isEqualToString:call.method]) {
         [self getDistance:call withResult:result];
+    } else if ([@"startForegroundService" isEqualToString:call.method]) {
+        // do nothing
+    } else if ([@"stopForegroundService" isEqualToString:call.method]) {
+        // do nothing
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -284,6 +288,7 @@
 
 - (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *optionsDict = call.arguments;
+    NSLog(@"%@", optionsDict);
     RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
     result(nil);

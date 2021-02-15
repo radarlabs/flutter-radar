@@ -6,9 +6,8 @@
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-  [Radar initializeWithPublishableKey:@"<yourRadarPublishableKey>"];
   [GeneratedPluginRegistrant registerWithRegistry:self];
-  // Override point for customization after application launch.
+  [Radar initializeWithPublishableKey:@"org_test_pk_5857c63d9c1565175db8b00750808a66a002acb8"];
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
