@@ -4,11 +4,22 @@ import 'package:flutter/services.dart';
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
-  static Function(Map result) _clientLocationHandler;
-  static Function(Map result) _eventHandler;
-  static Function(Map result) _locationHandler;
-  static Function(Map result) _errorHandler;
-  static Function(Map result) _logHandler;
+  static const EventChannel _eventsChannel =
+      const EventChannel('flutter_radar_onEvents');
+  static const EventChannel _locationChannel =
+      const EventChannel('flutter_radar_onLocation');
+  static const EventChannel _clientLocationChannel =
+      const EventChannel('flutter_radar_onClientLocation');
+  static const EventChannel _errorChannel =
+      const EventChannel('flutter_radar_onError');
+  static const EventChannel _logChannel =
+      const EventChannel('flutter_radar_onLog');
+
+  static Function(Map res) _eventsCallback;
+  static Function(Map res) _locationCallback;
+  static Function(Map res) _clientLocationCallback;
+  static Function(Map res) _errorCallback;
+  static Function(Map res) _logCallback;
 
   static Future initialize(String publishableKey) async {
     try {
@@ -313,68 +324,68 @@ class Radar {
     }
   }
 
-  static startListeners() {
-    _channel.setMethodCallHandler((MethodCall methodCall) async {
-      if (methodCall.method == 'onEvents' && _eventHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _eventHandler(res);
-      } else if (methodCall.method == 'onLocation' &&
-          _locationHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _locationHandler(res);
-      } else if (methodCall.method == 'onClientLocation' &&
-          _clientLocationHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _clientLocationHandler(res);
-      } else if (methodCall.method == 'onError' && _errorHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _errorHandler(res);
-      } else if (methodCall.method == 'onLog' && _logHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _logHandler(res);
+  static onEvents(Function(Map<dynamic, dynamic> result) callback) {
+    _eventsCallback = callback;
+    _eventsChannel.receiveBroadcastStream().listen((data) {
+      if (_eventsCallback != null) {
+        _eventsCallback(data);
       }
-      return null;
     });
   }
 
-  static onEvents(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _eventHandler = resultProcess;
-  }
-
   static offEvents() {
-    _eventHandler = null;
+    _eventsCallback = null;
   }
 
-  static onLocation(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _locationHandler = resultProcess;
+  static onLocation(Function(Map<dynamic, dynamic> result) callback) {
+    _locationCallback = callback;
+    _locationChannel.receiveBroadcastStream().listen((data) {
+      if (_locationCallback != null) {
+        _locationCallback(data);
+      }
+    });
   }
 
   static offLocation() {
-    _locationHandler = null;
+    _locationCallback = null;
   }
 
-  static onClientLocation(
-      Function(Map<dynamic, dynamic> result) resultProcess) {
-    _clientLocationHandler = resultProcess;
+  static onClientLocation(Function(Map<dynamic, dynamic> result) callback) {
+    _clientLocationCallback = callback;
+    _clientLocationChannel.receiveBroadcastStream().listen((data) {
+      if (_clientLocationCallback != null) {
+        _clientLocationCallback(data);
+      }
+    });
   }
 
   static offClientLocation() {
-    _clientLocationHandler = null;
+    _clientLocationCallback = null;
   }
 
-  static onError(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _errorHandler = resultProcess;
+  static onError(Function(Map<dynamic, dynamic> result) callback) {
+    _errorCallback = callback;
+    _errorChannel.receiveBroadcastStream().listen((data) {
+      if (_errorCallback != null) {
+        _errorCallback(data);
+      }
+    });
   }
 
   static offError() {
-    _errorHandler = null;
+    _errorCallback = null;
   }
 
-  static onLog(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _logHandler = resultProcess;
+  static onLog(Function(Map<dynamic, dynamic> result) callback) {
+    _logCallback = callback;
+    _logChannel.receiveBroadcastStream().listen((data) {
+      if (_logCallback != null) {
+        _logCallback(data);
+      }
+    });
   }
 
   static offLog() {
-    _logHandler = null;
+    _logCallback = null;
   }
 }

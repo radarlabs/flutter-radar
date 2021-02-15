@@ -25,11 +25,11 @@ class _MyAppState extends State<MyApp> {
     Radar.onEvents((result) {
       print('onEvents: $result');
     });
-    Radar.onClientLocation((result) {
-      print('onClientLocation: $result');
-    });
     Radar.onLocation((result) {
       print('onLocation: $result');
+    });
+    Radar.onClientLocation((result) {
+      print('onClientLocation: $result');
     });
     Radar.onError((result) {
       print('onError: $result');
@@ -37,7 +37,6 @@ class _MyAppState extends State<MyApp> {
     Radar.onLog((result) {
       print('onLog: $result');
     });
-    Radar.startListeners();
   }
 
   @override

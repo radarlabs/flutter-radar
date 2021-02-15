@@ -27,14 +27,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.view.FlutterMain;
 
 import io.radar.sdk.Radar;
 import io.radar.sdk.RadarReceiver;
@@ -50,54 +54,144 @@ import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
+
+    private static FlutterEngine sBackgroundFlutterEngine;
+    private static EventChannel sEventsChannel;
+    private static EventChannel.EventSink sEventsSink;
+    private static EventChannel sLocationChannel;
+    private static EventChannel.EventSink sLocationSink;
+    private static EventChannel sClientLocationChannel;
+    private static EventChannel.EventSink sClientLocationSink;
+    private static EventChannel sErrorChannel;
+    private static EventChannel.EventSink sErrorSink;
+    private static EventChannel sLogChannel;
+    private static EventChannel.EventSink sLogSink;
+
+    private Activity mActivity;
+    private Context mContext;
     
-    public static MethodChannel channel;
-    private Activity activity;
-    private Registrar registrar;
-    private Context applicationContext;
+    private static void initializeBackgroundEngine(Context context) {
+        FlutterMain.startInitialization(context.getApplicationContext());
+        FlutterMain.ensureInitializationComplete(context.getApplicationContext(), null);
 
-    private Activity getActivity() {
-        return registrar != null ? registrar.activity() : activity;
+        if (sBackgroundFlutterEngine == null) {
+            sBackgroundFlutterEngine = new FlutterEngine(context);
+            initializeEventChannels(sBackgroundFlutterEngine.getDartExecutor());
+        }
     }
 
-    @Override
-    public void onAttachedToActivity(ActivityPluginBinding activityPluginBinding) {
-        this.activity = activityPluginBinding.getActivity();
-    }
+    private static void initializeEventChannels(BinaryMessenger messenger) {
+        sEventsChannel = new EventChannel(messenger, "flutter_radar_onEvents");
+        sEventsChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object listener, EventChannel.EventSink eventSink) {
+                sEventsSink = eventSink;
+            }
 
-    @Override
-    public void onDetachedFromActivityForConfigChanges() {
-        this.activity = null;
-    }
+            @Override
+            public void onCancel(Object listener) {
+                sEventsSink = null;
+            }
+        });
 
-    @Override
-    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding activityPluginBinding) {
-        this.activity = activityPluginBinding.getActivity();
-    }
+        sLocationChannel = new EventChannel(messenger, "flutter_radar_onLocation");
+        sLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object listener, EventChannel.EventSink eventSink) {
+                sLocationSink = eventSink;
+            }
 
+            @Override
+            public void onCancel(Object listener) {
+                sLocationSink = null;
+            }
+        });
+
+        sClientLocationChannel = new EventChannel(messenger, "flutter_radar_onClientLocation");
+        sClientLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object listener, EventChannel.EventSink eventSink) {
+                sClientLocationSink = eventSink;
+            }
+
+            @Override
+            public void onCancel(Object listener) {
+                sClientLocationSink = null;
+            }
+        });
+
+        sErrorChannel = new EventChannel(messenger, "flutter_radar_onError");
+        sErrorChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object listener, EventChannel.EventSink eventSink) {
+                sErrorSink = eventSink;
+            }
+
+            @Override
+            public void onCancel(Object listener) {
+                sErrorSink = null;
+            }
+        });
+
+        sLogChannel = new EventChannel(messenger, "flutter_radar_onLog");
+        sLogChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object listener, EventChannel.EventSink eventSink) {
+                sLogSink = eventSink;
+            }
+
+            @Override
+            public void onCancel(Object listener) {
+                sLogSink = null;
+            }
+        });
+    }
+    
     @Override
-    public void onDetachedFromActivity() {
-        
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        mContext = binding.getApplicationContext();
+        MethodChannel channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
+        channel.setMethodCallHandler(this);
+        initializeEventChannels(binding.getFlutterEngine().getDartExecutor());
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        channel.setMethodCallHandler(null);
+        mContext = null;
     }
 
     @Override
-    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "flutter_radar");
-        channel.setMethodCallHandler(this);
-        applicationContext = flutterPluginBinding.getApplicationContext();
+    public void onAttachedToActivity(ActivityPluginBinding binding) {
+        mActivity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        mActivity = null;
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        mActivity = null;
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+        mActivity = binding.getActivity();
     }
 
     public static void registerWith(Registrar registrar) {
-        channel = new MethodChannel(registrar.messenger(), "flutter_radar");
+        MethodChannel channel = new MethodChannel(registrar.messenger(), "radar_flutter_plugin");
         RadarFlutterPlugin plugin = new RadarFlutterPlugin();
         channel.setMethodCallHandler(plugin);
-        plugin.applicationContext = registrar.context();
-        plugin.activity = registrar.activity();
+        plugin.mContext = registrar.context();
+        plugin.mActivity = registrar.activity();
+        initializeEventChannels(registrar.messenger());
+    }
+
+    private void runOnMainThread(final Runnable runnable) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(runnable);
     }
 
     @Override
@@ -206,33 +300,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    private void runOnMainThread(final Runnable runnable) {
-        if (Looper.getMainLooper().getThread() == Thread.currentThread())
-           runnable.run();
-        else {
-           Handler handler = new Handler(Looper.getMainLooper());
-           handler.post(runnable);
-        }
-     }
-
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
-        Radar.initialize(applicationContext,publishableKey);
+        Radar.initialize(mContext, publishableKey);
         result.success(true);
-    }
-
-    private void getPermissionStatus(Result result) {
-        boolean foreground = ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        if (Build.VERSION.SDK_INT >= 29) {
-            if (foreground) {
-                boolean background = ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                result.success(background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND");
-            } else {
-                result.success("DENIED");
-            }
-        } else {
-            result.success(foreground ? "GRANTED_BACKGROUND" : "DENIED");
-        }
     }
 
     private void setLogLevel(MethodCall call, Result result) {
@@ -257,15 +328,30 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(true);
     }
 
+
+    private void getPermissionStatus(Result result) {
+        boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (Build.VERSION.SDK_INT >= 29) {
+            if (foreground) {
+                boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                result.success(background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND");
+            } else {
+                result.success("DENIED");
+            }
+        } else {
+            result.success(foreground ? "GRANTED_BACKGROUND" : "DENIED");
+        }
+    }
+
     private void requestPermissions(MethodCall call, Result result) {
-        Boolean background = call.argument("background");
-        if (activity != null) {
+        boolean background = call.argument("background");
+        if (mActivity != null) {
             if (Build.VERSION.SDK_INT >= 23) {
                 int requestCode = 0;
                 if (background && Build.VERSION.SDK_INT >= 29) {
-                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION}, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION }, requestCode);
                 } else {
-                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, requestCode);
                 }
             }
         }
@@ -790,8 +876,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void startForegroundService(MethodCall call, Result result) {
+        if (mActivity == null) {
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= 26) {
-            Intent intent = new Intent(activity, RadarForegroundService.class);
+            Intent intent = new Intent(mActivity, RadarForegroundService.class);
             String title = call.argument("title");
             String text = call.argument("text");
             String icon = call.argument("icon");
@@ -803,17 +893,21 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 .putExtra("icon", icon)
                 .putExtra("importance", importance)
                 .putExtra("id", id)
-                .putExtra("activity", activity.getClass().getCanonicalName());
-            applicationContext.startForegroundService(intent);
+                .putExtra("activity", mActivity.getClass().getCanonicalName());
+            mContext.startForegroundService(intent);
             result.success(true);
         }
     }
 
     public void stopForegroundService(MethodCall call, Result result) throws JSONException {
+        if (mActivity == null) {
+            return;
+        }
+
         if (Build.VERSION.SDK_INT >= 26) {
-            Intent intent = new Intent(activity, RadarForegroundService.class);
+            Intent intent = new Intent(mActivity, RadarForegroundService.class);
             intent.setAction("stop");
-            applicationContext.startService(intent);
+            mContext.startService(intent);
             result.success(true);
         }
     }
@@ -850,30 +944,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
         @Override
         public void onEventsReceived(Context context, RadarEvent[] events, RadarUser user) {
+            RadarFlutterPlugin.initializeBackgroundEngine(context);
+
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("events", RadarEvent.toJson(events));
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                if (RadarFlutterPlugin.channel != null) {
-                    RadarFlutterPlugin.channel.invokeMethod("onEvents", map);
-                }
-            } catch (JSONException e) {
-                Log.e("RadarFlutterPlugin", e.toString());
-            }
-        }
-    
-        public void onClientLocationUpdated(Context context, Location location, boolean stopped, Radar.RadarLocationSource source) {
-            try {
-                JSONObject obj = new JSONObject();
-                obj.put("location", Radar.jsonForLocation(location));
-                obj.put("stopped", stopped);
-                obj.put("source", source.toString());
-
-                HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                if (RadarFlutterPlugin.channel != null) {
-                    RadarFlutterPlugin.channel.invokeMethod("onClientLocation", map);
+                if (sEventsSink != null) {
+                    sEventsSink.success(map);
                 }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
@@ -882,14 +962,34 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     
         @Override
         public void onLocationUpdated(Context context, Location location, RadarUser user) {
+            RadarFlutterPlugin.initializeBackgroundEngine(context);
+
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("location", Radar.jsonForLocation(location));
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                if (RadarFlutterPlugin.channel != null) {
-                    RadarFlutterPlugin.channel.invokeMethod("onLocation", map);
+                if (sLocationSink != null) {
+                    sLocationSink.success(map);
+                }
+            } catch (JSONException e) {
+                Log.e("RadarFlutterPlugin", e.toString());
+            }
+        }
+
+        public void onClientLocationUpdated(Context context, Location location, boolean stopped, Radar.RadarLocationSource source) {
+            RadarFlutterPlugin.initializeBackgroundEngine(context);
+
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("location", Radar.jsonForLocation(location));
+                obj.put("stopped", stopped);
+                obj.put("source", source.toString());
+
+                HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                if (sClientLocationSink != null) {
+                    sClientLocationSink.success(map);
                 }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
@@ -898,13 +998,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     
         @Override
         public void onError(Context context, Radar.RadarStatus status) {
+            RadarFlutterPlugin.initializeBackgroundEngine(context);
+
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("status", status.toString());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                if (RadarFlutterPlugin.channel != null) {
-                    RadarFlutterPlugin.channel.invokeMethod("onError", map);
+                if (sErrorSink != null) {
+                    sErrorSink.success(map);
                 }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
@@ -912,14 +1014,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     
         @Override
-        public void onLog(Context context,String message) {
+        public void onLog(Context context, String message) {
+            RadarFlutterPlugin.initializeBackgroundEngine(context);
+            
             try {
                 JSONObject obj = new JSONObject();
                 obj.put("message", message);
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                if (RadarFlutterPlugin.channel != null) {
-                    RadarFlutterPlugin.channel.invokeMethod("onLog", map);
+                if (sLogSink != null) {
+                    sLogSink.success(map);
                 }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
