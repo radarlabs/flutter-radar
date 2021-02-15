@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:radar_flutter_plugin/radar_flutter_plugin.dart';
+import 'package:flutter_radar/flutter_radar.dart';
 
 void main() => runApp(MyApp());
 
