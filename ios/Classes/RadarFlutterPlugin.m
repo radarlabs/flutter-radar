@@ -183,13 +183,13 @@
 }
 
 - (void)setMetadata:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *metadata = call.arguments;
+    NSDictionary *metadata = call.arguments;
     [Radar setMetadata:metadata];
     result(nil);
 }
 
 - (void)getMetadata:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *metadata = [Radar getMetadata];
+    NSDictionary *metadata = [Radar getMetadata];
     result(metadata);
 }
 
@@ -240,7 +240,7 @@
                 [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
             }
             if (user) {
-                [dict setObject:userDict forKey:@"user"];
+                [dict setObject:[user dictionaryValue] forKey:@"user"];
             }
             result(dict);
         }
@@ -283,8 +283,8 @@
 }
 
 - (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *trackingOptionsDict = call.arguments;
-    RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:trackargsDict];
+    NSDictionary *optionsDict = call.arguments;
+    RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
     result(nil);
 }
@@ -349,9 +349,9 @@
     result(nil);
 }
 
-- (void)isTracking {
+- (void)isTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isTracking = [Radar isTracking];
-    result(isTracking ? @"True" : @"False" );
+    result(@(isTracking));
 }
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -379,11 +379,11 @@
 
 - (void)getTripOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTripOptions *options = [Radar getTripOptions];
-    NSMutableDictionary *optionsDict;
+    NSDictionary *optionsDict;
     if (options) {
       optionsDict = [options dictionaryValue];
     }
-    result(dict);
+    result(optionsDict);
 }
 
 - (void)completeTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -468,6 +468,7 @@
     } else {
         limit = 10;
     }
+
     if (near != nil) {
         [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
     } else {
@@ -495,39 +496,30 @@
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
     if (nearDict) {
-        NSDictionary *nearDict = call.arguments[@"near"];
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
         double longitude = [longitudeNumber doubleValue];
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
-    NSNumber *radiusNumber = call.arguments[@"radius"];
+    NSNumber *radiusNumber = argsDict[@"radius"];
     int radius;
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
         radius = [radiusNumber intValue];
     } else {
         radius = 1000;
     }
-    NSNumber *limitNumber = call.arguments[@"limit"];
+    NSArray *chains = argsDict[@"chains"];
+    NSArray *categories = argsDict[@"categories"];
+    NSArray *groups = argsDict[@"groups"];
+    NSNumber *limitNumber = argsDict[@"limit"];
     int limit;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
     } else {
         limit = 10;
     }
-    NSArray *chains = call.arguments[@"chains"];
-    if (chains == [NSNull null]) {
-      chains = nil;
-    }
-    NSArray *categories = call.arguments[@"categories"];
-      if (categories == [NSNull null]) {
-      categories = nil;
-    }
-    NSArray *groups = call.arguments[@"groups"];
-    if (groups == [NSNull null]) {
-      groups = nil;
-    }
+
     if (near != nil) {
         [Radar searchPlacesNear:near radius:radius chains:chains categories:categories groups:groups limit:limit completionHandler:completionHandler];
     } else {
@@ -676,12 +668,12 @@
 }
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
-    NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": userDict};
+    NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": [user dictionaryValue]};
     [_channel invokeMethod:@"onEvents" arguments:dict];
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
-    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": userDict};
+    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
     [_channel invokeMethod:@"onLocation" arguments:dict];
 }
 
