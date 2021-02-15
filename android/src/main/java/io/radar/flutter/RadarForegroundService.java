@@ -1,4 +1,4 @@
-package com.bg.radar_flutter_plugin;
+package io.radar.flutter;
 
 import android.content.Intent;
 import android.content.Context;
