@@ -1,4 +1,4 @@
-package io.radar.example
+package io.radar.example;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
