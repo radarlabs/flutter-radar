@@ -45,7 +45,7 @@ class _MyAppState extends State<MyApp> {
         title: const Text('flutter_radar_example'),
       ),
       body: Container(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        child: Column(children: [
           Permissions(),
           TrackOnce(),
           RaisedButton(
