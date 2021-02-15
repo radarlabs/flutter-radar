@@ -77,7 +77,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     @Override
     public void onDetachedFromActivity() {
-    
+        
     }
 
     @Override
@@ -87,13 +87,13 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        MethodChannel channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "flutter_radar");
+        channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "flutter_radar");
         channel.setMethodCallHandler(this);
         applicationContext = flutterPluginBinding.getApplicationContext();
     }
 
     public static void registerWith(Registrar registrar) {
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_radar");
+        channel = new MethodChannel(registrar.messenger(), "flutter_radar");
         RadarFlutterPlugin plugin = new RadarFlutterPlugin();
         channel.setMethodCallHandler(plugin);
         plugin.applicationContext = registrar.context();
@@ -214,16 +214,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
            handler.post(runnable);
         }
      }
-
-    private void invokeMethodOnUiThread(final String methodName, final HashMap map) {
-        final MethodChannel channel = this.channel;
-        runOnMainThread(new Runnable() {
-           @Override
-           public void run() {
-              channel.invokeMethod(methodName, map);
-           }
-        });
-    }
 
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
@@ -866,7 +856,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                RadarFlutterPlugin.channel.invokeMethod("onEvents", map);
+                if (RadarFlutterPlugin.channel != null) {
+                    RadarFlutterPlugin.channel.invokeMethod("onEvents", map);
+                }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
@@ -880,7 +872,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 obj.put("source", source.toString());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                RadarFlutterPlugin.channel.invokeMethod("onClientLocation", map);
+                if (RadarFlutterPlugin.channel != null) {
+                    RadarFlutterPlugin.channel.invokeMethod("onClientLocation", map);
+                }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
@@ -894,7 +888,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                RadarFlutterPlugin.channel.invokeMethod("onLocation", map);
+                if (RadarFlutterPlugin.channel != null) {
+                    RadarFlutterPlugin.channel.invokeMethod("onLocation", map);
+                }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
@@ -907,7 +903,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 obj.put("status", status.toString());
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                RadarFlutterPlugin.channel.invokeMethod("onError", map);
+                if (RadarFlutterPlugin.channel != null) {
+                    RadarFlutterPlugin.channel.invokeMethod("onError", map);
+                }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
@@ -920,7 +918,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 obj.put("message", message);
 
                 HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                RadarFlutterPlugin.channel.invokeMethod("onLog", map);
+                if (RadarFlutterPlugin.channel != null) {
+                    RadarFlutterPlugin.channel.invokeMethod("onLog", map);
+                }
             } catch (JSONException e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }

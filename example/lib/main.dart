@@ -59,9 +59,9 @@ class _MyAppState extends State<MyApp> {
             color: Colors.blueAccent,
             onPressed: () {
               RadarFlutterPlugin.startTrackingCustom({
-                'desiredStoppedUpdateInterval': 180,
-                'desiredMovingUpdateInterval': 60,
-                'desiredSyncInterval': 50,
+                'desiredStoppedUpdateInterval': 60,
+                'desiredMovingUpdateInterval': 30,
+                'desiredSyncInterval': 20,
                 'desiredAccuracy': 'high',
                 'stopDuration': 140,
                 'stopDistance': 70,
