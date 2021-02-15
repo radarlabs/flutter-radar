@@ -60,7 +60,9 @@ class _MyAppState extends State<MyApp> {
             onPressed: () {
               RadarFlutterPlugin.startTrackingCustom({
                 'desiredStoppedUpdateInterval': 60,
+                'fastestStoppedUpdateInterval': 60,
                 'desiredMovingUpdateInterval': 30,
+                'fastestMovingUpdateInterval': 30,
                 'desiredSyncInterval': 20,
                 'desiredAccuracy': 'high',
                 'stopDuration': 140,
