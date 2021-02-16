@@ -1,6 +1,7 @@
+#import <RadarSDK/RadarSDK.h>
+
 #import "AppDelegate.h"
 #import "GeneratedPluginRegistrant.h"
-#import <RadarSDK/RadarSDK.h>
 
 @implementation AppDelegate
 
