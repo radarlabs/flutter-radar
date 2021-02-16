@@ -4,11 +4,22 @@ import 'package:flutter/services.dart';
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
-  static Function(Map result) _clientLocationHandler;
-  static Function(Map result) _eventHandler;
-  static Function(Map result) _locationHandler;
-  static Function(Map result) _errorHandler;
-  static Function(Map result) _logHandler;
+  static const EventChannel _eventsChannel =
+      const EventChannel('flutter_radar/events');
+  static const EventChannel _locationChannel =
+      const EventChannel('flutter_radar/location');
+  static const EventChannel _clientLocationChannel =
+      const EventChannel('flutter_radar/clientLocation');
+  static const EventChannel _errorChannel =
+      const EventChannel('flutter_radar/error');
+  static const EventChannel _logChannel =
+      const EventChannel('flutter_radar/log');
+
+  static Function(Map res) _eventsCallback;
+  static Function(Map res) _locationCallback;
+  static Function(Map res) _clientLocationCallback;
+  static Function(Map res) _errorCallback;
+  static Function(Map res) _logCallback;
 
   static Future initialize(String publishableKey) async {
     try {
@@ -151,6 +162,28 @@ class Radar {
     return isTracking;
   }
 
+  static Future<Map> mockTracking(
+      {Map<String, double> origin,
+      Map<String, double> destination,
+      String mode,
+      int steps,
+      int interval}) async {
+    try {
+      final Map res = await _channel.invokeMethod('mockTracking', {
+        'origin': origin,
+        'destination': destination,
+        'mode': mode,
+        'steps': steps,
+        'interval': interval
+      });
+      return res;
+    } on PlatformException catch (e) {
+      print(e);
+      Map<String, String> err = {'error': e.code};
+      return err;
+    }
+  }
+
   static Future startTrip(Map<String, dynamic> tripOptions) async {
     try {
       await _channel.invokeMethod('startTrip', tripOptions);
@@ -192,8 +225,12 @@ class Radar {
     }
   }
 
-  static Future<Map> searchGeofences(Map<String, dynamic> near, int radius,
-      List tags, Map<String, dynamic> metadata, int limit) async {
+  static Future<Map> searchGeofences(
+      {Map<String, dynamic> near,
+      int radius,
+      List tags,
+      Map<String, dynamic> metadata,
+      int limit}) async {
     try {
       final Map res =
           await _channel.invokeMethod('searchGeofences', <String, dynamic>{
@@ -211,8 +248,13 @@ class Radar {
     }
   }
 
-  static Future<Map> searchPlaces(Map<String, dynamic> near, int radius,
-      int limit, List chains, List categories, List groups) async {
+  static Future<Map> searchPlaces(
+      {Map<String, dynamic> near,
+      int radius,
+      int limit,
+      List chains,
+      List categories,
+      List groups}) async {
     try {
       final Map res = await _channel.invokeMethod('searchPlaces', {
         'near': near,
@@ -231,7 +273,7 @@ class Radar {
   }
 
   static Future<Map> autocomplete(
-      String query, Map<String, dynamic> near, int limit) async {
+      {String query, Map<String, dynamic> near, int limit}) async {
     try {
       final Map res = await _channel.invokeMethod(
           'autocomplete', {'query': query, 'near': near, 'limit': limit});
@@ -278,8 +320,11 @@ class Radar {
     }
   }
 
-  static Future<Map> getDistance(Map<String, double> origin,
-      Map<String, double> destination, List modes, String units) async {
+  static Future<Map> getDistance(
+      {Map<String, double> origin,
+      Map<String, double> destination,
+      List modes,
+      String units}) async {
     try {
       final Map res = await _channel.invokeMethod('getDistance', {
         'origin': origin,
@@ -313,68 +358,68 @@ class Radar {
     }
   }
 
-  static startListeners() {
-    _channel.setMethodCallHandler((MethodCall methodCall) async {
-      if (methodCall.method == 'onEvents' && _eventHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _eventHandler(res);
-      } else if (methodCall.method == 'onLocation' &&
-          _locationHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _locationHandler(res);
-      } else if (methodCall.method == 'onClientLocation' &&
-          _clientLocationHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _clientLocationHandler(res);
-      } else if (methodCall.method == 'onError' && _errorHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _errorHandler(res);
-      } else if (methodCall.method == 'onLog' && _logHandler != null) {
-        Map res = Map.from(methodCall.arguments);
-        _logHandler(res);
+  static onEvents(Function(Map<dynamic, dynamic> result) callback) {
+    _eventsCallback = callback;
+    _eventsChannel.receiveBroadcastStream().listen((data) {
+      if (_eventsCallback != null) {
+        _eventsCallback(data);
       }
-      return null;
     });
   }
 
-  static onEvents(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _eventHandler = resultProcess;
-  }
-
   static offEvents() {
-    _eventHandler = null;
+    _eventsCallback = null;
   }
 
-  static onLocation(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _locationHandler = resultProcess;
+  static onLocation(Function(Map<dynamic, dynamic> result) callback) {
+    _locationCallback = callback;
+    _locationChannel.receiveBroadcastStream().listen((data) {
+      if (_locationCallback != null) {
+        _locationCallback(data);
+      }
+    });
   }
 
   static offLocation() {
-    _locationHandler = null;
+    _locationCallback = null;
   }
 
-  static onClientLocation(
-      Function(Map<dynamic, dynamic> result) resultProcess) {
-    _clientLocationHandler = resultProcess;
+  static onClientLocation(Function(Map<dynamic, dynamic> result) callback) {
+    _clientLocationCallback = callback;
+    _clientLocationChannel.receiveBroadcastStream().listen((data) {
+      if (_clientLocationCallback != null) {
+        _clientLocationCallback(data);
+      }
+    });
   }
 
   static offClientLocation() {
-    _clientLocationHandler = null;
+    _clientLocationCallback = null;
   }
 
-  static onError(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _errorHandler = resultProcess;
+  static onError(Function(Map<dynamic, dynamic> result) callback) {
+    _errorCallback = callback;
+    _errorChannel.receiveBroadcastStream().listen((data) {
+      if (_errorCallback != null) {
+        _errorCallback(data);
+      }
+    });
   }
 
   static offError() {
-    _errorHandler = null;
+    _errorCallback = null;
   }
 
-  static onLog(Function(Map<dynamic, dynamic> result) resultProcess) {
-    _logHandler = resultProcess;
+  static onLog(Function(Map<dynamic, dynamic> result) callback) {
+    _logCallback = callback;
+    _logChannel.receiveBroadcastStream().listen((data) {
+      if (_logCallback != null) {
+        _logCallback(data);
+      }
+    });
   }
 
   static offLog() {
-    _logHandler = null;
+    _logCallback = null;
   }
 }
