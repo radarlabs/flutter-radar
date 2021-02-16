@@ -86,8 +86,6 @@
         [self startTracking:call withResult:result];
     } else if ([@"startTrackingCustom" isEqualToString:call.method]) {
         [self startTrackingCustom:call withResult:result];
-    } else if ([@"mockTracking" isEqualToString:call.method]) {
-        [self mockTracking:call withResult:result];
     } else if ([@"stopTracking" isEqualToString:call.method]) {
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
@@ -324,61 +322,6 @@
     result(nil);
 }
 
-- (void)mockTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;
-
-    NSDictionary *originDict = argsDict[@"origin"];
-    NSNumber *originLatitudeNumber = originDict[@"latitude"];
-    NSNumber *originLongitudeNumber = originDict[@"longitude"];
-    double originLatitude = [originLatitudeNumber doubleValue];
-    double originLongitude = [originLongitudeNumber doubleValue];
-    CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(originLatitude, originLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    NSDictionary *destinationDict = argsDict[@"destination"];
-    NSNumber *destinationLatitudeNumber = destinationDict[@"latitude"];
-    NSNumber *destinationLongitudeNumber = destinationDict[@"longitude"];
-    double destinationLatitude = [destinationLatitudeNumber doubleValue];
-    double destinationLongitude = [destinationLongitudeNumber doubleValue];
-    CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    NSString *modeStr = argsDict[@"mode"];
-    RadarRouteMode mode = RadarRouteModeCar;
-    if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
-        mode = RadarRouteModeFoot;
-    } else if ([modeStr isEqualToString:@"BIKE"] || [modeStr isEqualToString:@"bike"]) {
-        mode = RadarRouteModeBike;
-    } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
-        mode = RadarRouteModeCar;
-    }
-    NSNumber *stepsNumber = argsDict[@"steps"];
-    int steps;
-    if (stepsNumber != nil && [stepsNumber isKindOfClass:[NSNumber class]]) {
-        steps = [stepsNumber intValue];
-    } else {
-        steps = 10;
-    }
-    NSNumber *intervalNumber = argsDict[@"interval"];
-    double interval;
-    if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
-        interval = [intervalNumber doubleValue];
-    } else {
-        interval = 1;
-    }
-
-    [Radar mockTrackingWithOrigin:origin destination:destination mode:mode steps:steps interval:interval completionHandler:^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
-        NSMutableDictionary *dict = [NSMutableDictionary new];
-        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-        if (location) {
-            [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-        }
-        if (events) {
-            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-        }
-        if (user) {
-            [dict setObject:[user dictionaryValue] forKey:@"user"];
-        }
-        result(dict);
-    }];
-}
-
 - (void)stopTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     [Radar stopTracking];
     result(nil);
@@ -413,14 +356,14 @@
     } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
         mode = RadarRouteModeCar;
     }
-    NSNumber *stepsNumber = optionsDict[@"steps"];
+    NSNumber *stepsNumber = argsDict[@"steps"];
     int steps;
     if (stepsNumber != nil && [stepsNumber isKindOfClass:[NSNumber class]]) {
         steps = [stepsNumber intValue];
     } else {
         steps = 10;
     }
-    NSNumber *intervalNumber = optionsDict[@"interval"];
+    NSNumber *intervalNumber = argsDict[@"interval"];
     int interval;
     if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
         interval = [intervalNumber intValue];
