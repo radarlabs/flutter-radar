@@ -519,24 +519,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         Radar.mockTracking(origin, destination, mode, steps, interval, new Radar.RadarTrackCallback() {
             @Override
             public void onComplete(Radar.RadarStatus status, Location location, RadarEvent[] events, RadarUser user) {
-                try {
-                    JSONObject obj = new JSONObject();
-                    obj.put("status", status.toString());
-                    if (location != null) {
-                        obj.put("location", Radar.jsonForLocation(location));
-                    }
-                    if (events != null) {
-                        obj.put("events", RadarEvent.toJson(events));
-                    }
-                    if (user != null) {
-                        obj.put("user", user.toJson());
-                    }
-                    
-                    HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                    result.success(map);
-                } catch (JSONException e) {
-                    result.error(e.toString(), e.getMessage(), e.getStackTrace());
-                }
+                
             }
         });
     }
