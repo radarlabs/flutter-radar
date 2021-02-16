@@ -17,7 +17,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    Radar.setLogLevel('none');
+    Radar.setLogLevel('info');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
@@ -25,11 +25,11 @@ class _MyAppState extends State<MyApp> {
     Radar.onEvents((result) {
       print('onEvents: $result');
     });
-    Radar.onClientLocation((result) {
-      print('onClientLocation: $result');
-    });
     Radar.onLocation((result) {
       print('onLocation: $result');
+    });
+    Radar.onClientLocation((result) {
+      print('onClientLocation: $result');
     });
     Radar.onError((result) {
       print('onError: $result');
@@ -37,7 +37,6 @@ class _MyAppState extends State<MyApp> {
     Radar.onLog((result) {
       print('onLog: $result');
     });
-    Radar.startListeners();
   }
 
   @override
@@ -83,6 +82,18 @@ class _MyAppState extends State<MyApp> {
               Radar.stopTracking();
             },
             child: Text('stopTracking()'),
+          ),
+          RaisedButton(
+            color: Colors.blueAccent,
+            onPressed: () {
+              Radar.mockTracking(
+                  origin: {'latitude': 40.78382, 'longitude': -73.97536},
+                  destination: {'latitude': 40.70390, 'longitude': -73.98670},
+                  mode: 'car',
+                  steps: 3,
+                  interval: 3);
+            },
+            child: Text('mockTracking()'),
           ),
           RaisedButton(
             color: Colors.blueAccent,
