@@ -251,6 +251,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "isTracking":
                     isTracking(result);
                     break;
+                case "mockTracking":
+                    mockTracking(call, result);
+                    break;
                 case "startTrip":
                     startTrip(call, result);
                     break;
