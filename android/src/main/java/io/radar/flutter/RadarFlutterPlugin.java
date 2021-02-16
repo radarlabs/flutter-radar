@@ -513,8 +513,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         } else if (modeStr.equals("CAR") || modeStr.equals("car")) {
             mode = Radar.RadarRouteMode.CAR;
         }
-        int steps = call.argument("steps") != null ? (int)call.argument("steps") : 10;
-        int interval = call.argument("interval") != null ? (int)call.argument("interval") : 1;
+        int steps = call.hasArgument("steps") ? (int)call.argument("steps") : 10;
+        int interval = call.hasArgument("interval") ? (int)call.argument("interval") : 1;
 
         Radar.mockTracking(origin, destination, mode, steps, interval, new Radar.RadarTrackCallback() {
             @Override
