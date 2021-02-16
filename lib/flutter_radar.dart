@@ -162,6 +162,28 @@ class Radar {
     return isTracking;
   }
 
+  static Future<Map> mockTracking(
+      {Map<String, double> origin,
+      Map<String, double> destination,
+      String mode,
+      int steps,
+      int interval}) async {
+    try {
+      final Map res = await _channel.invokeMethod('mockTracking', {
+        'origin': origin,
+        'destination': destination,
+        'mode': mode,
+        'steps': steps,
+        'interval': interval
+      });
+      return res;
+    } on PlatformException catch (e) {
+      print(e);
+      Map<String, String> err = {'error': e.code};
+      return err;
+    }
+  }
+
   static Future startTrip(Map<String, dynamic> tripOptions) async {
     try {
       await _channel.invokeMethod('startTrip', tripOptions);
@@ -203,8 +225,12 @@ class Radar {
     }
   }
 
-  static Future<Map> searchGeofences(Map<String, dynamic> near, int radius,
-      List tags, Map<String, dynamic> metadata, int limit) async {
+  static Future<Map> searchGeofences(
+      {Map<String, dynamic> near,
+      int radius,
+      List tags,
+      Map<String, dynamic> metadata,
+      int limit}) async {
     try {
       final Map res =
           await _channel.invokeMethod('searchGeofences', <String, dynamic>{
@@ -222,8 +248,13 @@ class Radar {
     }
   }
 
-  static Future<Map> searchPlaces(Map<String, dynamic> near, int radius,
-      int limit, List chains, List categories, List groups) async {
+  static Future<Map> searchPlaces(
+      {Map<String, dynamic> near,
+      int radius,
+      int limit,
+      List chains,
+      List categories,
+      List groups}) async {
     try {
       final Map res = await _channel.invokeMethod('searchPlaces', {
         'near': near,
@@ -242,7 +273,7 @@ class Radar {
   }
 
   static Future<Map> autocomplete(
-      String query, Map<String, dynamic> near, int limit) async {
+      {String query, Map<String, dynamic> near, int limit}) async {
     try {
       final Map res = await _channel.invokeMethod(
           'autocomplete', {'query': query, 'near': near, 'limit': limit});
@@ -289,8 +320,11 @@ class Radar {
     }
   }
 
-  static Future<Map> getDistance(Map<String, double> origin,
-      Map<String, double> destination, List modes, String units) async {
+  static Future<Map> getDistance(
+      {Map<String, double> origin,
+      Map<String, double> destination,
+      List modes,
+      String units}) async {
     try {
       final Map res = await _channel.invokeMethod('getDistance', {
         'origin': origin,

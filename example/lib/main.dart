@@ -86,6 +86,18 @@ class _MyAppState extends State<MyApp> {
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () {
+              Radar.mockTracking(
+                  origin: {'latitude': 40.78382, 'longitude': -73.97536},
+                  destination: {'latitude': 40.70390, 'longitude': -73.98670},
+                  mode: 'car',
+                  steps: 3,
+                  interval: 3);
+            },
+            child: Text('mockTracking()'),
+          ),
+          RaisedButton(
+            color: Colors.blueAccent,
+            onPressed: () {
               Radar.requestPermissions(true);
             },
             child: Text('requestPermissions()'),

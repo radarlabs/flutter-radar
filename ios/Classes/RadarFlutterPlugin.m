@@ -92,6 +92,8 @@
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
         [self isTracking:call withResult:result];
+    } else if ([@"mockTracking" isEqualToString:call.method]) {
+        [self mockTracking:call withResult:result];
     } else if ([@"startTrip" isEqualToString:call.method]) {
        [self startTrip:call withResult:result];
     } else if ([@"getTripOptions" isEqualToString:call.method]) {
@@ -385,6 +387,48 @@
 - (void)isTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isTracking = [Radar isTracking];
     result(@(isTracking));
+}
+
+- (void)mockTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSDictionary *originDict = argsDict[@"origin"];
+    NSNumber *originLatitudeNumber = originDict[@"latitude"];
+    NSNumber *originLongitudeNumber = originDict[@"longitude"];
+    double originLatitude = [originLatitudeNumber doubleValue];
+    double originLongitude = [originLongitudeNumber doubleValue];
+    CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(originLatitude, originLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
+    NSDictionary *destinationDict = argsDict[@"destination"];
+    NSNumber *destinationLatitudeNumber = destinationDict[@"latitude"];
+    NSNumber *destinationLongitudeNumber = destinationDict[@"longitude"];
+    double destinationLatitude = [destinationLatitudeNumber doubleValue];
+    double destinationLongitude = [destinationLongitudeNumber doubleValue];
+    CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
+    NSString *modeStr = argsDict[@"mode"];
+    RadarRouteMode mode = RadarRouteModeCar;
+    if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
+        mode = RadarRouteModeFoot;
+    } else if ([modeStr isEqualToString:@"BIKE"] || [modeStr isEqualToString:@"bike"]) {
+        mode = RadarRouteModeBike;
+    } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
+        mode = RadarRouteModeCar;
+    }
+    NSNumber *stepsNumber = optionsDict[@"steps"];
+    int steps;
+    if (stepsNumber != nil && [stepsNumber isKindOfClass:[NSNumber class]]) {
+        steps = [stepsNumber intValue];
+    } else {
+        steps = 10;
+    }
+    NSNumber *intervalNumber = optionsDict[@"interval"];
+    int interval;
+    if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
+        interval = [intervalNumber intValue];
+    } else {
+        interval = 1;
+    }
+
+    [Radar mockTrackingWithOrigin:origin destination:destination mode:mode steps:steps interval:interval completionHandler:nil];
 }
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
