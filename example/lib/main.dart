@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_radar/flutter_radar.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   @override
