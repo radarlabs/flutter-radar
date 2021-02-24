@@ -19,27 +19,38 @@ class _MyAppState extends State<MyApp> {
     initRadar();
   }
 
+  static void onEvents(Map res) {
+    print('📍 onEvents: $res');
+  }
+
+  static void onLocation(Map res) {
+    print('📍 onLocation: $res');
+  }
+
+  static void onClientLocation(Map res) {
+    print('📍 onClientLocation: $res');
+  }
+
+  static void onError(Map res) {
+    print('📍 onError: $res');
+  }
+
+  static void onLog(Map res) {
+    print('📍 onLog: $res');
+  }
+
   Future<void> initRadar() async {
     Radar.setLogLevel('info');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
 
-    Radar.onEvents((result) {
-      print('onEvents: $result');
-    });
-    Radar.onLocation((result) {
-      print('onLocation: $result');
-    });
-    Radar.onClientLocation((result) {
-      print('onClientLocation: $result');
-    });
-    Radar.onError((result) {
-      print('onError: $result');
-    });
-    Radar.onLog((result) {
-      print('onLog: $result');
-    });
+    Radar.attachListeners();
+    Radar.onEvents(onEvents);
+    Radar.onLocation(onLocation);
+    Radar.onClientLocation(onClientLocation);
+    Radar.onError(onError);
+    Radar.onLog(onLog);
   }
 
   @override
