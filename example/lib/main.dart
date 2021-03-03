@@ -120,8 +120,7 @@ class _MyAppState extends State<MyApp> {
             onPressed: () {
               Radar.startForegroundService({
                 'title': 'Tracking',
-                'text':
-                    'goPuff frequently requests your location while your workday is active to ensure a smooth delivery experience. If you\'re finished delivering for the day, please be sure to end your workday.',
+                'text': 'Continuous tracking started',
                 'icon': 'car_icon',
                 'importance': '2',
                 'id': '12555541'
