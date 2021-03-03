@@ -174,13 +174,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     @Override
     public void onDetachedFromActivity() {
         mActivity = null;
-        binding.removeRequestPermissionsResultListener(this);
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
         mActivity = null;
-        binding.removeRequestPermissionsResultListener(this);
     }
 
     @Override
@@ -206,11 +204,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST_CODE && mPermissionsRequestResult != null) {
-            getPermissionsStatus(mPermissionsRequestResult);
+            getPermissionStatus(mPermissionsRequestResult);
             mPermissionsRequestResult = null;
         }
+        return true;
     }
 
     @Override
@@ -349,29 +348,26 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     private void getPermissionStatus(Result result) {
         String status = "NOT_DETERMINED";
-        if (mActivity == null) {
-            result(status);
+        
+        if (mActivity == null || result == null) {
+            result.success(status);
 
             return;
         }
 
         boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        boolean denied = !foreground && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION);
-        if (denied) {
-            status = "DENIED";
-        }
-        if (foreground) {
-            status = "GRANTED_FOREGROUND";
-        }
         if (Build.VERSION.SDK_INT >= 29) {
-            boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
-            if (background) {
-                status = "GRANTED_BACKGROUND";
+            if (foreground) {
+                boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                status = background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND";
+            } else {
+                status = "DENIED";
             }
-        } else if (foreground) {
-            status = "GRANTED_BACKGROUND";
+        } else {
+            status = foreground ? "GRANTED_BACKGROUND" : "DENIED";
         }
-        result(status);
+
+        result.success(status);
     }
 
     private void requestPermissions(MethodCall call, Result result) {

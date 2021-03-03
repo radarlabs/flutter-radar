@@ -11,7 +11,7 @@
 @property (strong, nonatomic) RadarStreamHandler *errorHandler;
 @property (strong, nonatomic) RadarStreamHandler *logHandler;
 @property (strong, nonatomic) CLLocationManager *locationManager;
-@property (strong, nonatomic) FlutterResult *permissionsRequestResult;
+@property (strong, nonatomic) FlutterResult permissionsRequestResult;
 
 @end
 
@@ -162,6 +162,10 @@
 }
 
 - (void)getPermissionsStatus:(FlutterResult)result {
+    if (!result) {
+        return;
+    }
+    
     CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
     NSString *statusStr;
     switch (status) {
@@ -199,7 +203,7 @@
     } else if (status == kCLAuthorizationStatusNotDetermined) {
         [self.locationManager requestWhenInUseAuthorization];
     } else {
-        getPermissionsStatus(result);
+        [self getPermissionsStatus:result];
     }
 }
 

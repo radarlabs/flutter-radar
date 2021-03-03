@@ -97,8 +97,13 @@ class _MyAppState extends State<MyApp> {
           ),
           RaisedButton(
             color: Colors.blueAccent,
-            onPressed: () {
-              Radar.requestPermissions(true);
+            onPressed: () async {
+              var status = await Radar.requestPermissions(false);
+              print(status);
+              if (status == 'GRANTED_FOREGROUND') {
+                status = await Radar.requestPermissions(true);
+                print(status);
+              }
             },
             child: Text('requestPermissions()'),
           ),
@@ -115,7 +120,8 @@ class _MyAppState extends State<MyApp> {
             onPressed: () {
               Radar.startForegroundService({
                 'title': 'Tracking',
-                'text': 'Continuous tracking started',
+                'text':
+                    'goPuff frequently requests your location while your workday is active to ensure a smooth delivery experience. If you\'re finished delivering for the day, please be sure to end your workday.',
                 'icon': 'car_icon',
                 'importance': '2',
                 'id': '12555541'
@@ -142,7 +148,7 @@ class Permissions extends StatefulWidget {
 }
 
 class _PermissionsState extends State<Permissions> {
-  String _permissionStatus = 'NOT_DETERMINED';
+  String _status = 'NOT_DETERMINED';
 
   @override
   void initState() {
@@ -156,7 +162,7 @@ class _PermissionsState extends State<Permissions> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          '$_permissionStatus',
+          '$_status',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         RaisedButton(
@@ -171,9 +177,9 @@ class _PermissionsState extends State<Permissions> {
   }
 
   Future _getPermissionsStatus() async {
-    String permissionsString = await Radar.getPermissionsStatus();
+    String status = await Radar.getPermissionsStatus();
     setState(() {
-      _permissionStatus = permissionsString;
+      _status = status;
     });
   }
 }
