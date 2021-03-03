@@ -348,17 +348,30 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
 
     private void getPermissionStatus(Result result) {
-        boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        if (Build.VERSION.SDK_INT >= 29) {
-            if (foreground) {
-                boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                result.success(background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND");
-            } else {
-                result.success("DENIED");
-            }
-        } else {
-            result.success(foreground ? "GRANTED_BACKGROUND" : "DENIED");
+        String status = "NOT_DETERMINED";
+        if (mActivity == null) {
+            result(status);
+
+            return;
         }
+        
+        boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean denied = !foreground && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION);
+        if (denied) {
+            status = "DENIED";
+        }
+        if (foreground) {
+            status = "GRANTED_FOREGROUND";
+        }
+        if (Build.VERSION.SDK_INT >= 29) {
+            boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            if (background) {
+                status = "GRANTED_BACKGROUND";
+            }
+        } else if (foreground) {
+            status = "GRANTED_BACKGROUND";
+        }
+        result(status);
     }
 
     private void requestPermissions(MethodCall call, Result result) {
