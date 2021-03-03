@@ -37,6 +37,8 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.view.FlutterMain;
 
@@ -53,7 +55,7 @@ import io.radar.sdk.model.RadarPoint;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 
-public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
+public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
     private static FlutterEngine sBackgroundFlutterEngine;
     private static EventChannel sEventsChannel;
@@ -69,6 +71,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     private Activity mActivity;
     private Context mContext;
+
+    private static final int PERMISSIONS_REQUEST_CODE = 20160525;
+    private Result mPermissionsRequestResult;
     
     private static void initializeBackgroundEngine(Context context) {
         FlutterMain.startInitialization(context.getApplicationContext());
@@ -163,21 +168,25 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     @Override
     public void onAttachedToActivity(ActivityPluginBinding binding) {
         mActivity = binding.getActivity();
+        binding.addRequestPermissionsResultListener(this);
     }
 
     @Override
     public void onDetachedFromActivity() {
         mActivity = null;
+        binding.removeRequestPermissionsResultListener(this);
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
         mActivity = null;
+        binding.removeRequestPermissionsResultListener(this);
     }
 
     @Override
     public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
         mActivity = binding.getActivity();
+        binding.addRequestPermissionsResultListener(this);
     }
 
     public static void registerWith(Registrar registrar) {
@@ -194,6 +203,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void runOnMainThread(final Runnable runnable) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(runnable);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE && mPermissionsRequestResult != null) {
+            getPermissionsStatus(mPermissionsRequestResult);
+            mPermissionsRequestResult = null;
+        }
     }
 
     @Override
@@ -346,17 +363,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     private void requestPermissions(MethodCall call, Result result) {
         boolean background = call.argument("background");
+        mPermissionsRequestResult = result;
         if (mActivity != null) {
             if (Build.VERSION.SDK_INT >= 23) {
-                int requestCode = 0;
                 if (background && Build.VERSION.SDK_INT >= 29) {
-                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION }, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION }, PERMISSIONS_REQUEST_CODE);
                 } else {
-                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
                 }
             }
         }
-        result.success(true);
     }
 
     private void setUserId(MethodCall call, Result result) {
