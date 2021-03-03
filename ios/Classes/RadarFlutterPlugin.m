@@ -177,6 +177,9 @@
         case kCLAuthorizationStatusAuthorizedWhenInUse:
             statusStr = @"GRANTED_FOREGROUND";
             break;
+        case kCLAuthorizationStatusNotDetermined:
+            statusStr = @"NOT_DETERMINED";
+            break;
         default:
             statusStr = @"DENIED";
             break;
@@ -190,10 +193,13 @@
     NSDictionary *argsDict = call.arguments;
 
     BOOL background = argsDict[@"background"];
-    if (background) {
+    CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+    if (background && status == kCLAuthorizationStatusAuthorizedWhenInUse) {
         [self.locationManager requestAlwaysAuthorization];
-    } else {
+    } else if (status == kCLAuthorizationStatusNotDetermined) {
         [self.locationManager requestWhenInUseAuthorization];
+    } else {
+        getPermissionsStatus(result);
     }
 }
 
