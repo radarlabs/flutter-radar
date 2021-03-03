@@ -1,25 +1,29 @@
 import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+void callbackDispatcher() {
+  const MethodChannel _backgroundChannel =
+      MethodChannel('flutter_radar_background');
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  _backgroundChannel.setMethodCallHandler((MethodCall call) async {
+    final args = call.arguments;
+
+    final Function callback = PluginUtilities.getCallbackFromHandle(
+        CallbackHandle.fromRawHandle(args[0]));
+    assert(callback != null);
+
+    final Map res = args[1].cast<Map>();
+
+    callback(res);
+  });
+}
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
-
-  static const EventChannel _eventsChannel =
-      const EventChannel('flutter_radar/events');
-  static const EventChannel _locationChannel =
-      const EventChannel('flutter_radar/location');
-  static const EventChannel _clientLocationChannel =
-      const EventChannel('flutter_radar/clientLocation');
-  static const EventChannel _errorChannel =
-      const EventChannel('flutter_radar/error');
-  static const EventChannel _logChannel =
-      const EventChannel('flutter_radar/log');
-
-  static Function(Map res) _eventsCallback;
-  static Function(Map res) _locationCallback;
-  static Function(Map res) _clientLocationCallback;
-  static Function(Map res) _errorCallback;
-  static Function(Map res) _logCallback;
 
   static Future initialize(String publishableKey) async {
     try {
@@ -358,68 +362,122 @@ class Radar {
     }
   }
 
-  static onEvents(Function(Map<dynamic, dynamic> result) callback) {
-    _eventsCallback = callback;
-    _eventsChannel.receiveBroadcastStream().listen((data) {
-      if (_eventsCallback != null) {
-        _eventsCallback(data);
-      }
-    });
+  static attachListeners() async {
+    try {
+      await _channel.invokeMethod('attachListeners', {
+        'callbackDispatcherHandle':
+            PluginUtilities.getCallbackHandle(callbackDispatcher).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static offEvents() {
-    _eventsCallback = null;
+  static Future detachListeners() async {
+    try {
+      await _channel.invokeMethod('detachListeners');
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static onLocation(Function(Map<dynamic, dynamic> result) callback) {
-    _locationCallback = callback;
-    _locationChannel.receiveBroadcastStream().listen((data) {
-      if (_locationCallback != null) {
-        _locationCallback(data);
-      }
-    });
+  static onEvents(Function(Map res) callback) async {
+    try {
+      await _channel.invokeMethod('on', {
+        'listener': 'events',
+        'callbackHandle':
+            PluginUtilities.getCallbackHandle(callback).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static offLocation() {
-    _locationCallback = null;
+  static offEvents() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'events'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static onClientLocation(Function(Map<dynamic, dynamic> result) callback) {
-    _clientLocationCallback = callback;
-    _clientLocationChannel.receiveBroadcastStream().listen((data) {
-      if (_clientLocationCallback != null) {
-        _clientLocationCallback(data);
-      }
-    });
+  static onLocation(Function(Map res) callback) async {
+    try {
+      await _channel.invokeMethod('on', {
+        'listener': 'location',
+        'callbackHandle':
+            PluginUtilities.getCallbackHandle(callback).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static offClientLocation() {
-    _clientLocationCallback = null;
+  static offLocation() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'location'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static onError(Function(Map<dynamic, dynamic> result) callback) {
-    _errorCallback = callback;
-    _errorChannel.receiveBroadcastStream().listen((data) {
-      if (_errorCallback != null) {
-        _errorCallback(data);
-      }
-    });
+  static onClientLocation(Function(Map res) callback) async {
+    try {
+      await _channel.invokeMethod('on', {
+        'listener': 'clientLocation',
+        'callbackHandle':
+            PluginUtilities.getCallbackHandle(callback).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static offError() {
-    _errorCallback = null;
+  static offClientLocation() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'clientLocation'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static onLog(Function(Map<dynamic, dynamic> result) callback) {
-    _logCallback = callback;
-    _logChannel.receiveBroadcastStream().listen((data) {
-      if (_logCallback != null) {
-        _logCallback(data);
-      }
-    });
+  static onError(Function(Map res) callback) async {
+    try {
+      await _channel.invokeMethod('on', {
+        'listener': 'error',
+        'callbackHandle':
+            PluginUtilities.getCallbackHandle(callback).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 
-  static offLog() {
-    _logCallback = null;
+  static offError() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'error'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static onLog(Function(Map res) callback) async {
+    try {
+      await _channel.invokeMethod('on', {
+        'listener': 'log',
+        'callbackHandle':
+            PluginUtilities.getCallbackHandle(callback).toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static offLog() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'log'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
   }
 }
