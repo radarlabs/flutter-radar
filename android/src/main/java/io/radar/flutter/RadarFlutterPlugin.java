@@ -206,7 +206,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     @Override
-    public void onRequestPermissionsResult(public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST_CODE && mPermissionsRequestResult != null) {
             getPermissionsStatus(mPermissionsRequestResult);
             mPermissionsRequestResult = null;
@@ -354,7 +354,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
             return;
         }
-        
+
         boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         boolean denied = !foreground && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.ACCESS_FINE_LOCATION);
         if (denied) {
