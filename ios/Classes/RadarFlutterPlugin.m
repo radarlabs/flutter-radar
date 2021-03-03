@@ -1,7 +1,6 @@
-#import <RadarSDK/RadarSDK.h>
-#import <CoreLocation/CoreLocation.h>
-
 #import "RadarFlutterPlugin.h"
+
+#import <RadarSDK/RadarSDK.h>
 
 @interface RadarFlutterPlugin() <RadarDelegate>
 
@@ -12,6 +11,7 @@
 @property (strong, nonatomic) RadarStreamHandler *errorHandler;
 @property (strong, nonatomic) RadarStreamHandler *logHandler;
 @property (strong, nonatomic) CLLocationManager *locationManager;
+@property (strong, nonatomic) FlutterResult *permissionsRequestResult;
 
 @end
 
@@ -51,8 +51,16 @@
         return nil;
     }
     self.locationManager = [CLLocationManager new];
+    self.locationManager.delegate = self;
     [Radar setDelegate:self];
     return self;
+}
+
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
+    if (self.permissionsRequestResult) {
+        [self getPermissionsStatus:self.permissionsRequestResult];
+        self.permissionsRequestResult = nil;
+    }
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -177,6 +185,8 @@
 }
 
 - (void)requestPermissions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    self.permissionsRequestResult = result;
+
     NSDictionary *argsDict = call.arguments;
 
     BOOL background = argsDict[@"background"];
@@ -185,7 +195,6 @@
     } else {
         [self.locationManager requestWhenInUseAuthorization];
     }
-    result(nil);
 }
 
 - (void)setUserId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
