@@ -335,7 +335,6 @@
 
 - (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *optionsDict = call.arguments;
-    NSLog(@"%@", optionsDict);
     RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
     result(nil);
