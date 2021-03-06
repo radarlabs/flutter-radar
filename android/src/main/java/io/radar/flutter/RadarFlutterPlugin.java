@@ -316,8 +316,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     result.notImplemented();
                     break;
             }
-        } catch (Error | JSONException e) {
-            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+        } catch (Error | Exception e) {
+            result.error(e.toString(), e.getMessage(), e.getMessage());
         }
     }
 
@@ -440,7 +440,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -484,7 +484,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -603,7 +603,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -639,7 +639,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -685,7 +685,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -735,7 +735,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -762,7 +762,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -787,7 +787,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -821,7 +821,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -846,7 +846,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
