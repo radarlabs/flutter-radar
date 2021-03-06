@@ -37,6 +37,8 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.view.FlutterMain;
 
@@ -53,7 +55,7 @@ import io.radar.sdk.model.RadarPoint;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 
-public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
+public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
     private static FlutterEngine sBackgroundFlutterEngine;
     private static EventChannel sEventsChannel;
@@ -69,6 +71,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     private Activity mActivity;
     private Context mContext;
+
+    private static final int PERMISSIONS_REQUEST_CODE = 20160525;
+    private Result mPermissionsRequestResult;
     
     private static void initializeBackgroundEngine(Context context) {
         FlutterMain.startInitialization(context.getApplicationContext());
@@ -163,6 +168,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     @Override
     public void onAttachedToActivity(ActivityPluginBinding binding) {
         mActivity = binding.getActivity();
+        binding.addRequestPermissionsResultListener(this);
     }
 
     @Override
@@ -178,6 +184,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     @Override
     public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
         mActivity = binding.getActivity();
+        binding.addRequestPermissionsResultListener(this);
     }
 
     public static void registerWith(Registrar registrar) {
@@ -194,6 +201,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void runOnMainThread(final Runnable runnable) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(runnable);
+    }
+
+    @Override
+    public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE && mPermissionsRequestResult != null) {
+            getPermissionStatus(mPermissionsRequestResult);
+            mPermissionsRequestResult = null;
+        }
+        return true;
     }
 
     @Override
@@ -300,8 +316,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     result.notImplemented();
                     break;
             }
-        } catch (Error | JSONException e) {
-            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+        } catch (Error | Exception e) {
+            result.error(e.toString(), e.getMessage(), e.getMessage());
         }
     }
 
@@ -331,32 +347,41 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
 
     private void getPermissionStatus(Result result) {
+        String status = "NOT_DETERMINED";
+        
+        if (mActivity == null || result == null) {
+            result.success(status);
+
+            return;
+        }
+
         boolean foreground = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         if (Build.VERSION.SDK_INT >= 29) {
             if (foreground) {
                 boolean background = ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                result.success(background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND");
+                status = background ? "GRANTED_BACKGROUND" : "GRANTED_FOREGROUND";
             } else {
-                result.success("DENIED");
+                status = "DENIED";
             }
         } else {
-            result.success(foreground ? "GRANTED_BACKGROUND" : "DENIED");
+            status = foreground ? "GRANTED_BACKGROUND" : "DENIED";
         }
+
+        result.success(status);
     }
 
     private void requestPermissions(MethodCall call, Result result) {
         boolean background = call.argument("background");
+        mPermissionsRequestResult = result;
         if (mActivity != null) {
             if (Build.VERSION.SDK_INT >= 23) {
-                int requestCode = 0;
                 if (background && Build.VERSION.SDK_INT >= 29) {
-                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION }, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION }, PERMISSIONS_REQUEST_CODE);
                 } else {
-                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, requestCode);
+                    ActivityCompat.requestPermissions(mActivity, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, PERMISSIONS_REQUEST_CODE);
                 }
             }
         }
-        result.success(true);
     }
 
     private void setUserId(MethodCall call, Result result) {
@@ -414,8 +439,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -458,8 +483,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -577,8 +602,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -613,8 +638,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -659,8 +684,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -709,8 +734,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -736,8 +761,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -761,8 +786,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error("geocode", "An unexpected error happened during the reverse geocode callback logic: " + e.getMessage(), null);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -795,8 +820,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error(e.toString(), e.getMessage(), e.getStackTrace());
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -820,8 +845,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
-                        } catch (JSONException e) {
-                            result.error("geocode", "An unexpected error happened during the ip geocode callback logic: " + e.getMessage(), null);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
                         }
                     }
                 });
@@ -918,7 +943,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 Object value = map.get(keyStr);
                 obj.put(keyStr, value);
             }
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e("RadarFlutterPlugin", e.toString());
         }
         return obj;
@@ -939,7 +964,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 if (sEventsSink != null) {
                     sEventsSink.success(map);
                 }
-            } catch (JSONException e) {
+            } catch (Exception e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
         }
@@ -957,7 +982,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 if (sLocationSink != null) {
                     sLocationSink.success(map);
                 }
-            } catch (JSONException e) {
+            } catch (Exception e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
         }
@@ -975,7 +1000,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 if (sClientLocationSink != null) {
                     sClientLocationSink.success(map);
                 }
-            } catch (JSONException e) {
+            } catch (Exception e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
         }
@@ -992,7 +1017,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 if (sErrorSink != null) {
                     sErrorSink.success(map);
                 }
-            } catch (JSONException e) {
+            } catch (Exception e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
         }
@@ -1009,7 +1034,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 if (sLogSink != null) {
                     sLogSink.success(map);
                 }
-            } catch (JSONException e) {
+            } catch (Exception e) {
                 Log.e("RadarFlutterPlugin", e.toString());
             }
         }

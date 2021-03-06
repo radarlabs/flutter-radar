@@ -1,7 +1,6 @@
-#import <RadarSDK/RadarSDK.h>
-#import <CoreLocation/CoreLocation.h>
-
 #import "RadarFlutterPlugin.h"
+
+#import <RadarSDK/RadarSDK.h>
 
 @interface RadarFlutterPlugin() <RadarDelegate>
 
@@ -12,6 +11,7 @@
 @property (strong, nonatomic) RadarStreamHandler *errorHandler;
 @property (strong, nonatomic) RadarStreamHandler *logHandler;
 @property (strong, nonatomic) CLLocationManager *locationManager;
+@property (strong, nonatomic) FlutterResult permissionsRequestResult;
 
 @end
 
@@ -51,8 +51,16 @@
         return nil;
     }
     self.locationManager = [CLLocationManager new];
+    self.locationManager.delegate = self;
     [Radar setDelegate:self];
     return self;
+}
+
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
+    if (self.permissionsRequestResult) {
+        [self getPermissionsStatus:self.permissionsRequestResult];
+        self.permissionsRequestResult = nil;
+    }
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -154,6 +162,10 @@
 }
 
 - (void)getPermissionsStatus:(FlutterResult)result {
+    if (!result) {
+        return;
+    }
+    
     CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
     NSString *statusStr;
     switch (status) {
@@ -169,6 +181,9 @@
         case kCLAuthorizationStatusAuthorizedWhenInUse:
             statusStr = @"GRANTED_FOREGROUND";
             break;
+        case kCLAuthorizationStatusNotDetermined:
+            statusStr = @"NOT_DETERMINED";
+            break;
         default:
             statusStr = @"DENIED";
             break;
@@ -177,15 +192,19 @@
 }
 
 - (void)requestPermissions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    self.permissionsRequestResult = result;
+
     NSDictionary *argsDict = call.arguments;
 
     BOOL background = argsDict[@"background"];
-    if (background) {
+    CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+    if (background && status == kCLAuthorizationStatusAuthorizedWhenInUse) {
         [self.locationManager requestAlwaysAuthorization];
-    } else {
+    } else if (status == kCLAuthorizationStatusNotDetermined) {
         [self.locationManager requestWhenInUseAuthorization];
+    } else {
+        [self getPermissionsStatus:result];
     }
-    result(nil);
 }
 
 - (void)setUserId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -316,7 +335,6 @@
 
 - (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *optionsDict = call.arguments;
-    NSLog(@"%@", optionsDict);
     RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
     result(nil);

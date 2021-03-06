@@ -1,6 +1,7 @@
 #import <Flutter/Flutter.h>
+#import <CoreLocation/CoreLocation.h>
 
-@interface RadarFlutterPlugin : NSObject<FlutterPlugin>
+@interface RadarFlutterPlugin : NSObject<FlutterPlugin, CLLocationManagerDelegate>
 
 @end
 

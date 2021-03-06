@@ -17,7 +17,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    Radar.setLogLevel('info');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
@@ -97,8 +96,13 @@ class _MyAppState extends State<MyApp> {
           ),
           RaisedButton(
             color: Colors.blueAccent,
-            onPressed: () {
-              Radar.requestPermissions(true);
+            onPressed: () async {
+              var status = await Radar.requestPermissions(false);
+              print(status);
+              if (status == 'GRANTED_FOREGROUND') {
+                status = await Radar.requestPermissions(true);
+                print(status);
+              }
             },
             child: Text('requestPermissions()'),
           ),
@@ -142,7 +146,7 @@ class Permissions extends StatefulWidget {
 }
 
 class _PermissionsState extends State<Permissions> {
-  String _permissionStatus = 'NOT_DETERMINED';
+  String _status = 'NOT_DETERMINED';
 
   @override
   void initState() {
@@ -156,7 +160,7 @@ class _PermissionsState extends State<Permissions> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          '$_permissionStatus',
+          '$_status',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         RaisedButton(
@@ -171,9 +175,9 @@ class _PermissionsState extends State<Permissions> {
   }
 
   Future _getPermissionsStatus() async {
-    String permissionsString = await Radar.getPermissionsStatus();
+    String status = await Radar.getPermissionsStatus();
     setState(() {
-      _permissionStatus = permissionsString;
+      _status = status;
     });
   }
 }

@@ -68,8 +68,9 @@ public class RadarForegroundService extends Service {
         }
 
         Notification notification = new Notification.Builder(context, "location")
-            .setContentTitle((CharSequence) extras.get("title"))
-            .setContentText((CharSequence) extras.get("text"))
+            .setContentTitle((CharSequence)extras.get("title"))
+            .setContentText((CharSequence)extras.get("text"))
+            .setStyle(new Notification.BigTextStyle().bigText((CharSequence)extras.get("text")))
             .setOngoing(true)
             .setSmallIcon(icon != 0 ? icon : 17301546) // r_drawable_ic_dialog_map
             .setContentIntent(pendingIntent)
