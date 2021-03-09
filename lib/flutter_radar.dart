@@ -308,7 +308,7 @@ class Radar {
   }
 
   static Future startForegroundService(
-      Map<String, String> foregroundServiceOptions) async {
+      Map<String, dynamic> foregroundServiceOptions) async {
     try {
       await _channel.invokeMethod(
           'startForegroundService', foregroundServiceOptions);

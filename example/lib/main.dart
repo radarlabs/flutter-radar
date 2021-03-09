@@ -122,7 +122,8 @@ class _MyAppState extends State<MyApp> {
                 'text': 'Continuous tracking started',
                 'icon': 'car_icon',
                 'importance': '2',
-                'id': '12555541'
+                'id': '12555541',
+                'clickAction': true
               });
             },
             child: Text('startForegroundService(), Android only'),

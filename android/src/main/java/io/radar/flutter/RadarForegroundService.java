@@ -34,7 +34,7 @@ public class RadarForegroundService extends Service {
         manager.deleteNotificationChannel("location");
 
         Integer importance;
-
+        Boolean clickAction;
         try {
             importance = Integer.parseInt((String) extras.get("importance"));
         } catch (NumberFormatException e) {
@@ -57,13 +57,21 @@ public class RadarForegroundService extends Service {
 
         int icon = getResources().getIdentifier((String) extras.get("icon"), "drawable", context.getPackageName());
 
+
+
         PendingIntent pendingIntent;
-        try {
-            Class activityClass = Class.forName((String) extras.get("activity"));
-            Intent intent = new Intent(this, activityClass);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        } catch (ClassNotFoundException e) {
+
+        clickAction = (Boolean) extras.getBoolean("clickAction");
+        if (clickAction) {
+            try {
+                Class activityClass = Class.forName((String) extras.get("activity"));
+                Intent intent = new Intent(this, activityClass);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+            } catch (ClassNotFoundException e) {
+                pendingIntent = null;
+            }
+        } else {
             pendingIntent = null;
         }
 
