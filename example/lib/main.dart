@@ -123,7 +123,7 @@ class _MyAppState extends State<MyApp> {
                 'icon': 'car_icon',
                 'importance': '2',
                 'id': '12555541',
-                'clickAction': true
+                'clickable': true
               });
             },
             child: Text('startForegroundService(), Android only'),
