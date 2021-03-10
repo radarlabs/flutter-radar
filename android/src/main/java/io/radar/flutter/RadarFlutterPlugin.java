@@ -896,12 +896,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             String icon = call.argument("icon");
             String importance = call.argument("importance");
             String id = call.argument("id");
+            boolean clickable = call.hasArgument("clickable") ? (boolean)call.argument("clickable") : false;
+            
             intent.setAction("start");
             intent.putExtra("title", title)
                 .putExtra("text", text)
                 .putExtra("icon", icon)
                 .putExtra("importance", importance)
                 .putExtra("id", id)
+                .putExtra("clickable", clickable)
                 .putExtra("activity", mActivity.getClass().getCanonicalName());
             mContext.startForegroundService(intent);
             result.success(true);

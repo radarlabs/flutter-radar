@@ -34,9 +34,8 @@ public class RadarForegroundService extends Service {
         manager.deleteNotificationChannel("location");
 
         Integer importance;
-
         try {
-            importance = Integer.parseInt((String) extras.get("importance"));
+            importance = Integer.parseInt((String)extras.get("importance"));
         } catch (NumberFormatException e) {
             importance = 1;
         }
@@ -55,15 +54,20 @@ public class RadarForegroundService extends Service {
         NotificationChannel channel = new NotificationChannel("location", "Location", importance);
         getSystemService(NotificationManager.class).createNotificationChannel(channel);
 
-        int icon = getResources().getIdentifier((String) extras.get("icon"), "drawable", context.getPackageName());
+        int icon = getResources().getIdentifier((String)extras.get("icon"), "drawable", context.getPackageName());
 
         PendingIntent pendingIntent;
-        try {
-            Class activityClass = Class.forName((String) extras.get("activity"));
-            Intent intent = new Intent(this, activityClass);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        } catch (ClassNotFoundException e) {
+        Boolean clickable = (Boolean) extras.getBoolean("clickable");
+        if (clickable) {
+            try {
+                Class activityClass = Class.forName((String)extras.get("activity"));
+                Intent intent = new Intent(this, activityClass);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+            } catch (ClassNotFoundException e) {
+                pendingIntent = null;
+            }
+        } else {
             pendingIntent = null;
         }
 
@@ -78,7 +82,7 @@ public class RadarForegroundService extends Service {
 
         Integer id;
         try {
-            id = Integer.parseInt((String) extras.get("id"));
+            id = Integer.parseInt((String)extras.get("id"));
         } catch (NumberFormatException e) {
             id = 0;
         }
