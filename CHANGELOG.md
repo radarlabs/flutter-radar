@@ -1,8 +1,4 @@
-# 3.0.2-alpha.2
-
-- Adds `s.ios.deployment_target = '10.0'` to the plugin podfile.
-
-# 3.0.2-alpha.1
+# 3.0.2
 
 - Adds `s.static_framework = true` to the plugin podfile.
 
