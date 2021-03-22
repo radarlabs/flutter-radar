@@ -196,7 +196,8 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    BOOL background = argsDict[@"background"];
+    NSNumber *backgroundNumber = argsDict[@"background"];
+    BOOL background = [backgroundNumber boolValue];
     CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
     if (background && status == kCLAuthorizationStatusAuthorizedWhenInUse) {
         [self.locationManager requestAlwaysAuthorization];
