@@ -1,6 +1,6 @@
 # 3.0.3
 
-- Properly parses the `background` flag in `requestPermissions(background)` on iOS.
+- Correctly parses the `background` flag in `requestPermissions(background)` on iOS.
 
 # 3.0.2
 
