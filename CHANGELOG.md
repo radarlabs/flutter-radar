@@ -1,3 +1,7 @@
+# 3.0.3
+
+- Correctly parses the `background` flag in `requestPermissions(background)` on iOS.
+
 # 3.0.2
 
 - Adds `s.static_framework = true` to the plugin podfile.
