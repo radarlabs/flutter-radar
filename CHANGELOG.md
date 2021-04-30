@@ -1,3 +1,7 @@
+# 3.1.0
+
+- Upgrades the Radar SDK to `3.1.x`.
+
 # 3.0.3
 
 - Correctly parses the `background` flag in `requestPermissions(background)` on iOS.
