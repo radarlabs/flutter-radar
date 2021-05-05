@@ -1,3 +1,7 @@
+# 3.1.1
+
+- Upgrades the Radar iOS SDK to `3.1.5`.
+
 # 3.1.0
 
 - Upgrades the Radar SDK to `3.1.x`.
