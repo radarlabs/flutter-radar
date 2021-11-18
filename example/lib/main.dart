@@ -134,7 +134,32 @@ class _MyAppState extends State<MyApp> {
               Radar.stopForegroundService();
             },
             child: Text('stopForegroundService(), Android only'),
-          )
+          ),
+          // RaisedButton(
+          //   color: Colors.blueAccent,
+          //   onPressed: () {
+          //     Radar.getMatrix(origins: [
+          //       {
+          //         'latitude': 40.78382,
+          //         'longitude': -73.97536,
+          //       },
+          //       {
+          //         'latitude': 40.70390,
+          //         'longitude': -73.98670,
+          //       },
+          //     ], destinations: [
+          //       {
+          //         'latitude': 40.64189,
+          //         'longitude': -73.78779,
+          //       },
+          //       {
+          //         'latitude': 35.99801,
+          //         'longitude': -78.94294,
+          //       },
+          //     ], mode: 'car', units: 'imperial');
+          //   },
+          //   child: Text('getMatrix()'),
+          // )
         ]),
       ),
     ));

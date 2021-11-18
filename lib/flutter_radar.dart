@@ -169,6 +169,25 @@ class Radar {
     }
   }
 
+  static Future<Map> getMatrix({
+    List<Map<String, double>> origins,
+    List<Map<String, double>> destinations,
+    String mode,
+    String units
+  }) async {
+    try {
+      return await _channel.invokeMethod('getMatrix', {
+        'origins': origins,
+        'destinations': destinations,
+        'mode': mode,
+        'units': units
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future startTrip(Map<String, dynamic> tripOptions) async {
     try {
       await _channel.invokeMethod('startTrip', tripOptions);

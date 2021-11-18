@@ -1,14 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="io.radar.flutter">
   <application>
-    <receiver
-      android:name="RadarFlutterPlugin$RadarFlutterReceiver"
-      android:enabled="true"
-      android:exported="false">
-      <intent-filter>
-          <action android:name="io.radar.sdk.RECEIVED" />
-      </intent-filter>
-    </receiver>
-    <service android:name="io.radar.flutter.RadarForegroundService" android:foregroundServiceType="location" android:stopWithTask="true" />
+    <service android:name="io.radar.flutter.RadarForegroundService"
+        android:foregroundServiceType="location"
+        android:stopWithTask="true" />
   </application>
 </manifest>
