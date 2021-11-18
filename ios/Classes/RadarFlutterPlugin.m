@@ -128,6 +128,8 @@
         // do nothing
     } else if ([@"stopForegroundService" isEqualToString:call.method]) {
         // do nothing
+    }  else if ([@"getMatrix" isEqualToString:call.method]) {
+        [self getMatrix:call withResult:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -433,6 +435,55 @@
 - (void)cancelTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     [Radar cancelTrip];
     result(nil);
+}
+
+- (void)getMatrix:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarRouteMatrixCompletionHandler completionHandler = ^(RadarStatus status, RadarRouteMatrix * _Nullable matrix) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (matrix) {
+            [dict setObject:[matrix arrayValue] forKey:@"matrix"];
+        }
+        result(dict);
+    };
+    NSDictionary *argsDict = call.arguments;
+    NSArray<NSDictionary *> *origins = argsDict[@"origins"];
+    NSArray<NSDictionary *> *destinations = argsDict[@"destinations"];
+    NSString *modeStr = argsDict[@"mode"];
+    NSString *unitsStr = argsDict[@"units"];
+    NSMutableArray<CLLocation *> *originArray = [NSMutableArray<CLLocation *> new];
+    NSMutableArray<CLLocation *> *destinationArray = [NSMutableArray<CLLocation *> new];
+    for (NSDictionary *originDict in origins) {
+        NSNumber *originLatitudeNumber = originDict[@"latitude"];
+        NSNumber *originLongitudeNumber = originDict[@"longitude"];
+        double originLatitude = [originLatitudeNumber doubleValue];
+        double originLongitude = [originLongitudeNumber doubleValue];
+        CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(originLatitude, originLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
+        [originArray addObject: origin];
+    }
+    for (NSDictionary *destDict in destinations) {
+        NSNumber *destLatitudeNumber = destDict[@"latitude"];
+        NSNumber *destLongitudeNumber = destDict[@"longitude"];
+        double destLatitude = [destLatitudeNumber doubleValue];
+        double destLongitude = [destLongitudeNumber doubleValue];
+        CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destLatitude, destLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
+        [destinationArray addObject: destination];
+    }
+    RadarRouteMode mode = RadarRouteModeCar;
+    if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
+        mode = RadarRouteModeFoot;
+    } else if ([modeStr isEqualToString:@"BIKE"] || [modeStr isEqualToString:@"bike"]) {
+        mode = RadarRouteModeBike;
+    } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
+        mode = RadarRouteModeCar;
+    }
+    RadarRouteUnits units;
+    if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
+        units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
+    } else {
+        units = RadarRouteUnitsImperial;
+    }
+    [Radar getMatrixFromOrigins:originArray destinations:destinationArray mode:mode units:units completionHandler:completionHandler];
 }
 
 - (void)getContext:(FlutterMethodCall *)call withResult:(FlutterResult)result {
