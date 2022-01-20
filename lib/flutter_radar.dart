@@ -1,25 +1,21 @@
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
-  static const EventChannel _eventsChannel =
-      const EventChannel('flutter_radar/events');
-  static const EventChannel _locationChannel =
-      const EventChannel('flutter_radar/location');
-  static const EventChannel _clientLocationChannel =
-      const EventChannel('flutter_radar/clientLocation');
-  static const EventChannel _errorChannel =
-      const EventChannel('flutter_radar/error');
-  static const EventChannel _logChannel =
-      const EventChannel('flutter_radar/log');
+  static const EventChannel _eventsChannel = const EventChannel('flutter_radar/events');
+  static const EventChannel _locationChannel = const EventChannel('flutter_radar/location');
+  static const EventChannel _clientLocationChannel = const EventChannel('flutter_radar/clientLocation');
+  static const EventChannel _errorChannel = const EventChannel('flutter_radar/error');
+  static const EventChannel _logChannel = const EventChannel('flutter_radar/log');
 
-  static Function(Map res) _eventsCallback;
-  static Function(Map res) _locationCallback;
-  static Function(Map res) _clientLocationCallback;
-  static Function(Map res) _errorCallback;
-  static Function(Map res) _logCallback;
+  static Function(Map? res)? _eventsCallback;
+  static Function(Map? res)? _locationCallback;
+  static Function(Map? res)? _clientLocationCallback;
+  static Function(Map? res)? _errorCallback;
+  static Function(Map? res)? _logCallback;
 
   static Future initialize(String publishableKey) async {
     try {
@@ -39,14 +35,13 @@ class Radar {
     }
   }
 
-  static Future<String> getPermissionsStatus() async {
+  static Future<String?> getPermissionsStatus() async {
     return await _channel.invokeMethod('getPermissionsStatus');
   }
 
   static Future requestPermissions(bool background) async {
     try {
-      return await _channel
-          .invokeMethod('requestPermissions', {'background': background});
+      return await _channel.invokeMethod('requestPermissions', {'background': background});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -60,20 +55,19 @@ class Radar {
     }
   }
 
-  static Future<String> getUserId() async {
+  static Future<String?> getUserId() async {
     return await _channel.invokeMethod('getUserId');
   }
 
   static Future setDescription(String description) async {
     try {
-      await _channel
-          .invokeMethod('setDescription', {'description': description});
+      await _channel.invokeMethod('setDescription', {'description': description});
     } on PlatformException catch (e) {
       print(e);
     }
   }
 
-  static Future<String> getDescription() async {
+  static Future<String?> getDescription() async {
     return await _channel.invokeMethod('getDescription');
   }
 
@@ -85,7 +79,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getMetadata() async {
+  static Future<Map?> getMetadata() async {
     return await _channel.invokeMethod('getMetadata');
   }
 
@@ -97,7 +91,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getLocation([String accuracy]) async {
+  static Future<Map?> getLocation([String? accuracy]) async {
     try {
       return await _channel.invokeMethod('getLocation', {'accuracy': accuracy});
     } on PlatformException catch (e) {
@@ -106,7 +100,7 @@ class Radar {
     }
   }
 
-  static Future<Map> trackOnce([Map<String, dynamic> location]) async {
+  static Future<Map?> trackOnce([Map<String, dynamic>? location]) async {
     try {
       if (location == null) {
         return await _channel.invokeMethod('trackOnce');
@@ -145,24 +139,13 @@ class Radar {
     }
   }
 
-  static Future<bool> isTracking() async {
+  static Future<bool?> isTracking() async {
     return await _channel.invokeMethod('isTracking');
   }
 
-  static Future<Map> mockTracking(
-      {Map<String, double> origin,
-      Map<String, double> destination,
-      String mode,
-      int steps,
-      int interval}) async {
+  static Future<Map?> mockTracking({Map<String, double>? origin, Map<String, double>? destination, String? mode, int? steps, int? interval}) async {
     try {
-      return await _channel.invokeMethod('mockTracking', {
-        'origin': origin,
-        'destination': destination,
-        'mode': mode,
-        'steps': steps,
-        'interval': interval
-      });
+      return await _channel.invokeMethod('mockTracking', {'origin': origin, 'destination': destination, 'mode': mode, 'steps': steps, 'interval': interval});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -177,7 +160,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getTripOptions() async {
+  static Future<Map?> getTripOptions() async {
     return await _channel.invokeMethod('getTripOptions');
   }
 
@@ -197,7 +180,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getContext(Map<String, dynamic> location) async {
+  static Future<Map?> getContext(Map<String, dynamic> location) async {
     try {
       return await _channel.invokeMethod('getContext', {'location': location});
     } on PlatformException catch (e) {
@@ -206,63 +189,36 @@ class Radar {
     }
   }
 
-  static Future<Map> searchGeofences(
-      {Map<String, dynamic> near,
-      int radius,
-      List tags,
-      Map<String, dynamic> metadata,
-      int limit}) async {
+  static Future<Map?> searchGeofences({Map<String, dynamic>? near, int? radius, List? tags, Map<String, dynamic>? metadata, int? limit}) async {
     try {
-      return await _channel.invokeMethod('searchGeofences', <String, dynamic>{
-        'near': near,
-        'radius': radius,
-        'limit': limit,
-        'tags': tags,
-        'metadata': metadata
-      });
+      return await _channel.invokeMethod('searchGeofences', <String, dynamic>{'near': near, 'radius': radius, 'limit': limit, 'tags': tags, 'metadata': metadata});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future<Map> searchPlaces(
-      {Map<String, dynamic> near,
-      int radius,
-      int limit,
-      List chains,
-      List categories,
-      List groups}) async {
+  static Future<Map?> searchPlaces({Map<String, dynamic>? near, int? radius, int? limit, List? chains, List? categories, List? groups}) async {
     try {
-      return await _channel.invokeMethod('searchPlaces', {
-        'near': near,
-        'radius': radius,
-        'limit': limit,
-        'chains': chains,
-        'catgories': categories,
-        'groups': groups
-      });
+      return await _channel.invokeMethod('searchPlaces', {'near': near, 'radius': radius, 'limit': limit, 'chains': chains, 'catgories': categories, 'groups': groups});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future<Map> autocomplete(
-      {String query, Map<String, dynamic> near, int limit}) async {
+  static Future<Map?> autocomplete({String? query, Map<String, dynamic>? near, int? limit}) async {
     try {
-      return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit});
+      return await _channel.invokeMethod('autocomplete', {'query': query, 'near': near, 'limit': limit});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future<Map> geocode(String query) async {
+  static Future<Map?> geocode(String query) async {
     try {
-      final Map geocodeResult =
-          await _channel.invokeMethod('forwardGeocode', {'query': query});
+      final Map? geocodeResult = await _channel.invokeMethod('forwardGeocode', {'query': query});
       return geocodeResult;
     } on PlatformException catch (e) {
       print(e);
@@ -270,17 +226,16 @@ class Radar {
     }
   }
 
-  static Future<Map> reverseGeocode(Map<String, dynamic> location) async {
+  static Future<Map?> reverseGeocode(Map<String, dynamic> location) async {
     try {
-      return await _channel
-          .invokeMethod('reverseGeocode', {'location': location});
+      return await _channel.invokeMethod('reverseGeocode', {'location': location});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future<Map> ipGeocode() async {
+  static Future<Map?> ipGeocode() async {
     try {
       return await _channel.invokeMethod('ipGeocode');
     } on PlatformException catch (e) {
@@ -289,29 +244,18 @@ class Radar {
     }
   }
 
-  static Future<Map> getDistance(
-      {Map<String, double> origin,
-      Map<String, double> destination,
-      List modes,
-      String units}) async {
+  static Future<Map?> getDistance({Map<String, double>? origin, Map<String, double>? destination, List? modes, String? units}) async {
     try {
-      return await _channel.invokeMethod('getDistance', {
-        'origin': origin,
-        'destination': destination,
-        'modes': modes,
-        'units': units
-      });
+      return await _channel.invokeMethod('getDistance', {'origin': origin, 'destination': destination, 'modes': modes, 'units': units});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future startForegroundService(
-      Map<String, dynamic> foregroundServiceOptions) async {
+  static Future startForegroundService(Map<String, dynamic> foregroundServiceOptions) async {
     try {
-      await _channel.invokeMethod(
-          'startForegroundService', foregroundServiceOptions);
+      await _channel.invokeMethod('startForegroundService', foregroundServiceOptions);
     } on PlatformException catch (e) {
       print(e);
     }
@@ -325,11 +269,11 @@ class Radar {
     }
   }
 
-  static onEvents(Function(Map<dynamic, dynamic> result) callback) {
+  static onEvents(Function(Map<dynamic, dynamic>? result) callback) {
     _eventsCallback = callback;
     _eventsChannel.receiveBroadcastStream().listen((data) {
       if (_eventsCallback != null) {
-        _eventsCallback(data);
+        _eventsCallback!(data);
       }
     });
   }
@@ -338,11 +282,11 @@ class Radar {
     _eventsCallback = null;
   }
 
-  static onLocation(Function(Map<dynamic, dynamic> result) callback) {
+  static onLocation(Function(Map<dynamic, dynamic>? result) callback) {
     _locationCallback = callback;
     _locationChannel.receiveBroadcastStream().listen((data) {
       if (_locationCallback != null) {
-        _locationCallback(data);
+        _locationCallback!(data);
       }
     });
   }
@@ -351,11 +295,11 @@ class Radar {
     _locationCallback = null;
   }
 
-  static onClientLocation(Function(Map<dynamic, dynamic> result) callback) {
+  static onClientLocation(Function(Map<dynamic, dynamic>? result) callback) {
     _clientLocationCallback = callback;
     _clientLocationChannel.receiveBroadcastStream().listen((data) {
       if (_clientLocationCallback != null) {
-        _clientLocationCallback(data);
+        _clientLocationCallback!(data);
       }
     });
   }
@@ -364,11 +308,11 @@ class Radar {
     _clientLocationCallback = null;
   }
 
-  static onError(Function(Map<dynamic, dynamic> result) callback) {
+  static onError(Function(Map<dynamic, dynamic>? result) callback) {
     _errorCallback = callback;
     _errorChannel.receiveBroadcastStream().listen((data) {
       if (_errorCallback != null) {
-        _errorCallback(data);
+        _errorCallback!(data);
       }
     });
   }
@@ -377,11 +321,11 @@ class Radar {
     _errorCallback = null;
   }
 
-  static onLog(Function(Map<dynamic, dynamic> result) callback) {
+  static onLog(Function(Map<dynamic, dynamic>? result) callback) {
     _logCallback = callback;
     _logChannel.receiveBroadcastStream().listen((data) {
       if (_logCallback != null) {
-        _logCallback(data);
+        _logCallback!(data);
       }
     });
   }

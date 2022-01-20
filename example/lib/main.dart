@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_radar/flutter_radar.dart';
 
 void main() => runApp(MyApp());
@@ -49,15 +50,15 @@ class _MyAppState extends State<MyApp> {
         child: Column(children: [
           Permissions(),
           TrackOnce(),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
               Radar.startTracking('responsive');
             },
             child: Text('startTracking(\'responsive\')'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
               Radar.startTrackingCustom({
                 'desiredStoppedUpdateInterval': 60,
@@ -75,27 +76,22 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('startTrackingCustom()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
               Radar.stopTracking();
             },
             child: Text('stopTracking()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
-              Radar.mockTracking(
-                  origin: {'latitude': 40.78382, 'longitude': -73.97536},
-                  destination: {'latitude': 40.70390, 'longitude': -73.98670},
-                  mode: 'car',
-                  steps: 3,
-                  interval: 3);
+              Radar.mockTracking(origin: {'latitude': 40.78382, 'longitude': -73.97536}, destination: {'latitude': 40.70390, 'longitude': -73.98670}, mode: 'car', steps: 3, interval: 3);
             },
             child: Text('mockTracking()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () async {
               var status = await Radar.requestPermissions(false);
               print(status);
@@ -106,30 +102,23 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('requestPermissions()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () async {
               Map location = await Radar.getLocation('high');
               print(location);
             },
             child: Text('getLocation()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
-              Radar.startForegroundService({
-                'title': 'Tracking',
-                'text': 'Continuous tracking started',
-                'icon': 'car_icon',
-                'importance': '2',
-                'id': '12555541',
-                'clickable': true
-              });
+              Radar.startForegroundService({'title': 'Tracking', 'text': 'Continuous tracking started', 'icon': 'car_icon', 'importance': '2', 'id': '12555541', 'clickable': true});
             },
             child: Text('startForegroundService(), Android only'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
             onPressed: () {
               Radar.stopForegroundService();
             },
@@ -164,8 +153,8 @@ class _PermissionsState extends State<Permissions> {
           '$_status',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
-        RaisedButton(
-          color: Colors.blueAccent,
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
           child: Text('getPermissionsStatus()'),
           onPressed: () {
             _getPermissionsStatus();
@@ -191,9 +180,9 @@ class TrackOnce extends StatefulWidget {
 class _TrackOnceState extends State<TrackOnce> {
   @override
   Widget build(BuildContext context) {
-    return RaisedButton(
+    return ElevatedButton(
       child: Text('trackOnce()'),
-      color: Colors.blueAccent,
+      style: ElevatedButton.styleFrom(onPrimary: Colors.blueAccent),
       onPressed: () {
         _showTrackOnceDialog();
       },
@@ -203,7 +192,7 @@ class _TrackOnceState extends State<TrackOnce> {
   Future<void> _showTrackOnceDialog() async {
     var trackResponse = await Radar.trackOnce();
 
-    Widget okButton = FlatButton(
+    Widget okButton = TextButton(
       child: Text('OK'),
       onPressed: () {
         Navigator.pop(context);
@@ -228,7 +217,7 @@ class _TrackOnceState extends State<TrackOnce> {
 }
 
 showAlertDialog(BuildContext context, String text) {
-  Widget okButton = FlatButton(
+  Widget okButton = TextButton(
     child: Text('OK'),
     onPressed: () {
       Navigator.of(context).pop();
