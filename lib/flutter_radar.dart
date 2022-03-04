@@ -239,7 +239,7 @@ class Radar {
         'radius': radius,
         'limit': limit,
         'chains': chains,
-        'catgories': categories,
+        'categories': categories,
         'groups': groups
       });
     } on PlatformException catch (e) {
