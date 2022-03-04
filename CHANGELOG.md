@@ -1,3 +1,7 @@
+# 3.1.2
+
+- Fixes a misspelled constant.
+
 # 3.1.1
 
 - Upgrades the Radar iOS SDK to `3.1.5`.
