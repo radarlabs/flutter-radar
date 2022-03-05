@@ -19,4 +19,5 @@ jobs:
         uses: sakebook/actions-flutter-pub-publisher@v1.4.0
         with:
           credential: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
+          flutter_package: false
           #credentialJson: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
