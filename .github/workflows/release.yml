@@ -20,4 +20,5 @@ jobs:
         with:
           credential: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
           flutter_package: false
+          skip_test: true
           #credentialJson: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
