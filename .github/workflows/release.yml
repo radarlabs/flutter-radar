@@ -14,8 +14,9 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v2
         
-      # https://github.com/marketplace/actions/dart-and-flutter-package-publisher
       - name: '>> Dart package <<'
-        uses: k-paxian/dart-package-publisher@master
+        #uses: k-paxian/dart-package-publisher@master
+        uses: sakebook/actions-flutter-pub-publisher@v1.4.0
         with:
-          credentialJson: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
+          credential: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
+          #credentialJson: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
