@@ -109,7 +109,7 @@ class _MyAppState extends State<MyApp> {
           RaisedButton(
             color: Colors.blueAccent,
             onPressed: () async {
-              Map location = await Radar.getLocation('high');
+              Map? location = await Radar.getLocation('high');
               print(location);
             },
             child: Text('getLocation()'),
@@ -147,7 +147,7 @@ class Permissions extends StatefulWidget {
 }
 
 class _PermissionsState extends State<Permissions> {
-  String _status = 'NOT_DETERMINED';
+  String? _status = 'NOT_DETERMINED';
 
   @override
   void initState() {
@@ -176,7 +176,7 @@ class _PermissionsState extends State<Permissions> {
   }
 
   Future _getPermissionsStatus() async {
-    String status = await Radar.getPermissionsStatus();
+    String? status = await Radar.getPermissionsStatus();
     setState(() {
       _status = status;
     });
@@ -212,7 +212,7 @@ class _TrackOnceState extends State<TrackOnce> {
 
     AlertDialog alert = AlertDialog(
       title: Text('flutter_radar_example'),
-      content: Text(trackResponse['status']),
+      content: Text(trackResponse?['status'] ?? ''),
       actions: [
         okButton,
       ],

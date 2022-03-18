@@ -15,11 +15,11 @@ class Radar {
   static const EventChannel _logChannel =
       const EventChannel('flutter_radar/log');
 
-  static Function(Map res) _eventsCallback;
-  static Function(Map res) _locationCallback;
-  static Function(Map res) _clientLocationCallback;
-  static Function(Map res) _errorCallback;
-  static Function(Map res) _logCallback;
+  static Function(Map? res)? _eventsCallback;
+  static Function(Map? res)? _locationCallback;
+  static Function(Map? res)? _clientLocationCallback;
+  static Function(Map? res)? _errorCallback;
+  static Function(Map? res)? _logCallback;
 
   static Future initialize(String publishableKey) async {
     try {
@@ -39,7 +39,7 @@ class Radar {
     }
   }
 
-  static Future<String> getPermissionsStatus() async {
+  static Future<String?> getPermissionsStatus() async {
     return await _channel.invokeMethod('getPermissionsStatus');
   }
 
@@ -60,7 +60,7 @@ class Radar {
     }
   }
 
-  static Future<String> getUserId() async {
+  static Future<String?> getUserId() async {
     return await _channel.invokeMethod('getUserId');
   }
 
@@ -73,7 +73,7 @@ class Radar {
     }
   }
 
-  static Future<String> getDescription() async {
+  static Future<String?> getDescription() async {
     return await _channel.invokeMethod('getDescription');
   }
 
@@ -85,7 +85,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getMetadata() async {
+  static Future<Map?> getMetadata() async {
     return await _channel.invokeMethod('getMetadata');
   }
 
@@ -97,7 +97,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getLocation([String accuracy]) async {
+  static Future<Map?> getLocation([String? accuracy]) async {
     try {
       return await _channel.invokeMethod('getLocation', {'accuracy': accuracy});
     } on PlatformException catch (e) {
@@ -106,7 +106,7 @@ class Radar {
     }
   }
 
-  static Future<Map> trackOnce([Map<String, dynamic> location]) async {
+  static Future<Map?> trackOnce([Map<String, dynamic>? location]) async {
     try {
       if (location == null) {
         return await _channel.invokeMethod('trackOnce');
@@ -145,16 +145,16 @@ class Radar {
     }
   }
 
-  static Future<bool> isTracking() async {
+  static Future<bool?> isTracking() async {
     return await _channel.invokeMethod('isTracking');
   }
 
-  static Future<Map> mockTracking(
-      {Map<String, double> origin,
-      Map<String, double> destination,
-      String mode,
-      int steps,
-      int interval}) async {
+  static Future<Map?> mockTracking(
+      {Map<String, double>? origin,
+      Map<String, double>? destination,
+      String? mode,
+      int? steps,
+      int? interval}) async {
     try {
       return await _channel.invokeMethod('mockTracking', {
         'origin': origin,
@@ -177,7 +177,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getTripOptions() async {
+  static Future<Map?> getTripOptions() async {
     return await _channel.invokeMethod('getTripOptions');
   }
 
@@ -197,7 +197,7 @@ class Radar {
     }
   }
 
-  static Future<Map> getContext(Map<String, dynamic> location) async {
+  static Future<Map?> getContext(Map<String, dynamic> location) async {
     try {
       return await _channel.invokeMethod('getContext', {'location': location});
     } on PlatformException catch (e) {
@@ -206,12 +206,12 @@ class Radar {
     }
   }
 
-  static Future<Map> searchGeofences(
-      {Map<String, dynamic> near,
-      int radius,
-      List tags,
-      Map<String, dynamic> metadata,
-      int limit}) async {
+  static Future<Map?> searchGeofences(
+      {Map<String, dynamic>? near,
+      int? radius,
+      List? tags,
+      Map<String, dynamic>? metadata,
+      int? limit}) async {
     try {
       return await _channel.invokeMethod('searchGeofences', <String, dynamic>{
         'near': near,
@@ -226,13 +226,13 @@ class Radar {
     }
   }
 
-  static Future<Map> searchPlaces(
-      {Map<String, dynamic> near,
-      int radius,
-      int limit,
-      List chains,
-      List categories,
-      List groups}) async {
+  static Future<Map?> searchPlaces(
+      {Map<String, dynamic>? near,
+      int? radius,
+      int? limit,
+      List? chains,
+      List? categories,
+      List? groups}) async {
     try {
       return await _channel.invokeMethod('searchPlaces', {
         'near': near,
@@ -248,8 +248,8 @@ class Radar {
     }
   }
 
-  static Future<Map> autocomplete(
-      {String query, Map<String, dynamic> near, int limit}) async {
+  static Future<Map?> autocomplete(
+      {String? query, Map<String, dynamic>? near, int? limit}) async {
     try {
       return await _channel.invokeMethod(
           'autocomplete', {'query': query, 'near': near, 'limit': limit});
@@ -259,9 +259,9 @@ class Radar {
     }
   }
 
-  static Future<Map> geocode(String query) async {
+  static Future<Map?> geocode(String query) async {
     try {
-      final Map geocodeResult =
+      final Map? geocodeResult =
           await _channel.invokeMethod('forwardGeocode', {'query': query});
       return geocodeResult;
     } on PlatformException catch (e) {
@@ -270,7 +270,7 @@ class Radar {
     }
   }
 
-  static Future<Map> reverseGeocode(Map<String, dynamic> location) async {
+  static Future<Map?> reverseGeocode(Map<String, dynamic> location) async {
     try {
       return await _channel
           .invokeMethod('reverseGeocode', {'location': location});
@@ -280,7 +280,7 @@ class Radar {
     }
   }
 
-  static Future<Map> ipGeocode() async {
+  static Future<Map?> ipGeocode() async {
     try {
       return await _channel.invokeMethod('ipGeocode');
     } on PlatformException catch (e) {
@@ -289,11 +289,11 @@ class Radar {
     }
   }
 
-  static Future<Map> getDistance(
-      {Map<String, double> origin,
-      Map<String, double> destination,
-      List modes,
-      String units}) async {
+  static Future<Map?> getDistance(
+      {Map<String, double>? origin,
+      Map<String, double>? destination,
+      List? modes,
+      String? units}) async {
     try {
       return await _channel.invokeMethod('getDistance', {
         'origin': origin,
@@ -325,11 +325,11 @@ class Radar {
     }
   }
 
-  static onEvents(Function(Map<dynamic, dynamic> result) callback) {
+  static onEvents(Function(Map<dynamic, dynamic>? result) callback) {
     _eventsCallback = callback;
     _eventsChannel.receiveBroadcastStream().listen((data) {
       if (_eventsCallback != null) {
-        _eventsCallback(data);
+        _eventsCallback!(data);
       }
     });
   }
@@ -338,11 +338,11 @@ class Radar {
     _eventsCallback = null;
   }
 
-  static onLocation(Function(Map<dynamic, dynamic> result) callback) {
+  static onLocation(Function(Map<dynamic, dynamic>? result) callback) {
     _locationCallback = callback;
     _locationChannel.receiveBroadcastStream().listen((data) {
       if (_locationCallback != null) {
-        _locationCallback(data);
+        _locationCallback!(data);
       }
     });
   }
@@ -351,11 +351,11 @@ class Radar {
     _locationCallback = null;
   }
 
-  static onClientLocation(Function(Map<dynamic, dynamic> result) callback) {
+  static onClientLocation(Function(Map<dynamic, dynamic>? result) callback) {
     _clientLocationCallback = callback;
     _clientLocationChannel.receiveBroadcastStream().listen((data) {
       if (_clientLocationCallback != null) {
-        _clientLocationCallback(data);
+        _clientLocationCallback!(data);
       }
     });
   }
@@ -364,11 +364,11 @@ class Radar {
     _clientLocationCallback = null;
   }
 
-  static onError(Function(Map<dynamic, dynamic> result) callback) {
+  static onError(Function(Map<dynamic, dynamic>? result) callback) {
     _errorCallback = callback;
     _errorChannel.receiveBroadcastStream().listen((data) {
       if (_errorCallback != null) {
-        _errorCallback(data);
+        _errorCallback!(data);
       }
     });
   }
@@ -377,11 +377,11 @@ class Radar {
     _errorCallback = null;
   }
 
-  static onLog(Function(Map<dynamic, dynamic> result) callback) {
+  static onLog(Function(Map<dynamic, dynamic>? result) callback) {
     _logCallback = callback;
     _logChannel.receiveBroadcastStream().listen((data) {
       if (_logCallback != null) {
-        _logCallback(data);
+        _logCallback!(data);
       }
     });
   }
