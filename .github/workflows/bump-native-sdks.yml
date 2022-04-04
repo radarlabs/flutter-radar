@@ -29,15 +29,29 @@ jobs:
           data: version=${{ github.event.client_payload.release }}
           path: "android/build.gradle"
 
+      # copy the template file to its final destination
+      - name: Copy example/android/app/build.gradle template file
+        uses: canastro/copy-action@master
+        with:
+          source: "example/android/app/build.gradle.template"
+          target: "example/android/app/build.gradle"
+
+      # render the template using the input sdk version
+      - name: Render radar-sdk-android release version onto example app's build.gradle
+        uses: jayamanikharyono/jinja-action@v0.1
+        with:
+          data: version=${{ github.event.client_payload.release }}
+          path: "example/android/app/build.gradle"
+
       # copy the pubspec.yaml template to its final destination
-      - name: Copy the podspec template
+      - name: Copy the pubspec.yml template
         uses: canastro/copy-action@master
         with:
           source: "pubspec.yaml.template"
           target: "pubspec.yaml"
 
       # render the pubspec.yaml template with the sdk version
-      - name: Render radar-sdk-ios release version onto podspec template
+      - name: Render radar-sdk-android release version onto pubspec.yaml
         uses: jayamanikharyono/jinja-action@v0.1
         with:
           data: version=${{ github.event.client_payload.release }}
