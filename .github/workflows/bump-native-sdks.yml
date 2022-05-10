@@ -78,15 +78,15 @@ jobs:
       - name: Copy the podspec template
         uses: canastro/copy-action@master
         with:
-          source: 'flutter_radar.podspec.template'
-          target: 'flutter_radar.podspec'
+          source: 'ios/flutter_radar.podspec.template'
+          target: 'ios/flutter_radar.podspec'
 
       # render the podspec template with the sdk version
       - name: Render radar-sdk-ios release version onto podspec template
         uses: jayamanikharyono/jinja-action@v0.1
         with:
           data: version=${{ github.event.client_payload.release }}
-          path: 'flutter_radar.podspec'
+          path: 'ios/flutter_radar.podspec'
 
       # copy the pubspec.yaml template to its final destination
       - name: Copy the podspec template
