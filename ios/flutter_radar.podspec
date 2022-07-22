@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
   s.description      = 'Flutter package for Radar, the leading geofencing and location tracking platform'
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Radar Labs, Inc.' => 'support@radar.io' }
+  s.author           = { 'Radar Labs, Inc.' => 'support@radar.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
