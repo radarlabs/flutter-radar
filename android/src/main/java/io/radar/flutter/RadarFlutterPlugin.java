@@ -52,6 +52,7 @@ import io.radar.sdk.model.RadarEvent;
 import io.radar.sdk.model.RadarGeofence;
 import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
+import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarUser;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
@@ -558,12 +559,35 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(isTracking);
     }
 
-    public void startTrip(MethodCall call, Result result) throws JSONException {
+    public void startTrip(MethodCall call, final Result result) throws JSONException {
         HashMap tripOptionsMap = (HashMap)call.arguments;
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
         RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
-        Radar.startTrip(tripOptions);
-        result.success(true);
+        Radar.startTrip(tripOptions, new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarTrip trip, final RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getTripOptions(Result result) {
@@ -572,14 +596,60 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(map);
     }
 
-    public void completeTrip(Result result) {
-        Radar.completeTrip();
-        result.success(true);
+    public void completeTrip(final Result result) {
+        Radar.completeTrip(new Radar.RadarTripCallback(){
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarTrip trip, final RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
-    public void cancelTrip(Result result) {
-        Radar.cancelTrip();
-        result.success(true);
+    public void cancelTrip(final Result result) {
+        Radar.cancelTrip(new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarTrip trip, final RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getContext(MethodCall call, final Result result) {

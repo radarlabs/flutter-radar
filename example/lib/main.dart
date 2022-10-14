@@ -45,99 +45,134 @@ class _MyAppState extends State<MyApp> {
       appBar: AppBar(
         title: const Text('flutter_radar_example'),
       ),
-      body: Container(
-        child: Column(children: [
-          Permissions(),
-          TrackOnce(),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.startTracking('responsive');
-            },
-            child: Text('startTracking(\'responsive\')'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.startTrackingCustom({
-                'desiredStoppedUpdateInterval': 60,
-                'fastestStoppedUpdateInterval': 60,
-                'desiredMovingUpdateInterval': 30,
-                'fastestMovingUpdateInterval': 30,
-                'desiredSyncInterval': 20,
-                'desiredAccuracy': 'high',
-                'stopDuration': 140,
-                'stopDistance': 70,
-                'sync': 'all',
-                'replay': 'none',
-                'showBlueBar': true
-              });
-            },
-            child: Text('startTrackingCustom()'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.stopTracking();
-            },
-            child: Text('stopTracking()'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.mockTracking(
-                  origin: {'latitude': 40.78382, 'longitude': -73.97536},
-                  destination: {'latitude': 40.70390, 'longitude': -73.98670},
-                  mode: 'car',
-                  steps: 3,
-                  interval: 3);
-            },
-            child: Text('mockTracking()'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () async {
-              var status = await Radar.requestPermissions(false);
-              print(status);
-              if (status == 'GRANTED_FOREGROUND') {
-                status = await Radar.requestPermissions(true);
-                print(status);
-              }
-            },
-            child: Text('requestPermissions()'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () async {
-              Map? location = await Radar.getLocation('high');
-              print(location);
-            },
-            child: Text('getLocation()'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.startForegroundService({
-                'title': 'Tracking',
-                'text': 'Continuous tracking started',
-                'icon': 'car_icon',
-                'importance': '2',
-                'id': '12555541',
-                'clickable': true
-              });
-            },
-            child: Text('startForegroundService(), Android only'),
-          ),
-          RaisedButton(
-            color: Colors.blueAccent,
-            onPressed: () {
-              Radar.stopForegroundService();
-            },
-            child: Text('stopForegroundService(), Android only'),
-          )
-        ]),
-      ),
-    ));
+      body: Center(
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.all(15.0),
+          children: [
+            Column(children: [
+              Permissions(),
+              TrackOnce(),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.startTracking('responsive');
+                },
+                child: Text('startTracking(\'responsive\')'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.startTrackingCustom({
+                    'desiredStoppedUpdateInterval': 60,
+                    'fastestStoppedUpdateInterval': 60,
+                    'desiredMovingUpdateInterval': 30,
+                    'fastestMovingUpdateInterval': 30,
+                    'desiredSyncInterval': 20,
+                    'desiredAccuracy': 'high',
+                    'stopDuration': 140,
+                    'stopDistance': 70,
+                    'sync': 'all',
+                    'replay': 'none',
+                    'showBlueBar': true
+                  });
+                },
+                child: Text('startTrackingCustom()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.stopTracking();
+                },
+                child: Text('stopTracking()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.mockTracking(origin: {
+                    'latitude': 40.78382,
+                    'longitude': -73.97536
+                  }, destination: {
+                    'latitude': 40.70390,
+                    'longitude': -73.98670
+                  }, mode: 'car', steps: 3, interval: 3);
+                },
+                child: Text('mockTracking()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () async {
+                  var result = await Radar.startTrip({
+                    'externalId': '299',
+                    'destinationGeofenceTag': 'store',
+                    'destinationGeofenceExternalId': '123',
+                    'mode': 'car'
+                  });
+                  print('startTrip: $result');
+                },
+                child: Text('startTrip()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () async {
+                  var result = await Radar.completeTrip();
+                  print('completeTrip: $result');
+                },
+                child: Text('completeTrip()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () async {
+                  var result = await Radar.cancelTrip();
+                  print('cancelTrip: $result');
+                },
+                child: Text('cancelTrip()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () async {
+                  var status = await Radar.requestPermissions(false);
+                  print(status);
+                  if (status == 'GRANTED_FOREGROUND') {
+                    status = await Radar.requestPermissions(true);
+                    print(status);
+                  }
+                },
+                child: Text('requestPermissions()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () async {
+                  Map? location = await Radar.getLocation('high');
+                  print(location);
+                },
+                child: Text('getLocation()'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.startForegroundService({
+                    'title': 'Tracking',
+                    'text': 'Continuous tracking started',
+                    'icon': 'car_icon',
+                    'importance': '2',
+                    'id': '12555541',
+                    'clickable': true
+                  });
+                },
+                child: Text('startForegroundService(), Android only'),
+              ),
+              RaisedButton(
+                color: Colors.blueAccent,
+                onPressed: () {
+                  Radar.stopForegroundService();
+                },
+                child: Text('stopForegroundService(), Android only'),
+              )
+            ])
+          ],
+        ),
+      )));
   }
 }
 

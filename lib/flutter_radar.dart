@@ -171,9 +171,10 @@ class Radar {
 
   static Future startTrip(Map<String, dynamic> tripOptions) async {
     try {
-      await _channel.invokeMethod('startTrip', tripOptions);
+      return await _channel.invokeMethod('startTrip', tripOptions);
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
@@ -183,17 +184,19 @@ class Radar {
 
   static Future completeTrip() async {
     try {
-      await _channel.invokeMethod('completeTrip');
+      return await _channel.invokeMethod('completeTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
   static Future cancelTrip() async {
     try {
-      await _channel.invokeMethod('cancelTrip');
+      return await _channel.invokeMethod('cancelTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
