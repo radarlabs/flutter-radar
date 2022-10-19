@@ -106,13 +106,9 @@ class Radar {
     }
   }
 
-  static Future<Map?> trackOnce([Map<String, dynamic>? location]) async {
+  static Future<Map?> trackOnce({Map<String, dynamic>? location, String? desiredAccuracy, bool? beacons}) async {
     try {
-      if (location == null) {
-        return await _channel.invokeMethod('trackOnce');
-      } else {
-        return await _channel.invokeMethod('trackOnce', {'location': location});
-      }
+      return await _channel.invokeMethod('trackOnce', {'location': location, 'desiredAccuracy': desiredAccuracy, 'beacons': beacons});      
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};

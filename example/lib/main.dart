@@ -236,7 +236,8 @@ class _TrackOnceState extends State<TrackOnce> {
   }
 
   Future<void> _showTrackOnceDialog() async {
-    var trackResponse = await Radar.trackOnce();
+    var trackResponse = await Radar.trackOnce(desiredAccuracy: 'high', beacons: true);
+    print("trackResponse: $trackResponse");
 
     Widget okButton = FlatButton(
       child: Text('OK'),
