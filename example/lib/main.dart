@@ -10,6 +10,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
+    primary: Colors.blueAccent,
+    minimumSize: Size(88, 36),
+    padding: EdgeInsets.symmetric(horizontal: 16),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(2)),
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +49,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
         home: Scaffold(
       appBar: AppBar(
@@ -49,15 +59,15 @@ class _MyAppState extends State<MyApp> {
         child: Column(children: [
           Permissions(),
           TrackOnce(),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.startTracking('responsive');
             },
             child: Text('startTracking(\'responsive\')'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.startTrackingCustom({
                 'desiredStoppedUpdateInterval': 60,
@@ -75,15 +85,15 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('startTrackingCustom()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.stopTracking();
             },
             child: Text('stopTracking()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.mockTracking(
                   origin: {'latitude': 40.78382, 'longitude': -73.97536},
@@ -94,8 +104,8 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('mockTracking()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () async {
               var status = await Radar.requestPermissions(false);
               print(status);
@@ -106,16 +116,16 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('requestPermissions()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () async {
               Map? location = await Radar.getLocation('high');
               print(location);
             },
             child: Text('getLocation()'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.startForegroundService({
                 'title': 'Tracking',
@@ -128,8 +138,8 @@ class _MyAppState extends State<MyApp> {
             },
             child: Text('startForegroundService(), Android only'),
           ),
-          RaisedButton(
-            color: Colors.blueAccent,
+          ElevatedButton(
+            style: raisedButtonStyle,
             onPressed: () {
               Radar.stopForegroundService();
             },
@@ -148,6 +158,14 @@ class Permissions extends StatefulWidget {
 
 class _PermissionsState extends State<Permissions> {
   String? _status = 'NOT_DETERMINED';
+  final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
+    primary: Colors.blueAccent,
+    minimumSize: Size(88, 36),
+    padding: EdgeInsets.symmetric(horizontal: 16),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(2)),
+    ),
+  );
 
   @override
   void initState() {
@@ -164,8 +182,8 @@ class _PermissionsState extends State<Permissions> {
           '$_status',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
-        RaisedButton(
-          color: Colors.blueAccent,
+        ElevatedButton(
+          style: raisedButtonStyle,
           child: Text('getPermissionsStatus()'),
           onPressed: () {
             _getPermissionsStatus();
@@ -189,11 +207,20 @@ class TrackOnce extends StatefulWidget {
 }
 
 class _TrackOnceState extends State<TrackOnce> {
+  final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
+    primary: Colors.blueAccent,
+    minimumSize: Size(88, 36),
+    padding: EdgeInsets.symmetric(horizontal: 16),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(2)),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
-    return RaisedButton(
+    return ElevatedButton(
       child: Text('trackOnce()'),
-      color: Colors.blueAccent,
+      style: raisedButtonStyle,
       onPressed: () {
         _showTrackOnceDialog();
       },
@@ -203,7 +230,7 @@ class _TrackOnceState extends State<TrackOnce> {
   Future<void> _showTrackOnceDialog() async {
     var trackResponse = await Radar.trackOnce();
 
-    Widget okButton = FlatButton(
+    Widget okButton = TextButton(
       child: Text('OK'),
       onPressed: () {
         Navigator.pop(context);
@@ -228,7 +255,7 @@ class _TrackOnceState extends State<TrackOnce> {
 }
 
 showAlertDialog(BuildContext context, String text) {
-  Widget okButton = FlatButton(
+  Widget okButton = TextButton(
     child: Text('OK'),
     onPressed: () {
       Navigator.of(context).pop();
