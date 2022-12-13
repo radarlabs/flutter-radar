@@ -89,6 +89,14 @@ class Radar {
     return await _channel.invokeMethod('getMetadata');
   }
 
+  static Future setAnonymousTrackingEnabled(bool enabled) async {
+    try {
+      await _channel.invokeMethod('setAnonymousTrackingEnabled', {'enabled': enabled});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future setAdIdEnabled(bool enabled) async {
     try {
       await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});

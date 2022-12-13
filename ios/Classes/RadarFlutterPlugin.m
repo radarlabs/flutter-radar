@@ -84,6 +84,8 @@
         [self setMetadata:call withResult:result];
     } else if ([@"getMetadata" isEqualToString:call.method]) {
         [self getMetadata:call withResult:result];
+    } else if ([@"setAnonymousTrackingEnabled" isEqualToString:call.method]) {
+        [self setAnonymousTrackingEnabled:call withResult:result];
     } else if ([@"setAdIdEnabled" isEqualToString:call.method]) {
         [self setAdIdEnabled:call withResult:result];
     } else if ([@"getLocation" isEqualToString:call.method]) {
@@ -245,6 +247,14 @@
     result(metadata);
 }
 
+- (void)setAnonymousTrackingEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    BOOL enabled = argsDict[@"enabled"];
+    [Radar setAnonymousTrackingEnabled:enabled];
+    result(nil);
+}
+
 - (void)setAdIdEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
@@ -316,7 +326,9 @@
     }
 }
 
-- (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
+    //TODO: need to update this function 3.5.9
+    /*
     NSDictionary *argsDict = call.arguments;
 
     NSString *preset = argsDict[@"preset"];
@@ -330,7 +342,7 @@
         [Radar startTrackingWithOptions:RadarTrackingOptions.efficient];
     } else {
         [Radar startTrackingWithOptions:RadarTrackingOptions.responsive];
-    }
+    }*/
     result(nil);
 }
 
@@ -394,8 +406,9 @@
 }
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;
-
+    NSDictionary *argsDict = call.arguments;    
+    //TODO: need to update this function 3.5.9
+    /*
     NSString *externalId = argsDict[@"externalId"];
     RadarTripOptions *options = [[RadarTripOptions alloc] initWithExternalId:externalId];
     options.destinationGeofenceTag = argsDict[@"destinationGeofenceTag"];
@@ -412,7 +425,7 @@
     if (metadata) {
         options.metadata = metadata;
     }
-    [Radar startTripWithOptions:options];
+    [Radar startTripWithOptions:options];*/
     result(nil);
 }
 
@@ -721,7 +734,7 @@
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
-    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForSource:source]};
+    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
     if (self.clientLocationHandler && self.clientLocationHandler.sink) {
         self.clientLocationHandler.sink(dict);
     }

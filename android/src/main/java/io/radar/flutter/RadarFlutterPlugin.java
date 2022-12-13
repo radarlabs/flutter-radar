@@ -245,6 +245,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getMetadata":
                     getMetadata(result);
                     break;
+                case "setAnonymousTrackingEnabled":
+                    setAnonymousTrackingEnabled(call, result);
+                    break;
                 case "setAdIdEnabled":
                     // do nothing
                     break;
@@ -421,6 +424,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(metadataMap);
     }
 
+    private void setAnonymousTrackingEnabled(MethodCall call, Result result) {
+        boolean enabled = call.argument("enabled");
+        Radar.setAnonymousTrackingEnabled(enabled);
+        result.success(true);
+    }
+
     private void getLocation(MethodCall call, final Result result) {
         Radar.RadarLocationCallback callback = new Radar.RadarLocationCallback() {
             @Override
@@ -561,8 +570,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     public void startTrip(MethodCall call, Result result) throws JSONException {
         HashMap tripOptionsMap = (HashMap)call.arguments;
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
-        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
-        Radar.startTrip(tripOptions);
+        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);        
+        //TODO: need to update this function 3.5.9
+        //Radar.startTrip(tripOptions, null);
         result.success(true);
     }
 
@@ -573,12 +583,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void completeTrip(Result result) {
-        Radar.completeTrip();
+        //TODO: need to update this function 3.5.9
+        //Radar.completeTrip();
         result.success(true);
     }
 
     public void cancelTrip(Result result) {
-        Radar.cancelTrip();
+        //TODO: need to update this function 3.5.9
+        //Radar.cancelTrip();
         result.success(true);
     }
 
