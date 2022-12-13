@@ -488,7 +488,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             if (user != null) {
                                 obj.put("user", user.toJson());
                             }
-
+      
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
@@ -498,15 +498,34 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 });
             }
         };
-
-        if (call.hasArgument("location")) {
+      
+        if (call.hasArgument("location") && call.argument("location") != null) {
             HashMap locationMap = (HashMap)call.argument("location");
             Location location = locationForMap(locationMap);
             Radar.trackOnce(location, callback);
         } else {
-            Radar.trackOnce(callback);
+            RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+            boolean beaconsTrackingOption = false;
+      
+            if (call.hasArgument("desiredAccuracy") && call.argument("desiredAccuracy") != null) {
+                String desiredAccuracy = ((String)call.argument("desiredAccuracy")).toLowerCase();
+                if (desiredAccuracy.equals("none")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.NONE;
+                } else if (desiredAccuracy.equals("low")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW;
+                } else if (desiredAccuracy.equals("medium")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+                } else if (desiredAccuracy.equals("high")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.HIGH;
+                }
+            }
+            if (call.hasArgument("beacons") && call.argument("beacons") != null) {
+                beaconsTrackingOption = call.argument("beacons");
+            }
+      
+            Radar.trackOnce(accuracyLevel, beaconsTrackingOption, callback);
         }
-    }
+    }      
 
     private void startTracking(MethodCall call, Result result) {
         String preset = call.argument("preset");

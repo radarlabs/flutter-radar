@@ -311,8 +311,7 @@
     NSDictionary *argsDict = call.arguments;
 
     NSDictionary *locationDict = argsDict[@"location"];
-    if (locationDict) {
-        NSDictionary *locationDict = call.arguments[@"location"];
+    if (locationDict != nil && [locationDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = locationDict[@"latitude"];
         NSNumber *longitudeNumber = locationDict[@"longitude"];
         NSNumber *accuracyNumber = locationDict[@"accuracy"];
@@ -322,7 +321,29 @@
         CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
         [Radar trackOnceWithLocation:location completionHandler:completionHandler];
     } else {
-        [Radar trackOnceWithCompletionHandler:completionHandler];
+        RadarTrackingOptionsDesiredAccuracy desiredAccuracy = RadarTrackingOptionsDesiredAccuracyMedium;
+        BOOL beaconsTrackingOption = NO;
+
+        NSString *accuracy = argsDict[@"desiredAccuracy"];
+
+        if (accuracy != nil && [accuracy isKindOfClass:[NSString class]]) {
+            NSString *lowerAccuracy = [accuracy lowercaseString];
+            if ([lowerAccuracy isEqualToString:@"high"]) {
+                desiredAccuracy = RadarTrackingOptionsDesiredAccuracyHigh;
+            } else if ([lowerAccuracy isEqualToString:@"medium"]) {
+                desiredAccuracy = RadarTrackingOptionsDesiredAccuracyMedium;
+            } else if ([lowerAccuracy isEqualToString:@"low"]) {
+                desiredAccuracy = RadarTrackingOptionsDesiredAccuracyLow;
+            }
+        }
+        
+        BOOL beacons = argsDict[@"beacons"];
+
+        if (beacons) {
+            beaconsTrackingOption = beacons;
+        }
+        
+        [Radar trackOnceWithDesiredAccuracy:desiredAccuracy beacons:beaconsTrackingOption completionHandler:completionHandler];
     }
 }
 
