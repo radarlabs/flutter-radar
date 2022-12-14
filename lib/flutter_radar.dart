@@ -256,6 +256,7 @@ class Radar {
       int? radius,
       int? limit,
       List? chains,
+      Map<String, String>? chainMetadata,
       List? categories,
       List? groups}) async {
     try {
@@ -264,6 +265,7 @@ class Radar {
         'radius': radius,
         'limit': limit,
         'chains': chains,
+        'chainMetadata': chainMetadata,
         'categories': categories,
         'groups': groups
       });

@@ -876,17 +876,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
         ArrayList chainsList = (ArrayList)call.argument("chains");
-        String[] chains = (String[])chainsList.toArray(new String[0]);
+        String[] chains = (String[])chainsList.toArray(new String[0]);        
+        Map<String, String> chainMetadata = (Map<String, String>)call.argument("chainMetadata");
         ArrayList categoriesList = (ArrayList)call.argument("categories");
-        String[] categories = (String[])categoriesList.toArray(new String[0]);
+        String[] categories = categoriesList != null ? (String[])categoriesList.toArray(new String[0]) : new String[0];
         ArrayList groupsList = (ArrayList)call.argument("groups");
-        String[] groups = (String[])groupsList.toArray(new String[0]);
+        String[] groups = groupsList != null ? (String[])groupsList.toArray(new String[0]) : new String[0];
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
 
         if (near != null) {
-            Radar.searchPlaces(near, radius, chains, categories, groups, limit, callback);
+            Radar.searchPlaces(near, radius, chains, chainMetadata, categories, groups, limit, callback);
         } else {
-            Radar.searchPlaces(radius, chains, categories, groups, limit, callback);
+            Radar.searchPlaces(radius, chains, chainMetadata, categories, groups, limit, callback);
         }
     }
 

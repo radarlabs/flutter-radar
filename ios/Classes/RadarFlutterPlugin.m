@@ -657,8 +657,9 @@
         radius = 1000;
     }
     NSArray *chains = argsDict[@"chains"];
-    NSArray *categories = argsDict[@"categories"];
-    NSArray *groups = argsDict[@"groups"];
+    NSDictionary *chainMetadata = [argsDict[@"chainMetadata"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"chainMetadata"];
+    NSArray *categories = [argsDict[@"categories"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"categories"];
+    NSArray *groups = [argsDict[@"groups"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"groups"];
     NSNumber *limitNumber = argsDict[@"limit"];
     int limit;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
@@ -668,9 +669,9 @@
     }
 
     if (near != nil) {
-        [Radar searchPlacesNear:near radius:radius chains:chains categories:categories groups:groups limit:limit completionHandler:completionHandler];
+        [Radar searchPlacesNear:near radius:radius chains:chains chainMetadata:chainMetadata categories:categories groups:groups limit:limit completionHandler:completionHandler];
     } else {
-        [Radar searchPlacesWithRadius:radius chains:chains categories:categories groups:groups limit:limit completionHandler:completionHandler];
+        [Radar searchPlacesWithRadius:radius chains:chains chainMetadata:chainMetadata categories:categories groups:groups limit:limit completionHandler:completionHandler];
     }
 }
 
