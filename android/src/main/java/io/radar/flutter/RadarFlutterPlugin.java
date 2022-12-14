@@ -280,6 +280,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "startTrip":
                     startTrip(call, result);
                     break;
+                case "updateTrip":
+                    updateTrip(call, result);
+                    break;
                 case "getTripOptions":
                     getTripOptions(result);
                     break;
@@ -612,6 +615,54 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             trackingOptions = RadarTrackingOptions.fromJson(trackingOptionsJson);
         }
         Radar.startTrip(tripOptions, trackingOptions, new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    public void updateTrip(MethodCall call, Result result) throws JSONException {
+        HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
+        JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
+        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
+        String statusStr = call.argument("status");
+        RadarTrip.RadarTripStatus status = RadarTrip.RadarTripStatus.UNKNOWN;
+        statusStr = statusStr.toLowerCase();
+        if (statusStr.equals("started")) {
+            status = RadarTrip.RadarTripStatus.STARTED;
+        } else if (statusStr.equals("approaching")) {
+            status = RadarTrip.RadarTripStatus.APPROACHING;
+        } else if (statusStr.equals("arrived")) {
+            status = RadarTrip.RadarTripStatus.ARRIVED;
+        } else if (statusStr.equals("completed")) {
+            status = RadarTrip.RadarTripStatus.COMPLETED;
+        } else if (statusStr.equals("canceled")) {
+            status = RadarTrip.RadarTripStatus.CANCELED;
+        }
+        
+        Radar.updateTrip(tripOptions, status, new Radar.RadarTripCallback() {
             @Override
             public void onComplete(@NonNull Radar.RadarStatus status,
                                    @Nullable RadarTrip trip,

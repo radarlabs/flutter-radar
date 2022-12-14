@@ -191,6 +191,15 @@ class Radar {
     }
   }
 
+  static Future<Map?> updateTrip({required Map<String, dynamic> options, required String status}) async {
+    try {
+      return await _channel.invokeMethod('updateTrip', {'tripOptions': options, 'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<Map?> getTripOptions() async {
     return await _channel.invokeMethod('getTripOptions');
   }

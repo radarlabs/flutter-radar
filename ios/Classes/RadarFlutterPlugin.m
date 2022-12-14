@@ -106,6 +106,8 @@
         [self mockTracking:call withResult:result];
     } else if ([@"startTrip" isEqualToString:call.method]) {
        [self startTrip:call withResult:result];
+    } else if ([@"updateTrip" isEqualToString:call.method]) {
+       [self updateTrip:call withResult:result];
     } else if ([@"getTripOptions" isEqualToString:call.method]) {
         [self getTripOptions:call withResult:result];
     } else if ([@"completeTrip" isEqualToString:call.method]) {
@@ -459,6 +461,41 @@
     }
 
     [Radar startTripWithOptions:tripOptions trackingOptions:trackingOptions completionHandler:completionHandler];
+}
+
+- (void)updateTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            if (trip) {
+                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+            }
+            if (events) {
+                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+            }
+            result(dict);
+        }
+    };
+    NSDictionary *argsDict = call.arguments;
+    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
+    NSString* statusStr = argsDict[@"status"];
+    RadarTripStatus status = RadarTripStatusUnknown;
+    statusStr = [statusStr lowercaseString];
+    if ([statusStr isEqualToString:@"started"]) {
+        status = RadarTripStatusStarted;
+    } else if ([statusStr isEqualToString:@"approaching"]) {
+        status = RadarTripStatusApproaching;
+    } else if ([statusStr isEqualToString:@"arrived"]) {
+        status = RadarTripStatusArrived;
+    } else if ([statusStr isEqualToString:@"completed"]) {
+        status = RadarTripStatusCompleted;
+    } else if ([statusStr isEqualToString:@"canceled"]) {
+        status = RadarTripStatusCanceled;
+    }
+
+    [Radar updateTripWithOptions:tripOptions status:status completionHandler:completionHandler];
 }
 
 - (void)getTripOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
