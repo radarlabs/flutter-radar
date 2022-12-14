@@ -100,6 +100,8 @@
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
         [self isTracking:call withResult:result];
+    } else if ([@"getTrackingOptions" isEqualToString:call.method]) {
+        [self getTrackingOptions:call withResult:result];
     } else if ([@"mockTracking" isEqualToString:call.method]) {
         [self mockTracking:call withResult:result];
     } else if ([@"startTrip" isEqualToString:call.method]) {
@@ -384,6 +386,11 @@
 - (void)isTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isTracking = [Radar isTracking];
     result(@(isTracking));
+}
+
+- (void)getTrackingOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTrackingOptions* options = [Radar getTrackingOptions];
+    result([options dictionaryValue]);
 }
 
 - (void)mockTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {

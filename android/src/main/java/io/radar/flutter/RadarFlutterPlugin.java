@@ -271,6 +271,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "isTracking":
                     isTracking(result);
                     break;
+                case "getTrackingOptions":
+                    getTrackingOptions(result);
+                    break;
                 case "mockTracking":
                     mockTracking(call, result);
                     break;
@@ -586,6 +589,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void isTracking(Result result) {
         Boolean isTracking = Radar.isTracking();
         result.success(isTracking);
+    }
+
+    private void getTrackingOptions(Result result) throws JSONException {     
+        RadarTrackingOptions options = Radar.getTrackingOptions();   
+        JSONObject optionsJson = options.toJson();
+        HashMap optionsMap = null;
+        if (optionsJson != null) {
+           optionsMap = new Gson().fromJson(optionsJson.toString(), HashMap.class);
+        }
+        result.success(optionsMap);
     }
 
     public void startTrip(MethodCall call, Result result) throws JSONException {

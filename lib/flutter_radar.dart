@@ -153,6 +153,15 @@ class Radar {
     return await _channel.invokeMethod('isTracking');
   }
 
+  static Future<Map?> getTrackingOptions() async {
+    try {
+      return await _channel.invokeMethod('getTrackingOptions');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<Map?> mockTracking(
       {Map<String, double>? origin,
       Map<String, double>? destination,
