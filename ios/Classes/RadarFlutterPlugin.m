@@ -464,8 +464,20 @@
 }
 
 - (void)completeTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [Radar completeTrip];
-    result(nil);
+    RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            if (trip) {
+                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+            }
+            if (events) {
+                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+            }
+            result(dict);
+        }
+    };
+    [Radar completeTripWithCompletionHandler:completionHandler];
 }
 
 - (void)cancelTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {

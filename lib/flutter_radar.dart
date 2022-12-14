@@ -186,11 +186,12 @@ class Radar {
     return await _channel.invokeMethod('getTripOptions');
   }
 
-  static Future completeTrip() async {
+  static Future<Map?> completeTrip() async {
     try {
-      await _channel.invokeMethod('completeTrip');
+      return await _channel.invokeMethod('completeTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
