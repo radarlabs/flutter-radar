@@ -55,6 +55,7 @@ import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
+import io.radar.sdk.model.RadarRouteMatrix;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
@@ -318,6 +319,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     break;
                 case "sendEvent":
                     sendEvent(call, result);
+                    break;
+                case "getMatrix":
+                    getMatrix(call, result);
                     break;
                 case "startForegroundService":
                     startForegroundService(call, result);
@@ -1105,6 +1109,60 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         } else {
             Radar.sendEvent(customType, metadataJson, callback);
         }
+    }
+
+    public void getMatrix(MethodCall call, final Result result) throws JSONException {
+        ArrayList<HashMap> originsArr = call.argument("origins"); 
+        Location[] origins = new Location[originsArr.size()];
+        for (int i = 0; i < originsArr.size(); i++) {
+            origins[i] = locationForMap(originsArr.get(i));
+        }
+        ArrayList<HashMap> destinationsArr = call.argument("destinations");
+        Location[] destinations = new Location[destinationsArr.size()];
+        for (int i = 0; i < destinationsArr.size(); i++) {
+            destinations[i] = locationForMap(destinationsArr.get(i));
+        }
+        String modeStr = call.argument("mode");
+        Radar.RadarRouteMode mode = Radar.RadarRouteMode.CAR;
+        if (modeStr != null) {
+            modeStr = modeStr.toLowerCase();
+            if ( modeStr.equals("foot")) {
+                mode = Radar.RadarRouteMode.FOOT;
+            } else if (modeStr.equals("bike")) {
+                mode = Radar.RadarRouteMode.BIKE;
+            } else if (modeStr.equals("car")) {
+                mode = Radar.RadarRouteMode.CAR;
+            } else if (modeStr.equals("truck")) {
+                mode = Radar.RadarRouteMode.TRUCK;
+            } else if (modeStr.equals("motorbike")) {
+                mode = Radar.RadarRouteMode.MOTORBIKE;
+            }
+        }
+        String unitsStr = call.argument("units");
+        Radar.RadarRouteUnits units = unitsStr != null && unitsStr.toLowerCase().equals("metric") ? Radar.RadarRouteUnits.METRIC : Radar.RadarRouteUnits.IMPERIAL;
+
+        Radar.getMatrix(origins, destinations, mode, units, new Radar.RadarMatrixCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable RadarRouteMatrix matrix) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (matrix != null) {
+                                obj.put("matrix", matrix.toJson());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void startForegroundService(MethodCall call, Result result) {

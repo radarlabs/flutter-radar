@@ -132,6 +132,8 @@
         [self getDistance:call withResult:result];
     } else if ([@"sendEvent" isEqualToString:call.method]) {
         [self sendEvent:call withResult:result];        
+    } else if ([@"getMatrix" isEqualToString:call.method]) {
+        [self getMatrix:call withResult:result];        
     } else if ([@"startForegroundService" isEqualToString:call.method]) {
         // do nothing
     } else if ([@"stopForegroundService" isEqualToString:call.method]) {
@@ -852,6 +854,64 @@
     } else {
         [Radar sendEvent:customType withMetadata:metadata completionHandler:completionHandler];
     }
+}
+
+- (void)getMatrix:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    
+    NSArray<NSDictionary *> *originsArr = argsDict[@"origins"];
+    NSMutableArray<CLLocation *> *origins = [NSMutableArray new];
+    for (NSDictionary *originDict in originsArr) {        
+        NSNumber *latitudeNumber = originDict[@"latitude"];
+        NSNumber *longitudeNumber = originDict[@"longitude"];
+        NSNumber *accuracyNumber = originDict[@"accuracy"];
+        double latitude = [latitudeNumber doubleValue];
+        double longitude = [longitudeNumber doubleValue];
+        double accuracy = accuracyNumber ? [accuracyNumber doubleValue] : -1;
+        CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
+        [origins addObject:origin];
+    }
+    NSArray<NSDictionary *> *destinationsArr = argsDict[@"destinations"];
+    NSMutableArray<CLLocation *> *destinations = [NSMutableArray new];
+    for (NSDictionary *destinationDict in destinationsArr) {
+        NSNumber *latitudeNumber = destinationDict[@"latitude"];
+        NSNumber *longitudeNumber = destinationDict[@"longitude"];
+        NSNumber *accuracyNumber = destinationDict[@"accuracy"];
+        double latitude = [latitudeNumber doubleValue];
+        double longitude = [longitudeNumber doubleValue];
+        double accuracy = accuracyNumber ? [accuracyNumber doubleValue] : -1;
+        CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
+        [destinations addObject:destination];
+    }
+    NSString *modeStr = argsDict[@"mode"];
+    RadarRouteMode mode = RadarRouteModeCar;
+    if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
+        mode = RadarRouteModeFoot;
+    } else if ([modeStr isEqualToString:@"BIKE"] || [modeStr isEqualToString:@"bike"]) {
+        mode = RadarRouteModeBike;
+    } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
+        mode = RadarRouteModeCar;
+    } else if ([modeStr isEqualToString:@"TRUCK"] || [modeStr isEqualToString:@"truck"]) {
+        mode = RadarRouteModeTruck;
+    } else if ([modeStr isEqualToString:@"MOTORBIKE"] || [modeStr isEqualToString:@"motorbike"]) {
+        mode = RadarRouteModeMotorbike;
+    }
+    NSString *unitsStr = argsDict[@"units"];
+    RadarRouteUnits units;
+    if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
+        units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
+    } else {
+        units = RadarRouteUnitsImperial;
+    }
+    
+    [Radar getMatrixFromOrigins:origins destinations:destinations mode:mode units:units completionHandler:^(RadarStatus status, RadarRouteMatrix * _Nullable matrix) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (matrix) {
+            [dict setObject:[matrix arrayValue] forKey:@"matrix"];
+        }
+        result(dict);
+    }];    
 }
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {

@@ -344,6 +344,20 @@ class Radar {
     }
   }
 
+  static Future<Map?> getMatrix(
+    {required List origins,
+    required List destinations,
+    required String mode,
+    required String units}) async {
+    try {
+      return await _channel
+          .invokeMethod('getMatrix', {'origins': origins, 'destinations': destinations, 'mode': mode, 'units': units});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future startForegroundService(
       Map<String, dynamic> foregroundServiceOptions) async {
     try {
