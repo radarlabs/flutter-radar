@@ -259,7 +259,8 @@
 - (void)setAdIdEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    BOOL enabled = argsDict[@"enabled"];
+    NSNumber* enabledNumber = argsDict[@"enabled"];
+    BOOL enabled = [enabledNumber boolValue];
     [Radar setAdIdEnabled:enabled];
     result(nil);
 }
