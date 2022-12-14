@@ -195,11 +195,12 @@ class Radar {
     }
   }
 
-  static Future cancelTrip() async {
+  static Future<Map?> cancelTrip() async {
     try {
-      await _channel.invokeMethod('cancelTrip');
+      return await _channel.invokeMethod('cancelTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 

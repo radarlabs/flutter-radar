@@ -664,9 +664,33 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void cancelTrip(Result result) {
-        //TODO: need to update this function 3.5.9
-        //Radar.cancelTrip();
-        result.success(true);
+        Radar.cancelTrip(new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getContext(MethodCall call, final Result result) {
