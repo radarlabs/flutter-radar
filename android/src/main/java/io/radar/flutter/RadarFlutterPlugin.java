@@ -316,6 +316,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getDistance":
                     getDistance(call, result);
                     break;
+                case "sendEvent":
+                    sendEvent(call, result);
+                    break;
                 case "startForegroundService":
                     startForegroundService(call, result);
                     break;
@@ -1055,6 +1058,48 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             Radar.getDistance(origin, destination, modes, units, callback);
         } else {
             Radar.getDistance(destination, modes, units, callback);
+        }
+    }
+
+    public void sendEvent(MethodCall call, final Result result) throws JSONException  {
+        Radar.RadarSendEventCallback callback = new Radar.RadarSendEventCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable Location location, @Nullable RadarEvent[] events, @Nullable RadarUser user) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (location != null) {
+                                obj.put("location", Radar.jsonForLocation(location));
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            if (user != null) {
+                                obj.put("user", user.toJson());
+                            }
+      
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        String customType = call.argument("customType");
+        HashMap metadataMap= call.argument("metadata");
+        JSONObject metadataJson = jsonForMap(metadataMap);        
+        if (call.hasArgument("location") && call.argument("location") != null) {
+            HashMap locationMap = (HashMap)call.argument("location");
+            Location location = locationForMap(locationMap);
+            Radar.sendEvent(customType, location, metadataJson, callback);
+        } else {
+            Radar.sendEvent(customType, metadataJson, callback);
         }
     }
 

@@ -130,6 +130,8 @@
         [self ipGeocode:call withResult:result];
     } else if ([@"getDistance" isEqualToString:call.method]) {
         [self getDistance:call withResult:result];
+    } else if ([@"sendEvent" isEqualToString:call.method]) {
+        [self sendEvent:call withResult:result];        
     } else if ([@"startForegroundService" isEqualToString:call.method]) {
         // do nothing
     } else if ([@"stopForegroundService" isEqualToString:call.method]) {
@@ -810,6 +812,43 @@
   } else {
      [Radar getDistanceToDestination:destination modes:modes units:units completionHandler:completionHandler];
   }
+}
+
+- (void)sendEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            if (location) {
+                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
+            }
+            if (events) {
+                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+            }
+            if (user) {
+                [dict setObject:[user dictionaryValue] forKey:@"user"];
+            }
+            result(dict);
+        }
+    };
+
+    NSDictionary *argsDict = call.arguments;
+
+    NSDictionary *metadata = argsDict[@"metadata"];
+    NSString *customType = argsDict[@"customType"];
+    NSDictionary *locationDict = argsDict[@"location"];
+    if (locationDict != nil && [locationDict isKindOfClass:[NSDictionary class]]) {
+        NSNumber *latitudeNumber = locationDict[@"latitude"];
+        NSNumber *longitudeNumber = locationDict[@"longitude"];
+        NSNumber *accuracyNumber = locationDict[@"accuracy"];
+        double latitude = [latitudeNumber doubleValue];
+        double longitude = [longitudeNumber doubleValue];
+        double accuracy = accuracyNumber ? [accuracyNumber doubleValue] : -1;
+        CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
+        [Radar sendEvent:customType withLocation:location metadata:metadata completionHandler:completionHandler];
+    } else {
+        [Radar sendEvent:customType withMetadata:metadata completionHandler:completionHandler];
+    }
 }
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {

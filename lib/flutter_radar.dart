@@ -332,6 +332,16 @@ class Radar {
     }
   }
 
+  static Future<Map?> sendEvent({required String customType, Map<String, dynamic>? location, required Map<String, dynamic> metadata}) async {
+    try {
+      return await _channel
+          .invokeMethod('sendEvent', {'customType': customType, 'location': location, 'metadata': metadata});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future startForegroundService(
       Map<String, dynamic> foregroundServiceOptions) async {
     try {
@@ -349,6 +359,8 @@ class Radar {
       print(e);
     }
   }
+
+
 
   static onEvents(Function(Map<dynamic, dynamic>? result) callback) {
     _eventsCallback = callback;
