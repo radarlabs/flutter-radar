@@ -173,11 +173,12 @@ class Radar {
     }
   }
 
-  static Future startTrip(Map<String, dynamic> tripOptions) async {
+  static Future<Map?> startTrip(Map<String, dynamic> tripOptions, {Map<String, dynamic>? trackingOptions}) async {
     try {
-      await _channel.invokeMethod('startTrip', tripOptions);
+      return await _channel.invokeMethod('startTrip', {'tripOptions': tripOptions, 'trackingOptions': trackingOptions});
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 

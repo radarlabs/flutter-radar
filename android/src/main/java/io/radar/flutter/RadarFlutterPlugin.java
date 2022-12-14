@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -53,6 +54,7 @@ import io.radar.sdk.model.RadarGeofence;
 import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
+import io.radar.sdk.model.RadarTrip;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
@@ -587,12 +589,42 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void startTrip(MethodCall call, Result result) throws JSONException {
-        HashMap tripOptionsMap = (HashMap)call.arguments;
+        HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
-        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);        
-        //TODO: need to update this function 3.5.9
-        //Radar.startTrip(tripOptions, null);
-        result.success(true);
+        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
+        HashMap trackingOptionsMap = (HashMap)call.argument("trackingOptions");
+        JSONObject trackingOptionsJson = jsonForMap(trackingOptionsMap);
+        RadarTrackingOptions trackingOptions = null;
+        if (trackingOptionsJson != null) {
+            trackingOptions = RadarTrackingOptions.fromJson(trackingOptionsJson);
+        }
+        Radar.startTrip(tripOptions, trackingOptions, new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getTripOptions(Result result) {

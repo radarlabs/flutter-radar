@@ -250,7 +250,8 @@
 - (void)setAnonymousTrackingEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    BOOL enabled = argsDict[@"enabled"];
+    NSNumber* enabledNumber = argsDict[@"enabled"];
+    BOOL enabled = [enabledNumber boolValue];
     [Radar setAnonymousTrackingEnabled:enabled];
     result(nil);
 }
@@ -427,27 +428,29 @@
 }
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;    
-    //TODO: need to update this function 3.5.9
-    /*
-    NSString *externalId = argsDict[@"externalId"];
-    RadarTripOptions *options = [[RadarTripOptions alloc] initWithExternalId:externalId];
-    options.destinationGeofenceTag = argsDict[@"destinationGeofenceTag"];
-    options.destinationGeofenceExternalId = argsDict[@"destinationGeofenceExternalId"];
-    NSString *modeStr = argsDict[@"mode"];
-    if ([modeStr isEqualToString:@"foot"]) {
-        options.mode = RadarRouteModeFoot;
-    } else if ([modeStr isEqualToString:@"bike"]) {
-        options.mode = RadarRouteModeBike;
-    } else {
-        options.mode = RadarRouteModeCar;
+    RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            if (trip) {
+                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+            }
+            if (events) {
+                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+            }
+            result(dict);
+        }
+    };
+    NSDictionary *argsDict = call.arguments;
+    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
+    NSDictionary *trackingOptionsDict = argsDict[@"trackingOptions"];
+    RadarTrackingOptions *trackingOptions;
+    if (trackingOptionsDict) {
+        trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
     }
-    NSDictionary *metadata = argsDict[@"metadata"];
-    if (metadata) {
-        options.metadata = metadata;
-    }
-    [Radar startTripWithOptions:options];*/
-    result(nil);
+
+    [Radar startTripWithOptions:tripOptions trackingOptions:trackingOptions completionHandler:completionHandler];
 }
 
 - (void)getTripOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -741,7 +744,7 @@
 }
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
-    NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": [user dictionaryValue]};
+    NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
     if (self.eventsHandler && self.eventsHandler.sink) {
         self.eventsHandler.sink(dict);
     }
