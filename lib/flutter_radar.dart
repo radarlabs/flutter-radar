@@ -276,10 +276,10 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit}) async {
+      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers}) async {
     try {
       return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit});
+          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};

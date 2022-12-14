@@ -896,8 +896,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         HashMap nearMap = (HashMap)call.argument("near");
         Location near = locationForMap(nearMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
+        String country = call.argument("country");
+        ArrayList layersList = (ArrayList)call.argument("layers");
+        String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
 
-        Radar.autocomplete(query, near, limit, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
