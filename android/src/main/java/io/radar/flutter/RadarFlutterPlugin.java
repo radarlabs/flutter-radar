@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -53,6 +54,8 @@ import io.radar.sdk.model.RadarGeofence;
 import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
+import io.radar.sdk.model.RadarTrip;
+import io.radar.sdk.model.RadarRouteMatrix;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
@@ -245,6 +248,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getMetadata":
                     getMetadata(result);
                     break;
+                case "setAnonymousTrackingEnabled":
+                    setAnonymousTrackingEnabled(call, result);
+                    break;
                 case "setAdIdEnabled":
                     // do nothing
                     break;
@@ -266,11 +272,17 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "isTracking":
                     isTracking(result);
                     break;
+                case "getTrackingOptions":
+                    getTrackingOptions(result);
+                    break;
                 case "mockTracking":
                     mockTracking(call, result);
                     break;
                 case "startTrip":
                     startTrip(call, result);
+                    break;
+                case "updateTrip":
+                    updateTrip(call, result);
                     break;
                 case "getTripOptions":
                     getTripOptions(result);
@@ -304,6 +316,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     break;
                 case "getDistance":
                     getDistance(call, result);
+                    break;
+                case "sendEvent":
+                    sendEvent(call, result);
+                    break;
+                case "getMatrix":
+                    getMatrix(call, result);
                     break;
                 case "startForegroundService":
                     startForegroundService(call, result);
@@ -421,6 +439,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(metadataMap);
     }
 
+    private void setAnonymousTrackingEnabled(MethodCall call, Result result) {
+        boolean enabled = call.argument("enabled");
+        Radar.setAnonymousTrackingEnabled(enabled);
+        result.success(true);
+    }
+
     private void getLocation(MethodCall call, final Result result) {
         Radar.RadarLocationCallback callback = new Radar.RadarLocationCallback() {
             @Override
@@ -479,7 +503,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                             if (user != null) {
                                 obj.put("user", user.toJson());
                             }
-
+      
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
                         } catch (Exception e) {
@@ -489,15 +513,34 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 });
             }
         };
-
-        if (call.hasArgument("location")) {
+      
+        if (call.hasArgument("location") && call.argument("location") != null) {
             HashMap locationMap = (HashMap)call.argument("location");
             Location location = locationForMap(locationMap);
             Radar.trackOnce(location, callback);
         } else {
-            Radar.trackOnce(callback);
+            RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+            boolean beaconsTrackingOption = false;
+      
+            if (call.hasArgument("desiredAccuracy") && call.argument("desiredAccuracy") != null) {
+                String desiredAccuracy = ((String)call.argument("desiredAccuracy")).toLowerCase();
+                if (desiredAccuracy.equals("none")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.NONE;
+                } else if (desiredAccuracy.equals("low")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW;
+                } else if (desiredAccuracy.equals("medium")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+                } else if (desiredAccuracy.equals("high")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.HIGH;
+                }
+            }
+            if (call.hasArgument("beacons") && call.argument("beacons") != null) {
+                beaconsTrackingOption = call.argument("beacons");
+            }
+      
+            Radar.trackOnce(accuracyLevel, beaconsTrackingOption, callback);
         }
-    }
+    }      
 
     private void startTracking(MethodCall call, Result result) {
         String preset = call.argument("preset");
@@ -558,12 +601,101 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(isTracking);
     }
 
+    private void getTrackingOptions(Result result) throws JSONException {     
+        RadarTrackingOptions options = Radar.getTrackingOptions();   
+        JSONObject optionsJson = options.toJson();
+        HashMap optionsMap = null;
+        if (optionsJson != null) {
+           optionsMap = new Gson().fromJson(optionsJson.toString(), HashMap.class);
+        }
+        result.success(optionsMap);
+    }
+
     public void startTrip(MethodCall call, Result result) throws JSONException {
-        HashMap tripOptionsMap = (HashMap)call.arguments;
+        HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
         RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
-        Radar.startTrip(tripOptions);
-        result.success(true);
+        HashMap trackingOptionsMap = (HashMap)call.argument("trackingOptions");
+        JSONObject trackingOptionsJson = jsonForMap(trackingOptionsMap);
+        RadarTrackingOptions trackingOptions = null;
+        if (trackingOptionsJson != null) {
+            trackingOptions = RadarTrackingOptions.fromJson(trackingOptionsJson);
+        }
+        Radar.startTrip(tripOptions, trackingOptions, new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    public void updateTrip(MethodCall call, Result result) throws JSONException {
+        HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
+        JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
+        RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
+        String statusStr = call.argument("status");
+        RadarTrip.RadarTripStatus status = RadarTrip.RadarTripStatus.UNKNOWN;
+        statusStr = statusStr.toLowerCase();
+        if (statusStr.equals("started")) {
+            status = RadarTrip.RadarTripStatus.STARTED;
+        } else if (statusStr.equals("approaching")) {
+            status = RadarTrip.RadarTripStatus.APPROACHING;
+        } else if (statusStr.equals("arrived")) {
+            status = RadarTrip.RadarTripStatus.ARRIVED;
+        } else if (statusStr.equals("completed")) {
+            status = RadarTrip.RadarTripStatus.COMPLETED;
+        } else if (statusStr.equals("canceled")) {
+            status = RadarTrip.RadarTripStatus.CANCELED;
+        }
+        
+        Radar.updateTrip(tripOptions, status, new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getTripOptions(Result result) {
@@ -573,13 +705,63 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void completeTrip(Result result) {
-        Radar.completeTrip();
-        result.success(true);
+        Radar.completeTrip(new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void cancelTrip(Result result) {
-        Radar.cancelTrip();
-        result.success(true);
+        Radar.cancelTrip(new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void getContext(MethodCall call, final Result result) {
@@ -698,17 +880,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
         ArrayList chainsList = (ArrayList)call.argument("chains");
-        String[] chains = (String[])chainsList.toArray(new String[0]);
+        String[] chains = (String[])chainsList.toArray(new String[0]);        
+        Map<String, String> chainMetadata = (Map<String, String>)call.argument("chainMetadata");
         ArrayList categoriesList = (ArrayList)call.argument("categories");
-        String[] categories = (String[])categoriesList.toArray(new String[0]);
+        String[] categories = categoriesList != null ? (String[])categoriesList.toArray(new String[0]) : new String[0];
         ArrayList groupsList = (ArrayList)call.argument("groups");
-        String[] groups = (String[])groupsList.toArray(new String[0]);
+        String[] groups = groupsList != null ? (String[])groupsList.toArray(new String[0]) : new String[0];
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
 
         if (near != null) {
-            Radar.searchPlaces(near, radius, chains, categories, groups, limit, callback);
+            Radar.searchPlaces(near, radius, chains, chainMetadata, categories, groups, limit, callback);
         } else {
-            Radar.searchPlaces(radius, chains, categories, groups, limit, callback);
+            Radar.searchPlaces(radius, chains, chainMetadata, categories, groups, limit, callback);
         }
     }
 
@@ -717,8 +900,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         HashMap nearMap = (HashMap)call.argument("near");
         Location near = locationForMap(nearMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
+        String country = call.argument("country");
+        ArrayList layersList = (ArrayList)call.argument("layers");
+        String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
 
-        Radar.autocomplete(query, near, limit, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -881,6 +1067,102 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         } else {
             Radar.getDistance(destination, modes, units, callback);
         }
+    }
+
+    public void sendEvent(MethodCall call, final Result result) throws JSONException  {
+        Radar.RadarSendEventCallback callback = new Radar.RadarSendEventCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable Location location, @Nullable RadarEvent[] events, @Nullable RadarUser user) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (location != null) {
+                                obj.put("location", Radar.jsonForLocation(location));
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            if (user != null) {
+                                obj.put("user", user.toJson());
+                            }
+      
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        String customType = call.argument("customType");
+        HashMap metadataMap= call.argument("metadata");
+        JSONObject metadataJson = jsonForMap(metadataMap);        
+        if (call.hasArgument("location") && call.argument("location") != null) {
+            HashMap locationMap = (HashMap)call.argument("location");
+            Location location = locationForMap(locationMap);
+            Radar.sendEvent(customType, location, metadataJson, callback);
+        } else {
+            Radar.sendEvent(customType, metadataJson, callback);
+        }
+    }
+
+    public void getMatrix(MethodCall call, final Result result) throws JSONException {
+        ArrayList<HashMap> originsArr = call.argument("origins"); 
+        Location[] origins = new Location[originsArr.size()];
+        for (int i = 0; i < originsArr.size(); i++) {
+            origins[i] = locationForMap(originsArr.get(i));
+        }
+        ArrayList<HashMap> destinationsArr = call.argument("destinations");
+        Location[] destinations = new Location[destinationsArr.size()];
+        for (int i = 0; i < destinationsArr.size(); i++) {
+            destinations[i] = locationForMap(destinationsArr.get(i));
+        }
+        String modeStr = call.argument("mode");
+        Radar.RadarRouteMode mode = Radar.RadarRouteMode.CAR;
+        if (modeStr != null) {
+            modeStr = modeStr.toLowerCase();
+            if ( modeStr.equals("foot")) {
+                mode = Radar.RadarRouteMode.FOOT;
+            } else if (modeStr.equals("bike")) {
+                mode = Radar.RadarRouteMode.BIKE;
+            } else if (modeStr.equals("car")) {
+                mode = Radar.RadarRouteMode.CAR;
+            } else if (modeStr.equals("truck")) {
+                mode = Radar.RadarRouteMode.TRUCK;
+            } else if (modeStr.equals("motorbike")) {
+                mode = Radar.RadarRouteMode.MOTORBIKE;
+            }
+        }
+        String unitsStr = call.argument("units");
+        Radar.RadarRouteUnits units = unitsStr != null && unitsStr.toLowerCase().equals("metric") ? Radar.RadarRouteUnits.METRIC : Radar.RadarRouteUnits.IMPERIAL;
+
+        Radar.getMatrix(origins, destinations, mode, units, new Radar.RadarMatrixCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable RadarRouteMatrix matrix) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (matrix != null) {
+                                obj.put("matrix", matrix.toJson());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
     }
 
     public void startForegroundService(MethodCall call, Result result) {

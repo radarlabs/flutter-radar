@@ -89,6 +89,14 @@ class Radar {
     return await _channel.invokeMethod('getMetadata');
   }
 
+  static Future setAnonymousTrackingEnabled(bool enabled) async {
+    try {
+      await _channel.invokeMethod('setAnonymousTrackingEnabled', {'enabled': enabled});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future setAdIdEnabled(bool enabled) async {
     try {
       await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});
@@ -106,13 +114,9 @@ class Radar {
     }
   }
 
-  static Future<Map?> trackOnce([Map<String, dynamic>? location]) async {
+  static Future<Map?> trackOnce({Map<String, dynamic>? location, String? desiredAccuracy, bool? beacons}) async {
     try {
-      if (location == null) {
-        return await _channel.invokeMethod('trackOnce');
-      } else {
-        return await _channel.invokeMethod('trackOnce', {'location': location});
-      }
+      return await _channel.invokeMethod('trackOnce', {'location': location, 'desiredAccuracy': desiredAccuracy, 'beacons': beacons});      
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -149,6 +153,15 @@ class Radar {
     return await _channel.invokeMethod('isTracking');
   }
 
+  static Future<Map?> getTrackingOptions() async {
+    try {
+      return await _channel.invokeMethod('getTrackingOptions');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<Map?> mockTracking(
       {Map<String, double>? origin,
       Map<String, double>? destination,
@@ -169,11 +182,21 @@ class Radar {
     }
   }
 
-  static Future startTrip(Map<String, dynamic> tripOptions) async {
+  static Future<Map?> startTrip({Map<String, dynamic>? tripOptions, Map<String, dynamic>? trackingOptions}) async {
     try {
-      await _channel.invokeMethod('startTrip', tripOptions);
+      return await _channel.invokeMethod('startTrip', {'tripOptions': tripOptions, 'trackingOptions': trackingOptions});
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> updateTrip({required Map<String, dynamic> options, required String status}) async {
+    try {
+      return await _channel.invokeMethod('updateTrip', {'tripOptions': options, 'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
     }
   }
 
@@ -181,19 +204,21 @@ class Radar {
     return await _channel.invokeMethod('getTripOptions');
   }
 
-  static Future completeTrip() async {
+  static Future<Map?> completeTrip() async {
     try {
-      await _channel.invokeMethod('completeTrip');
+      return await _channel.invokeMethod('completeTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
-  static Future cancelTrip() async {
+  static Future<Map?> cancelTrip() async {
     try {
-      await _channel.invokeMethod('cancelTrip');
+      return await _channel.invokeMethod('cancelTrip');
     } on PlatformException catch (e) {
       print(e);
+      return {'error': e.code};
     }
   }
 
@@ -231,6 +256,7 @@ class Radar {
       int? radius,
       int? limit,
       List? chains,
+      Map<String, String>? chainMetadata,
       List? categories,
       List? groups}) async {
     try {
@@ -239,6 +265,7 @@ class Radar {
         'radius': radius,
         'limit': limit,
         'chains': chains,
+        'chainMetadata': chainMetadata,
         'categories': categories,
         'groups': groups
       });
@@ -249,10 +276,10 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit}) async {
+      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers}) async {
     try {
       return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit});
+          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -307,6 +334,30 @@ class Radar {
     }
   }
 
+  static Future<Map?> sendEvent({required String customType, Map<String, dynamic>? location, required Map<String, dynamic> metadata}) async {
+    try {
+      return await _channel
+          .invokeMethod('sendEvent', {'customType': customType, 'location': location, 'metadata': metadata});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> getMatrix(
+    {required List origins,
+    required List destinations,
+    required String mode,
+    required String units}) async {
+    try {
+      return await _channel
+          .invokeMethod('getMatrix', {'origins': origins, 'destinations': destinations, 'mode': mode, 'units': units});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future startForegroundService(
       Map<String, dynamic> foregroundServiceOptions) async {
     try {
@@ -324,6 +375,8 @@ class Radar {
       print(e);
     }
   }
+
+
 
   static onEvents(Function(Map<dynamic, dynamic>? result) callback) {
     _eventsCallback = callback;
