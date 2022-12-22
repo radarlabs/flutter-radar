@@ -67,7 +67,8 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                var resp = await Radar.startTrip({
+                var resp = await Radar.startTrip(
+                    tripOptions: {
                     "externalId": '299',
                     "destinationGeofenceTag": 'store',
                     "destinationGeofenceExternalId": '123',
