@@ -358,22 +358,20 @@
 }
 
 - (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    //TODO: need to update this function 3.5.9
-    /*
     NSDictionary *argsDict = call.arguments;
 
     NSString *preset = argsDict[@"preset"];
     if (!preset) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.responsive];
+        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
     } else if ([preset isEqualToString:@"continuous"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.continuous];
+        [Radar startTrackingWithOptions:RadarTrackingOptions.presetContinuous];
     } else if ([preset isEqualToString:@"responsive"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.responsive];
+        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
     } else if ([preset isEqualToString:@"efficient"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.efficient];
+        [Radar startTrackingWithOptions:RadarTrackingOptions.presetEfficient];
     } else {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.responsive];
-    }*/
+        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
+    }
     result(nil);
 }
 
