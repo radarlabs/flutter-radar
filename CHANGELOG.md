@@ -1,3 +1,7 @@
+# 3.1.3
+
+- Exposes all remaining SDK functions in Android and iOS SDK 3.5.4
+
 # 3.1.2
 
 - Fixes a misspelled constant.
