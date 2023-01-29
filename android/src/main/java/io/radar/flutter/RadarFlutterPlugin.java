@@ -56,6 +56,7 @@ import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarRouteMatrix;
+import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
@@ -80,7 +81,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private static void initializeBackgroundEngine(Context context) {
         FlutterMain.startInitialization(context.getApplicationContext());
         FlutterMain.ensureInitializationComplete(context.getApplicationContext(), null);
-
         if (sBackgroundFlutterEngine == null) {
             sBackgroundFlutterEngine = new FlutterEngine(context);
             initializeEventChannels(sBackgroundFlutterEngine.getDartExecutor());
@@ -156,6 +156,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        Radar.setReceiver(new RadarFlutterReceiver());
         mContext = binding.getApplicationContext();
         MethodChannel channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
         channel.setMethodCallHandler(this);
@@ -329,6 +330,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "stopForegroundService":
                     stopForegroundService(call, result);
                     break;
+                case "setForegroundServiceOptions":
+                    setForegroundServiceOptions(call, result);
+                    break;
                 default:
                     result.notImplemented();
                     break;
@@ -341,6 +345,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
         Radar.initialize(mContext, publishableKey);
+        result.success(true);
+    }
+
+    private void setForegroundServiceOptions(MethodCall call, Result result) {
+        HashMap foregroundServiceOptionsMap = (HashMap)call.arguments;
+        JSONObject foregroundServiceOptionsJson = new JSONObject(foregroundServiceOptionsMap);
+        RadarTrackingOptionsForegroundService options = RadarTrackingOptionsForegroundService.fromJson(foregroundServiceOptionsJson);
+        Radar.setForegroundServiceOptions(options);
         result.success(true);
     }
 

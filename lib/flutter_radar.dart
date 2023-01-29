@@ -376,6 +376,16 @@ class Radar {
     }
   }
 
+    static Future setForegroundServiceOptions(
+      Map<String, dynamic> foregroundServiceOptions) async {
+    try {
+      await _channel.invokeMethod(
+          'setForegroundServiceOptions', foregroundServiceOptions);
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
 
 
   static onEvents(Function(Map<dynamic, dynamic>? result) callback) {

@@ -138,6 +138,8 @@
         // do nothing
     } else if ([@"stopForegroundService" isEqualToString:call.method]) {
         // do nothing
+    } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
+        // do nothing
     } else {
         result(FlutterMethodNotImplemented);
     }
