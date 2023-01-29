@@ -26,11 +26,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    Radar.initialize("prj_test_pk_...");
+    Radar.initialize("prj_test_pk_0000000000000000000000000000");
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
-    // Radar.setLogLevel('info');
+    Radar.setLogLevel('info');
     Radar.setAnonymousTrackingEnabled(false);
 
     Radar.onEvents((result) {
@@ -391,12 +391,7 @@ class _TrackOnceState extends State<TrackOnce> {
   }
 
   Future<void> _showTrackOnceDialog() async {
-    // var trackResponse = await Radar.trackOnce(location: {
-    //   "latitude": 39.2904,
-    //   "longitude": -76.6122,
-    //   "accuracy": 60.0
-    // });
-        var trackResponse = await Radar.trackOnce();
+    var trackResponse = await Radar.trackOnce();
     print("trackResponse: $trackResponse");
 
     Widget okButton = TextButton(
