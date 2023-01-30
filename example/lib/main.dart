@@ -70,7 +70,7 @@ class _MyAppState extends State<MyApp> {
                 Radar.setForegroundServiceOptions({
                   'title': 'Tracking',
                   'text': 'Trip tracking started',
-                  'icon': 2131165300,
+                  'icon': 2131165271,
                   'importance': 2,
                   'updatesOnly': false,
                   'activity': 'io.radar.example.MainActivity'
@@ -246,7 +246,7 @@ class _MyAppState extends State<MyApp> {
                 Radar.setForegroundServiceOptions({
                   'title': 'Tracking',
                   'text': 'Continuous tracking started',
-                  'icon': 2131165300,
+                  'icon': 2131165271,
                   'importance': 2,
                   'updatesOnly': false,
                   'activity': 'io.radar.example.MainActivity'
