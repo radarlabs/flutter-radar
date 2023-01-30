@@ -1,4 +1,4 @@
-# 3.1.3
+# 3.1.4
 
 - Exposes `setForegroundServiceOptions` and fixes android receiver implementation.
 
