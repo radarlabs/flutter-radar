@@ -1,6 +1,3 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="io.radar.flutter">
-  <application>
-    <service android:name="io.radar.flutter.RadarForegroundService" android:foregroundServiceType="location" android:stopWithTask="true" />
-  </application>
 </manifest>
