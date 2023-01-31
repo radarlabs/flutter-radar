@@ -134,10 +134,6 @@
         [self sendEvent:call withResult:result];        
     } else if ([@"getMatrix" isEqualToString:call.method]) {
         [self getMatrix:call withResult:result];        
-    } else if ([@"startForegroundService" isEqualToString:call.method]) {
-        // do nothing
-    } else if ([@"stopForegroundService" isEqualToString:call.method]) {
-        // do nothing
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
     } else {
