@@ -1,3 +1,19 @@
+# 3.1.5
+
+- `startForegroundService` and `stopForegroundService` are no longer available. This has been replaced by `Radar.setForegroundServiceOptions` instead.
+
+For example:
+```
+Radar.setForegroundServiceOptions({
+  'title': 'Tracking',
+  'text': 'Trip tracking started',
+  'icon': 2131165271,
+  'importance': 2,
+  'updatesOnly': false,
+  'activity': 'io.radar.example.MainActivity'
+});
+```
+
 # 3.1.4
 
 - Exposes `setForegroundServiceOptions` and fixes android receiver implementation.
