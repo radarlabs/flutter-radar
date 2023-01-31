@@ -7,8 +7,6 @@ import androidx.core.app.ActivityCompat;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
@@ -56,6 +54,7 @@ import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarRouteMatrix;
+import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
@@ -80,7 +79,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private static void initializeBackgroundEngine(Context context) {
         FlutterMain.startInitialization(context.getApplicationContext());
         FlutterMain.ensureInitializationComplete(context.getApplicationContext(), null);
-
         if (sBackgroundFlutterEngine == null) {
             sBackgroundFlutterEngine = new FlutterEngine(context);
             initializeEventChannels(sBackgroundFlutterEngine.getDartExecutor());
@@ -156,6 +154,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        Radar.setReceiver(new RadarFlutterReceiver());
         mContext = binding.getApplicationContext();
         MethodChannel channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
         channel.setMethodCallHandler(this);
@@ -323,11 +322,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getMatrix":
                     getMatrix(call, result);
                     break;
-                case "startForegroundService":
-                    startForegroundService(call, result);
-                    break;
-                case "stopForegroundService":
-                    stopForegroundService(call, result);
+                case "setForegroundServiceOptions":
+                    setForegroundServiceOptions(call, result);
                     break;
                 default:
                     result.notImplemented();
@@ -341,6 +337,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
         Radar.initialize(mContext, publishableKey);
+        result.success(true);
+    }
+
+    private void setForegroundServiceOptions(MethodCall call, Result result) {
+        HashMap foregroundServiceOptionsMap = (HashMap)call.arguments;
+        JSONObject foregroundServiceOptionsJson = new JSONObject(foregroundServiceOptionsMap);
+        RadarTrackingOptionsForegroundService options = RadarTrackingOptionsForegroundService.fromJson(foregroundServiceOptionsJson);
+        Radar.setForegroundServiceOptions(options);
         result.success(true);
     }
 
@@ -1163,46 +1167,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 });
             }
         });
-    }
-
-    public void startForegroundService(MethodCall call, Result result) {
-        if (mActivity == null) {
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= 26) {
-            Intent intent = new Intent(mActivity, RadarForegroundService.class);
-            String title = call.argument("title");
-            String text = call.argument("text");
-            String icon = call.argument("icon");
-            String importance = call.argument("importance");
-            String id = call.argument("id");
-            boolean clickable = call.hasArgument("clickable") ? (boolean)call.argument("clickable") : false;
-            
-            intent.setAction("start");
-            intent.putExtra("title", title)
-                .putExtra("text", text)
-                .putExtra("icon", icon)
-                .putExtra("importance", importance)
-                .putExtra("id", id)
-                .putExtra("clickable", clickable)
-                .putExtra("activity", mActivity.getClass().getCanonicalName());
-            mContext.startForegroundService(intent);
-            result.success(true);
-        }
-    }
-
-    public void stopForegroundService(MethodCall call, Result result) throws JSONException {
-        if (mActivity == null) {
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= 26) {
-            Intent intent = new Intent(mActivity, RadarForegroundService.class);
-            intent.setAction("stop");
-            mContext.startService(intent);
-            result.success(true);
-        }
     }
 
     private Location locationForMap(HashMap locationMap) {

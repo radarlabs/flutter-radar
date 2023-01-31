@@ -1,6 +1,10 @@
+# 3.1.4
+
+- Exposes `setForegroundServiceOptions` and fixes android receiver implementation.
+
 # 3.1.3
 
-- Exposes all remaining SDK functions in Android and iOS SDK 3.5.4
+- Exposes all remaining SDK functions in Android and iOS SDK 3.5.9.
 
 # 3.1.2
 

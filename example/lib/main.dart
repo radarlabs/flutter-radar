@@ -67,6 +67,14 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
+                Radar.setForegroundServiceOptions({
+                  'title': 'Tracking',
+                  'text': 'Trip tracking started',
+                  'icon': 2131165271,
+                  'importance': 2,
+                  'updatesOnly': false,
+                  'activity': 'io.radar.example.MainActivity'
+                });
                 var resp = await Radar.startTrip(
                     tripOptions: {
                     "externalId": '299',
@@ -95,7 +103,7 @@ class _MyAppState extends State<MyApp> {
                       "syncGeofences": false,
                       "syncGeofencesLimit": 0,
                       "beacons": false,
-                      "foregroundServiceEnabled": false
+                      "foregroundServiceEnabled": true
                     }
                 );
                 print("startTrip: $resp");
@@ -234,6 +242,15 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () {
+                
+                Radar.setForegroundServiceOptions({
+                  'title': 'Tracking',
+                  'text': 'Continuous tracking started',
+                  'icon': 2131165271,
+                  'importance': 2,
+                  'updatesOnly': false,
+                  'activity': 'io.radar.example.MainActivity'
+                });
                 Radar.startTrackingCustom({
                   'desiredStoppedUpdateInterval': 60,
                   'fastestStoppedUpdateInterval': 60,
@@ -245,7 +262,8 @@ class _MyAppState extends State<MyApp> {
                   'stopDistance': 70,
                   'sync': 'all',
                   'replay': 'none',
-                  'showBlueBar': true
+                  'showBlueBar': true,
+                  'foregroundServiceEnabled': true
                 });
               },
               child: Text('startTrackingCustom()'),
@@ -288,27 +306,6 @@ class _MyAppState extends State<MyApp> {
                 print(location);
               },
               child: Text('getLocation()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.startForegroundService({
-                  'title': 'Tracking',
-                  'text': 'Continuous tracking started',
-                  'icon': 'car_icon',
-                  'importance': '2',
-                  'id': '12555541',
-                  'clickable': true
-                });
-              },
-              child: Text('startForegroundService(), Android only'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.stopForegroundService();
-              },
-              child: Text('stopForegroundService(), Android only'),
             )
           ]),
         )
@@ -394,11 +391,7 @@ class _TrackOnceState extends State<TrackOnce> {
   }
 
   Future<void> _showTrackOnceDialog() async {
-    var trackResponse = await Radar.trackOnce(location: {
-      "latitude": 39.2904,
-      "longitude": -76.6122,
-      "accuracy": 60.0
-    });
+    var trackResponse = await Radar.trackOnce();
     print("trackResponse: $trackResponse");
 
     Widget okButton = TextButton(

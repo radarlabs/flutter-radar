@@ -358,19 +358,11 @@ class Radar {
     }
   }
 
-  static Future startForegroundService(
-      Map<String, dynamic> foregroundServiceOptions) async {
+  static Future setForegroundServiceOptions(
+    Map<String, dynamic> foregroundServiceOptions) async {
     try {
       await _channel.invokeMethod(
-          'startForegroundService', foregroundServiceOptions);
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future stopForegroundService() async {
-    try {
-      await _channel.invokeMethod('stopForegroundService');
+        'setForegroundServiceOptions', foregroundServiceOptions);
     } on PlatformException catch (e) {
       print(e);
     }
