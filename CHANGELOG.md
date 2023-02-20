@@ -1,9 +1,8 @@
 # 3.1.5
 
-- `startForegroundService` and `stopForegroundService` are no longer available. This has been replaced by `Radar.setForegroundServiceOptions` instead.
+- Exposes `Radar.setForegroundServiceOptions()`. `Radar.startForegroundService()` and `Radar.stopForegroundService()` are no longer available.
 
-For example:
-```
+```dart
 Radar.setForegroundServiceOptions({
   'title': 'Tracking',
   'text': 'Trip tracking started',
@@ -16,15 +15,15 @@ Radar.setForegroundServiceOptions({
 
 # 3.1.4
 
-- Exposes `setForegroundServiceOptions` and fixes android receiver implementation.
+- Exposes `Radar.setForegroundServiceOptions()`.
 
 # 3.1.3
 
-- Exposes all remaining SDK functions in Android and iOS SDK 3.5.9.
+- Upgrades `radar-sdk-android` to `3.5.9` and `radar-sdk-ios` to `3.5.9`. Exposes all remaining SDK functions.
 
 # 3.1.2
 
-- Fixes a misspelled constant.
+- Fixes a typo in a constant.
 
 # 3.1.1
 
