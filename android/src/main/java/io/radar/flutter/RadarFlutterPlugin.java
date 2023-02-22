@@ -111,74 +111,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 sBackgroundChannel = new MethodChannel(sBackgroundFlutterEngine.getDartExecutor().getBinaryMessenger(), "flutter_radar_background");
             }
         }
-        // sBackgroundChannel.setMethodCallHandler(this);
-    }
-
-    private static void initializeEventChannels(BinaryMessenger messenger) {
-        sEventsChannel = new EventChannel(messenger, "flutter_radar/events");
-        sEventsChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object listener, EventChannel.EventSink eventSink) {
-                sEventsSink = eventSink;
-            }
-
-            @Override
-            public void onCancel(Object listener) {
-                sEventsSink = null;
-            }
-        });
-
-        sLocationChannel = new EventChannel(messenger, "flutter_radar/location");
-        sLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object listener, EventChannel.EventSink eventSink) {
-                sLocationSink = eventSink;
-            }
-
-            @Override
-            public void onCancel(Object listener) {
-                sLocationSink = null;
-            }
-        });
-
-        sClientLocationChannel = new EventChannel(messenger, "flutter_radar/clientLocation");
-        sClientLocationChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object listener, EventChannel.EventSink eventSink) {
-                sClientLocationSink = eventSink;
-            }
-
-            @Override
-            public void onCancel(Object listener) {
-                sClientLocationSink = null;
-            }
-        });
-
-        sErrorChannel = new EventChannel(messenger, "flutter_radar/error");
-        sErrorChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object listener, EventChannel.EventSink eventSink) {
-                sErrorSink = eventSink;
-            }
-
-            @Override
-            public void onCancel(Object listener) {
-                sErrorSink = null;
-            }
-        });
-
-        sLogChannel = new EventChannel(messenger, "flutter_radar/log");
-        sLogChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object listener, EventChannel.EventSink eventSink) {
-                sLogSink = eventSink;
-            }
-
-            @Override
-            public void onCancel(Object listener) {
-                sLogSink = null;
-            }
-        });
     }
     
     @Override
@@ -187,7 +119,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         mContext = binding.getApplicationContext();
         MethodChannel channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
         channel.setMethodCallHandler(this);
-        initializeEventChannels(binding.getFlutterEngine().getDartExecutor());
     }
 
     @Override
@@ -224,8 +155,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         channel.setMethodCallHandler(plugin);
         plugin.mContext = registrar.context();
         plugin.mActivity = registrar.activity();
-        
-        initializeEventChannels(registrar.messenger());
     }
 
     private static void runOnMainThread(final Runnable runnable) {
@@ -1409,7 +1338,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     public void attachListeners(MethodCall call, Result result) {
         SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
         long callbackDispatcherHandle = ((Number)call.argument("callbackDispatcherHandle")).longValue();
-        Log.d(TAG, String.valueOf(callbackDispatcherHandle));
         sharedPrefs.edit().putLong(CALLBACK_DISPATCHER_HANDLE_KEY, callbackDispatcherHandle).commit();
         result.success(true);
     }
@@ -1422,14 +1350,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void on(MethodCall call, Result result) {
-        Log.d(TAG,"setting up callback store in shared prefs");
         SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
         String listener = call.argument("listener");
-        Log.d(TAG,listener);
-        // long userCallbackHandle = ((Number)call.argument("userCallbackHandle")).longValue();
-        // long userCallbackHandle = ((Number)call.argument("userCallbackHandle")).longValue();
-        // Log.d(TAG,String.valueOf(userCallbackHandle));
-        // sharedPrefs.edit().putLong(listener, userCallbackHandle).commit();
         long callbackHandle = ((Number)call.argument("callbackHandle")).longValue();
         sharedPrefs.edit().putLong(listener, callbackHandle).commit();
         result.success(true);

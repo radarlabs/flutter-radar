@@ -4,6 +4,8 @@ import 'package:flutter_radar/flutter_radar.dart';
 
 void main() => runApp(MyApp());
 
+
+
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -25,29 +27,42 @@ class _MyAppState extends State<MyApp> {
     initRadar();
   }
 
+  static void onLocation(Map res) async {
+    print('📍 onLocation: $res');
+  }
+
+  static void onClientLocation(Map res) async {
+    print('📍 onClientLocation: $res');
+  }
+  
+  static void onError(Map res) async {
+    print('📍 onError: $res');
+  }
+
+  static void onLog(Map res) async {
+    print('📍 onLog: $res');
+  }
+
+  static void onEvents(Map res) async {
+    print('📍 onEvents: $res');
+  }
+
   Future<void> initRadar() async {
     Radar.initialize("prj_test_pk_0000000000000000000000000000");
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
-    Radar.setLogLevel('info');
+    Radar.setLogLevel('debug');
     Radar.setAnonymousTrackingEnabled(false);
 
-    Radar.onEvents((result) {
-      print('onEvents: $result');
-    });
-    Radar.onLocation((result) {
-      print('onLocation: $result');
-    });
-    Radar.onClientLocation((result) {
-      print('onClientLocation: $result');
-    });
-    Radar.onError((result) {
-      print('onError: $result');
-    });
-    Radar.onLog((result) {
-      print('onLog: $result');
-    });
+    Radar.attachListeners();
+
+    Radar.onLocation(onLocation);
+    Radar.onClientLocation(onClientLocation);
+    Radar.onError(onError);
+    Radar.onEvents(onEvents);
+    Radar.onLog(onLog);
+
   }
 
   @override
@@ -64,6 +79,18 @@ class _MyAppState extends State<MyApp> {
           child: Column(children: [
             Permissions(),
             TrackOnce(),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var status = await Radar.requestPermissions(false);
+                print(status);
+                if (status == 'GRANTED_FOREGROUND') {
+                  status = await Radar.requestPermissions(true);
+                  print(status);
+                }
+              },
+              child: Text('requestPermissions()'),
+            ),
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
@@ -128,7 +155,7 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
               style: raisedButtonStyle,
-              onPressed: () async {
+              onPressed: () async {                
                 var resp = await Radar.getTrackingOptions();
                 print("getTrackingOptions: $resp");
               },
@@ -252,8 +279,8 @@ class _MyAppState extends State<MyApp> {
                   'activity': 'io.radar.example.MainActivity'
                 });
                 Radar.startTrackingCustom({
-                  'desiredStoppedUpdateInterval': 60,
-                  'fastestStoppedUpdateInterval': 60,
+                  'desiredStoppedUpdateInterval': 120,
+                  'fastestStoppedUpdateInterval': 120,
                   'desiredMovingUpdateInterval': 30,
                   'fastestMovingUpdateInterval': 30,
                   'desiredSyncInterval': 20,
@@ -286,18 +313,6 @@ class _MyAppState extends State<MyApp> {
                     interval: 3);
               },
               child: Text('mockTracking()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var status = await Radar.requestPermissions(false);
-                print(status);
-                if (status == 'GRANTED_FOREGROUND') {
-                  status = await Radar.requestPermissions(true);
-                  print(status);
-                }
-              },
-              child: Text('requestPermissions()'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
