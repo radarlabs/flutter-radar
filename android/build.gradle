@@ -4,29 +4,28 @@ version '1.0'
 buildscript {
     repositories {
         google()
-        mavenCentral()
+        jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
+        classpath 'com.android.tools.build:gradle:3.5.0'
     }
 }
 
 rootProject.allprojects {
     repositories {
         google()
-        mavenCentral()
+        jcenter()
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 29
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 31
     }
     lintOptions {
         disable 'InvalidPackage'
@@ -34,7 +33,7 @@ android {
 }
 
 dependencies {
-    implementation 'io.radar:sdk:3.5.9'
+    implementation 'io.radar:sdk:3.8.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
     implementation 'com.google.code.gson:gson:2.8.6'
 }
