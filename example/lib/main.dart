@@ -28,31 +28,31 @@ class _MyAppState extends State<MyApp> {
   }
 
   static void onLocation(Map res) async {
-    print('📍 onLocation: $res');
+    print('📍📍 onLocation: $res');
   }
 
   static void onClientLocation(Map res) async {
-    print('📍 onClientLocation: $res');
+    print('📍📍 onClientLocation: $res');
   }
   
   static void onError(Map res) async {
-    print('📍 onError: $res');
+    print('📍📍 onError: $res');
   }
 
   static void onLog(Map res) async {
-    print('📍 onLog: $res');
+    print('📍📍 onLog: $res');
   }
 
   static void onEvents(Map res) async {
-    print('📍 onEvents: $res');
+    print('📍📍 onEvents: $res');
   }
 
   Future<void> initRadar() async {
-    Radar.initialize("prj_test_pk_0000000000000000000000000000");
+    await Radar.initialize("prj_test_pk_54a55d603cb12eaf51dbacb90cec86d639760c93");
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
-    Radar.setLogLevel('debug');
+    Radar.setLogLevel('info');
     Radar.setAnonymousTrackingEnabled(false);
 
     Radar.attachListeners();
@@ -62,7 +62,28 @@ class _MyAppState extends State<MyApp> {
     Radar.onError(onError);
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
+    
+    await Radar.requestPermissions(true);
+    var permissionStatus = await Radar.getPermissionsStatus();
+    if (permissionStatus != "DENIED") {
+      var b = await Radar.startTrackingCustom({
+        "desiredStoppedUpdateInterval": 180,
+        "desiredMovingUpdateInterval": 1,
+        "desiredSyncInterval": 10,
+        "desiredAccuracy": 'high',
+        "stopDuration": 140,
+        "stopDistance": 70,
+        "sync": 'all',
+        "replay": 'none',
+        "showBlueBar": true,
+        "foregroundServiceEnabled": true,
+        "beacons": true,
+        "fastestMovingUpdateInterval": 10,
+      });
 
+      var c = await Radar.getTrackingOptions();
+      print("Tracking options $c");
+    }
   }
 
   @override
