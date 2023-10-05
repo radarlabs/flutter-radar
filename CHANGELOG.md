@@ -1,3 +1,8 @@
+# 3.1.6
+
+- Fixes event listeners
+- Updates an example project
+  
 # 3.1.5
 
 - Exposes `Radar.setForegroundServiceOptions()`. `Radar.startForegroundService()` and `Radar.stopForegroundService()` are no longer available.
