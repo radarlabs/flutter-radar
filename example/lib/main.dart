@@ -176,7 +176,7 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
               style: raisedButtonStyle,
-              onPressed: () async {                
+              onPressed: () async {
                 var resp = await Radar.getTrackingOptions();
                 print("getTrackingOptions: $resp");
               },
