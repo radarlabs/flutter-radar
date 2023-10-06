@@ -7,20 +7,18 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# token from https://dart.dev/tools/pub/automated-publishing
 jobs:
   publishing:
+    permissions:
+      id-token: write # Required for authentication using OIDC
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v2
-        
-      - name: '>> Dart package <<'
-        uses: k-paxian/dart-package-publisher@master
-        #uses: sakebook/actions-flutter-pub-publisher@v1.4.1
-        with:
-          #credential: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
-          #flutter_package: false
-          #skip_test: true
-          flutter: false
-          skipTests: true
-          credentialJson: ${{ secrets.FLUTTER_CREDENTIAL_JSON }}
+      - uses: actions/checkout@v3
+      - uses: dart-lang/setup-dart@v1
+      - name: Install dependencies
+        run: dart pub get
+      # Here you can insert custom steps you need
+      # - run: dart tool/generate-code.dart
+      - name: Publish
+        run: dart pub publish --force
