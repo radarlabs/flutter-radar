@@ -1,3 +1,8 @@
+# 3.1.7
+
+- Update ios event channel
+- Updates an example project
+
 # 3.1.6
 
 - Fixes event listeners
