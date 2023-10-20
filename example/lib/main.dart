@@ -48,7 +48,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initRadar() async {
-    Radar.initialize("prj_test_pk_0000000000000000000000000000000000000000");
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
