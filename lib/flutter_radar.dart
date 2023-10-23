@@ -21,16 +21,6 @@ void callbackDispatcher() {
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
-  static const EventChannel _eventsChannel =
-      const EventChannel('flutter_radar/events');
-  static const EventChannel _locationChannel =
-      const EventChannel('flutter_radar/location');
-  static const EventChannel _clientLocationChannel =
-      const EventChannel('flutter_radar/clientLocation');
-  static const EventChannel _errorChannel =
-      const EventChannel('flutter_radar/error');
-  static const EventChannel _logChannel =
-      const EventChannel('flutter_radar/log');
 
   static Function(Map res)? _eventsCallback;
   static Function(Map res)? _locationCallback;
@@ -50,15 +40,10 @@ class Radar {
 
   static attachListeners() async {
     try {
-      if (Platform.isAndroid) {
-        print("attaching listeners");
-        await _channel.invokeMethod('attachListeners', {
-          'callbackDispatcherHandle':
-              PluginUtilities.getCallbackHandle(callbackDispatcher)?.toRawHandle()
-        });
-      } else {
-        // ios ignore
-      }
+      await _channel.invokeMethod('attachListeners', {
+        'callbackDispatcherHandle':
+            PluginUtilities.getCallbackHandle(callbackDispatcher)?.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -66,11 +51,7 @@ class Radar {
 
   static Future detachListeners() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('detachListeners');
-      } else {
-        // ios ignore
-      }
+      await _channel.invokeMethod('detachListeners');      
     } on PlatformException catch (e) {
       print(e);
     }
@@ -415,20 +396,11 @@ class Radar {
 
   static onLocation(Function(Map res) callback) async {
     try {
-      if (Platform.isAndroid) {
-        final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
-        await _channel.invokeMethod('on', {
-          'listener': 'location',
-          'callbackHandle': handle.toRawHandle()
-        });
-      } else {
-        _locationCallback = callback;
-        _locationChannel.receiveBroadcastStream().listen((data) {
-          if (_locationCallback != null) {
-            _locationCallback!(data);
-          }
-        });
-      }
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'location',
+        'callbackHandle': handle.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -436,11 +408,7 @@ class Radar {
 
   static offLocation() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('off', {'listener': 'location'});
-      } else {        
-        _locationCallback = null;
-      }
+      await _channel.invokeMethod('off', {'listener': 'location'});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -448,21 +416,12 @@ class Radar {
 
   static onClientLocation(Function(Map res) callback) async {
     try {
-      if (Platform.isAndroid) {
-        final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
-        await _channel.invokeMethod('on', {
-          'listener': 'clientLocation',
-          'callbackHandle':
-              handle.toRawHandle()
-        });
-      } else {
-        _clientLocationCallback = callback;
-        _clientLocationChannel.receiveBroadcastStream().listen((data) {
-          if (_clientLocationCallback != null) {
-            _clientLocationCallback!(data);
-          }
-        });
-      }
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'clientLocation',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -470,11 +429,7 @@ class Radar {
 
   static offClientLocation() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('off', {'listener': 'clientLocation'});
-      } else {
-        _clientLocationCallback = null;
-      }
+      await _channel.invokeMethod('off', {'listener': 'clientLocation'});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -482,21 +437,12 @@ class Radar {
 
   static onError(Function(Map res) callback) async {
     try {
-      if (Platform.isAndroid) {
-        final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
-        await _channel.invokeMethod('on', {
-          'listener': 'error',
-          'callbackHandle':
-              handle.toRawHandle()
-        });
-      } else {
-         _errorCallback = callback;
-        _errorChannel.receiveBroadcastStream().listen((data) {
-          if (_errorCallback != null) {
-            _errorCallback!(data);
-          }
-        });
-      }
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'error',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -504,11 +450,7 @@ class Radar {
 
   static offError() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('off', {'listener': 'error'});
-      } else {
-        _errorCallback = null;
-      }
+      await _channel.invokeMethod('off', {'listener': 'error'});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -516,21 +458,12 @@ class Radar {
 
   static onLog(Function(Map res) callback) async {
     try {
-      if (Platform.isAndroid) {
-        final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
-        await _channel.invokeMethod('on', {
-          'listener': 'log',
-          'callbackHandle':
-              handle.toRawHandle()
-        });
-      } else {
-         _logCallback = callback;
-        _logChannel.receiveBroadcastStream().listen((data) {
-          if (_logCallback != null) {
-            _logCallback!(data);
-          }
-        });
-      }
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'log',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -538,11 +471,7 @@ class Radar {
 
   static offLog() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('off', {'listener': 'log'});
-      } else {
-        _logCallback = null;
-      }
+      await _channel.invokeMethod('off', {'listener': 'log'});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -550,21 +479,12 @@ class Radar {
 
   static onEvents(Function(Map res) callback) async {
     try {
-      if (Platform.isAndroid) {
-        final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
-        await _channel.invokeMethod('on', {
-          'listener': 'events',
-          'callbackHandle':
-              handle.toRawHandle()
-        });
-      } else {
-         _eventsCallback = callback;
-        _eventsChannel.receiveBroadcastStream().listen((data) {
-          if (_eventsCallback != null) {
-            _eventsCallback!(data);
-          }
-        });
-      }
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'events',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -572,11 +492,7 @@ class Radar {
 
   static offEvents() async {
     try {
-      if (Platform.isAndroid) {
-        await _channel.invokeMethod('off', {'listener': 'events'});
-      } else {
-        _eventsCallback = null;
-      }
+      await _channel.invokeMethod('off', {'listener': 'events'});
     } on PlatformException catch (e) {
       print(e);
     }

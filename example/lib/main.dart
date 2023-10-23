@@ -27,28 +27,27 @@ class _MyAppState extends State<MyApp> {
     initRadar();
   }
 
-  static void onLocation(Map res) async {
+  static void onLocation(Map res) {
     print('📍📍 onLocation: $res');
   }
 
-  static void onClientLocation(Map res) async {
+  static void onClientLocation(Map res) {
     print('📍📍 onClientLocation: $res');
   }
   
-  static void onError(Map res) async {
+  static void onError(Map res) {
     print('📍📍 onError: $res');
   }
 
-  static void onLog(Map res) async {
+  static void onLog(Map res) {
     print('📍📍 onLog: $res');
   }
 
-  static void onEvents(Map res) async {
+  static void onEvents(Map res) {
     print('📍📍 onEvents: $res');
   }
 
   Future<void> initRadar() async {
-    await Radar.initialize("prj_test_pk_0000000000000000000000000000");
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});

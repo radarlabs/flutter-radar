@@ -5,12 +5,9 @@
 @interface RadarFlutterPlugin() <RadarDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
-@property (strong, nonatomic) RadarStreamHandler *eventsHandler;
-@property (strong, nonatomic) RadarStreamHandler *locationHandler;
-@property (strong, nonatomic) RadarStreamHandler *clientLocationHandler;
-@property (strong, nonatomic) RadarStreamHandler *errorHandler;
-@property (strong, nonatomic) RadarStreamHandler *logHandler;
+@property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
 @property (strong, nonatomic) CLLocationManager *locationManager;
+@property (strong, nonatomic) FlutterEngine *sBackgroundFlutterEngine;
 @property (strong, nonatomic) FlutterResult permissionsRequestResult;
 
 @end
@@ -23,26 +20,6 @@
     FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar" binaryMessenger:[registrar messenger]];
     instance.channel = channel;
     [registrar addMethodCallDelegate:instance channel:channel];
-    
-    FlutterEventChannel *eventsChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/events" binaryMessenger:[registrar messenger]];
-    instance.eventsHandler = [RadarStreamHandler new];
-    [eventsChannel setStreamHandler:instance.eventsHandler];
-    
-    FlutterEventChannel *locationChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/location" binaryMessenger:[registrar messenger]];
-    instance.locationHandler = [RadarStreamHandler new];
-    [locationChannel setStreamHandler:instance.locationHandler];
-
-    FlutterEventChannel *clientLocationChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/clientLocation" binaryMessenger:[registrar messenger]];
-    instance.clientLocationHandler = [RadarStreamHandler new];
-    [clientLocationChannel setStreamHandler:instance.clientLocationHandler];
-
-    FlutterEventChannel *errorChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/error" binaryMessenger:[registrar messenger]];
-    instance.errorHandler = [RadarStreamHandler new];
-    [errorChannel setStreamHandler:instance.errorHandler];
-    
-    FlutterEventChannel *logChannel = [FlutterEventChannel eventChannelWithName:@"flutter_radar/log" binaryMessenger:[registrar messenger]];
-    instance.logHandler = [RadarStreamHandler new];
-    [logChannel setStreamHandler:instance.logHandler];
 }
 
 - (instancetype)init {
@@ -136,6 +113,14 @@
         [self getMatrix:call withResult:result];        
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
+    } else if ([@"attachListeners" isEqualToString:call.method]) {
+        [self attachListeners:call withResult:result];
+    } else if ([@"detachListeners" isEqualToString:call.method]) {
+        [self detachListeners:call withResult:result];
+    } else if ([@"on" isEqualToString:call.method]) {
+        [self on:call withResult:result];
+    } else if ([@"off" isEqualToString:call.method]) {
+        [self off:call withResult:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -910,39 +895,100 @@
     }];    
 }
 
+-(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
+    NSNumber* callbackDispatcherHandle = call.arguments[@"callbackDispatcherHandle"];
+
+    // Retrieve the callback information
+    FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackDispatcherHandle longValue]];
+
+    // Create the background Flutter engine
+    FlutterEngine *sBackgroundFlutterEngine;
+    sBackgroundFlutterEngine = [[FlutterEngine alloc] init];
+    self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
+
+    FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
+    self.backgroundChannel = backgroundChannel;
+
+    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath] ;    
+    result(nil);
+}
+
+-(void)detachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    self.backgroundChannel = nil;
+    result(nil);
+}
+
+-(void)on:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
+    NSDictionary *argsDict = call.arguments;
+    NSString* listener = argsDict[@"listener"];
+    NSNumber *callbackHandleNumber = argsDict[@"callbackHandle"];
+    long callbackHandle = [callbackHandleNumber longValue];
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:callbackHandleNumber forKey:listener];
+    result(nil);
+}
+
+-(void)off:(FlutterMethodCall *)call withResult:(FlutterResult)result { 
+    NSDictionary *argsDict = call.arguments;
+    NSString* listener = argsDict[@"listener"];
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:nil forKey:listener];   
+    result(nil);
+}
+
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
-    if (self.eventsHandler && self.eventsHandler.sink) {
-        self.eventsHandler.sink(dict);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSInteger callbackHandle = [userDefaults integerForKey:@"events"];
+    if (callbackHandle == 0) {
+        return;
     }
+    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    if (self.locationHandler && self.locationHandler.sink) {
-        self.locationHandler.sink(dict);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
+    if (callbackHandle == 0) {
+        return;
     }
+    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
-    if (self.clientLocationHandler && self.clientLocationHandler.sink) {
-        self.clientLocationHandler.sink(dict);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSInteger callbackHandle = [userDefaults integerForKey:@"clientLocation"];
+    if (callbackHandle == 0) {
+        return;
     }
+    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    if (self.errorHandler && self.errorHandler.sink) {
-        self.errorHandler.sink(dict);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSInteger callbackHandle = [userDefaults integerForKey:@"error"];
+    if (callbackHandle == 0) {
+        return;
     }
+    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didLogMessage:(NSString *)message {
-    NSDictionary *dict = @{@"message": message};
-    if (self.logHandler && self.logHandler.sink) {
-        self.logHandler.sink(dict);
+    NSDictionary *dict = @{@"message": message};    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSNumber* callbackHandle = [userDefaults objectForKey:@"log"];
+    if (callbackHandle == 0) {
+        return;
     }
+    NSArray* args = @[callbackHandle, dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 @end
