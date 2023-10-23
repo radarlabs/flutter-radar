@@ -363,6 +363,21 @@ class _MyAppState extends State<MyApp> {
               },
               child: Text('isUsingRemoteTrackingOptions'),
             ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.validateAddress({
+                  "city": "NEW YORK",
+                  "stateCode": "NY",
+                  "postalCode": "10003",
+                  "countryCode": "US",
+                  "street": "BROADWAY",
+                  "number": "841",
+                });
+                print("validateAddress: $resp");
+              },
+              child: Text('validateAddress'),
+            ),
           ]),
         )
       ),

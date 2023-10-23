@@ -292,6 +292,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "trackVerifiedToken":
                     trackVerifiedToken(call, result);
                     break;
+                case "validateAddress":
+                    validateAddress(call, result);
+                    break;
                 case "attachListeners":
                     attachListeners(call, result);
                     break;
@@ -1201,6 +1204,39 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void isUsingRemoteTrackingOptions(Result result) {
         Boolean isRemoteTracking = Radar.isUsingRemoteTrackingOptions();
         result.success(isRemoteTracking);
+    }
+
+    public void validateAddress(MethodCall call, final Result result) throws JSONException {
+        Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final Radar.RadarAddressVerificationStatus verificationStatus) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (address != null) {
+                                //obj.put("address", address.toJson());
+                            }
+                            if (verificationStatus != null) {
+                                obj.put("verificationStatus", verificationStatus.toString());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        HashMap addressMap= call.argument("address");
+        JSONObject addressJSON = jsonForMap(addressMap);
+        RadarAddress address = RadarAddress.fromJson(addressJSON);
+        Radar.validateAddress(address, callback);
     }
 
     private Location locationForMap(HashMap locationMap) {

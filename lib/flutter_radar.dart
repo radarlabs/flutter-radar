@@ -415,6 +415,16 @@ class Radar {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
 
+  static Future<Map?> validateAddress(Map address) async {
+    try {
+      return await _channel
+          .invokeMethod('validateAddress', {'address': address});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static onLocation(Function(Map res) callback) async {
     try {
       final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
