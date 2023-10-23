@@ -283,6 +283,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "setForegroundServiceOptions":
                     setForegroundServiceOptions(call, result);
                     break;
+                case "trackVerified":
+                    trackVerified(call, result);
+                    break;
                 case "attachListeners":
                     attachListeners(call, result);
                     break;
@@ -877,8 +880,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String country = call.argument("country");
         ArrayList layersList = (ArrayList)call.argument("layers");
         String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
+        Boolean expandUnits = call.argument("expandUnits");
 
-        Radar.autocomplete(query, near, layers, limit, country, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, expandUnits, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -1130,6 +1134,37 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 });
             }
         });
+    }
+
+    public void trackVerified(MethodCall call, final Result result) {
+        Radar.RadarTrackCallback callback = new Radar.RadarTrackCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final Location location, final RadarEvent[] events, final RadarUser user) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (location != null) {
+                                obj.put("location", Radar.jsonForLocation(location));
+                            }
+                            obj.put("events", RadarEvent.toJson(events));
+                            if ( user != null) {
+                                obj.put("user", user.toJson());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        Radar.trackVerified(callback);
     }
 
     private Location locationForMap(HashMap locationMap) {

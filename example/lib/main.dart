@@ -238,7 +238,8 @@ class _MyAppState extends State<MyApp> {
                   },
                   limit: 10,
                   layers: ['address', 'street'],
-                  country: 'US'
+                  country: 'US',
+                  expandUnits: false
                 );
                 print("autocomplete: $resp");
               },
@@ -337,7 +338,15 @@ class _MyAppState extends State<MyApp> {
                 print(location);
               },
               child: Text('getLocation()'),
-            )
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.trackVerified();
+                print("getMatrix: $resp");
+              },
+              child: Text('trackVerified'),
+            ),
           ]),
         )
       ),

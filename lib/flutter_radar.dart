@@ -296,10 +296,10 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers}) async {
+      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers, bool? expandUnits}) async {
     try {
       return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers});
+          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers, 'expandUnits': expandUnits});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -389,6 +389,17 @@ class Radar {
     } on PlatformException catch (e) {
       print(e);
     }
+  }
+
+  static Future<Map?> trackVerified() async {
+    try {
+      return await _channel
+          .invokeMethod('trackVerified');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+    
   }
 
   static onLocation(Function(Map res) callback) async {
