@@ -274,8 +274,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getDistance":
                     getDistance(call, result);
                     break;
-                case "sendEvent":
-                    sendEvent(call, result);
+                case "logConversion":
+                    logConversion(call, result);
                     break;
                 case "getMatrix":
                     getMatrix(call, result);
@@ -1043,24 +1043,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    public void sendEvent(MethodCall call, final Result result) throws JSONException  {
-        Radar.RadarSendEventCallback callback = new Radar.RadarSendEventCallback() {
+    public void logConversion(MethodCall call, final Result result) throws JSONException  {
+        Radar.RadarLogConversionCallback callback = new Radar.RadarLogConversionCallback() {
             @Override
-            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable Location location, @Nullable RadarEvent[] events, @Nullable RadarUser user) {
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable RadarEvent event) {
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("status", status.toString());
-                            if (location != null) {
-                                obj.put("location", Radar.jsonForLocation(location));
-                            }
-                            if (events != null) {
-                                obj.put("events", RadarEvent.toJson(events));
-                            }
-                            if (user != null) {
-                                obj.put("user", user.toJson());
+                            if (event != null) {
+                                obj.put("event", event.toJson());
                             }
       
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
@@ -1073,15 +1067,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        String customType = call.argument("customType");
+        String name = call.argument("name");
         HashMap metadataMap= call.argument("metadata");
         JSONObject metadataJson = jsonForMap(metadataMap);        
-        if (call.hasArgument("location") && call.argument("location") != null) {
-            HashMap locationMap = (HashMap)call.argument("location");
-            Location location = locationForMap(locationMap);
-            Radar.sendEvent(customType, location, metadataJson, callback);
+        if (call.hasArgument("revenue") && call.argument("revenue") != null) {
+            double revenue = (Double)call.argument("revenue");
+            Radar.logConversion(name, revenue, metadataJson, callback);
         } else {
-            Radar.sendEvent(customType, metadataJson, callback);
+            Radar.logConversion(name, metadataJson, callback);
         }
     }
 

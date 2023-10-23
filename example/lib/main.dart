@@ -200,17 +200,13 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                var resp = await Radar.sendEvent(
-                  customType: "in_app_purchase",
-                  location: {
-                    "latitude": 35.0,
-                    "longitude": -75.0
-                  },
-                  metadata: {"price": "150USD"}
-                );
-                print("sendEvent: $resp");
+                var resp = await Radar.logConversion(
+                    name: "in_app_purchase",
+                    revenue: 0.2,
+                    metadata: {"price": "150USD"});
+                print("logConversion: $resp");
               },
-              child: Text('sendEvent'),
+              child: Text('logConversion'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
