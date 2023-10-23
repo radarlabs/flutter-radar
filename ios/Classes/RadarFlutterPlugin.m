@@ -63,8 +63,6 @@
         [self getMetadata:call withResult:result];
     } else if ([@"setAnonymousTrackingEnabled" isEqualToString:call.method]) {
         [self setAnonymousTrackingEnabled:call withResult:result];
-    } else if ([@"setAdIdEnabled" isEqualToString:call.method]) {
-        [self setAdIdEnabled:call withResult:result];
     } else if ([@"getLocation" isEqualToString:call.method]) {
         [self getLocation:call withResult:result];
     } else if ([@"trackOnce" isEqualToString:call.method]) {
@@ -107,8 +105,8 @@
         [self ipGeocode:call withResult:result];
     } else if ([@"getDistance" isEqualToString:call.method]) {
         [self getDistance:call withResult:result];
-    } else if ([@"sendEvent" isEqualToString:call.method]) {
-        [self sendEvent:call withResult:result];        
+    } else if ([@"logConversion" isEqualToString:call.method]) {
+        [self logConversion:call withResult:result];        
     } else if ([@"getMatrix" isEqualToString:call.method]) {
         [self getMatrix:call withResult:result];        
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
@@ -247,14 +245,6 @@
     result(nil);
 }
 
-- (void)setAdIdEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;
-
-    NSNumber* enabledNumber = argsDict[@"enabled"];
-    BOOL enabled = [enabledNumber boolValue];
-    [Radar setAdIdEnabled:enabled];
-    result(nil);
-}
 
 - (void)getLocation:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarLocationCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, BOOL stopped) {
@@ -800,19 +790,13 @@
   }
 }
 
-- (void)sendEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
+- (void)logConversion:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarLogConversionCompletionHandler completionHandler = ^(RadarStatus status, RadarEvent *event) {
         if (status == RadarStatusSuccess) {
             NSMutableDictionary *dict = [NSMutableDictionary new];
             [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (location) {
-                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            if (user) {
-                [dict setObject:[user dictionaryValue] forKey:@"user"];
+            if (event) {
+                [dict setObject:[event dictionaryValue] forKey:@"event"];
             }
             result(dict);
         }
@@ -821,19 +805,12 @@
     NSDictionary *argsDict = call.arguments;
 
     NSDictionary *metadata = argsDict[@"metadata"];
-    NSString *customType = argsDict[@"customType"];
-    NSDictionary *locationDict = argsDict[@"location"];
-    if (locationDict != nil && [locationDict isKindOfClass:[NSDictionary class]]) {
-        NSNumber *latitudeNumber = locationDict[@"latitude"];
-        NSNumber *longitudeNumber = locationDict[@"longitude"];
-        NSNumber *accuracyNumber = locationDict[@"accuracy"];
-        double latitude = [latitudeNumber doubleValue];
-        double longitude = [longitudeNumber doubleValue];
-        double accuracy = accuracyNumber ? [accuracyNumber doubleValue] : -1;
-        CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
-        [Radar sendEvent:customType withLocation:location metadata:metadata completionHandler:completionHandler];
+    NSString *name = argsDict[@"name"];
+    NSNumber *revenueNumber = argsDict[@"revenue"];
+    if (revenueNumber != nil && [revenueNumber isKindOfClass:[NSNumber class]]) {
+        [Radar logConversionWithName:name revenue:revenueNumber metadata:metadata completionHandler:completionHandler];
     } else {
-        [Radar sendEvent:customType withMetadata:metadata completionHandler:completionHandler];
+        [Radar logConversionWithName:name metadata:metadata completionHandler:completionHandler];
     }
 }
 

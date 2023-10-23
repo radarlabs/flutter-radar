@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'RadarSDK', '3.5.9'
+  s.dependency 'RadarSDK', '3.8.9'
   s.platform = :ios, '10.0'
   s.static_framework = true
 
