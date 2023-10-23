@@ -355,6 +355,14 @@ class _MyAppState extends State<MyApp> {
               },
               child: Text('trackVerifiedToken'),
             ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                bool? resp = await Radar.isUsingRemoteTrackingOptions();
+                print("isUsingRemoteTrackingOptions: $resp");
+              },
+              child: Text('isUsingRemoteTrackingOptions'),
+            ),
           ]),
         )
       ),

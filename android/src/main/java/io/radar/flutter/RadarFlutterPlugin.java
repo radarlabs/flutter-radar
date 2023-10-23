@@ -229,6 +229,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "isTracking":
                     isTracking(result);
                     break;
+                case "isUsingRemoteTrackingOptions":
+                    isUsingRemoteTrackingOptions(result);
+                    break;
                 case "getTrackingOptions":
                     getTrackingOptions(result);
                     break;
@@ -1193,6 +1196,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         };
 
         Radar.trackVerifiedToken(callback);
+    }
+
+    private void isUsingRemoteTrackingOptions(Result result) {
+        Boolean isRemoteTracking = Radar.isUsingRemoteTrackingOptions();
+        result.success(isRemoteTracking);
     }
 
     private Location locationForMap(HashMap locationMap) {

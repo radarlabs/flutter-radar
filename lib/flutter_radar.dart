@@ -399,7 +399,6 @@ class Radar {
       print(e);
       return {'error': e.code};
     }
-    
   }
 
   static Future<Map?> trackVerifiedToken() async {
@@ -410,7 +409,10 @@ class Radar {
       print(e);
       return {'error': e.code};
     }
-    
+  }
+
+  static Future<bool?> isUsingRemoteTrackingOptions() async {
+    return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
 
   static onLocation(Function(Map res) callback) async {
