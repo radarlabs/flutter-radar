@@ -286,6 +286,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "trackVerified":
                     trackVerified(call, result);
                     break;
+                case "trackVerifiedToken":
+                    trackVerifiedToken(call, result);
+                    break;
                 case "attachListeners":
                     attachListeners(call, result);
                     break;
@@ -1165,6 +1168,31 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         };
 
         Radar.trackVerified(callback);
+    }
+
+    public void trackVerifiedToken(MethodCall call, final Result result) {
+        Radar.RadarTrackTokenCallback callback = new Radar.RadarTrackTokenCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final String token) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            obj.put("token", token);
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        Radar.trackVerifiedToken(callback);
     }
 
     private Location locationForMap(HashMap locationMap) {

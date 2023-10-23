@@ -402,6 +402,17 @@ class Radar {
     
   }
 
+  static Future<Map?> trackVerifiedToken() async {
+    try {
+      return await _channel
+          .invokeMethod('trackVerifiedToken');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+    
+  }
+
   static onLocation(Function(Map res) callback) async {
     try {
       final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;

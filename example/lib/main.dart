@@ -343,9 +343,17 @@ class _MyAppState extends State<MyApp> {
               style: raisedButtonStyle,
               onPressed: () async {
                 Map? resp = await Radar.trackVerified();
-                print("getMatrix: $resp");
+                print("trackVerified: $resp");
               },
               child: Text('trackVerified'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.trackVerifiedToken();
+                print("trackVerifiedToken: $resp");
+              },
+              child: Text('trackVerifiedToken'),
             ),
           ]),
         )
