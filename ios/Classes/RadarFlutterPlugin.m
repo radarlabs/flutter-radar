@@ -670,15 +670,24 @@
     }
     NSArray *layers = [argsDict[@"layers"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"layers"];
     NSString *country = [argsDict[@"country"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"country"];
-
-    [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country completionHandler:^(RadarStatus status, NSArray<RadarAddress *> * _Nullable addresses) {
+    
+    RadarGeocodeCompletionHandler completionHandler = ^(RadarStatus status, NSArray<RadarAddress *> * _Nullable addresses) {
         NSMutableDictionary *dict = [NSMutableDictionary new];
         [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
         if (addresses) {
             [dict setObject:[RadarAddress arrayForAddresses:addresses] forKey:@"addresses"];
         }
         result(dict);
-    }];
+    };
+
+    
+    NSNumber *expandUnitsNumber = argsDict[@"expandUnits"];
+    if (expandUnitsNumber != nil && [expandUnitsNumber isKindOfClass:[NSNumber class]]) {
+        BOOL expandUnits = [expandUnitsNumber boolValue];
+        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country expandUnits:expandUnits completionHandler:completionHandler];
+    } else {
+        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country completionHandler:completionHandler];
+    }
 }
 
 - (void)geocode:(FlutterMethodCall *)call withResult:(FlutterResult)result {
