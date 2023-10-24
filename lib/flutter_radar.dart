@@ -117,14 +117,6 @@ class Radar {
     }
   }
 
-  static Future setAdIdEnabled(bool enabled) async {
-    try {
-      await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
   static Future<Map?> getLocation([String? accuracy]) async {
     try {
       return await _channel.invokeMethod('getLocation', {'accuracy': accuracy});

@@ -198,9 +198,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "setAnonymousTrackingEnabled":
                     setAnonymousTrackingEnabled(call, result);
                     break;
-                case "setAdIdEnabled":
-                    // do nothing
-                    break;
                 case "getLocation":
                     getLocation(call, result);
                     break;
