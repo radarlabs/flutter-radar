@@ -113,6 +113,8 @@
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
         [self trackVerified:call withResult:result];    
+    } else if ([@"trackVerifiedToken" isEqualToString:call.method]) {
+        [self trackVerifiedToken:call withResult:result];    
     } else if ([@"attachListeners" isEqualToString:call.method]) {
         [self attachListeners:call withResult:result];
     } else if ([@"detachListeners" isEqualToString:call.method]) {
@@ -902,6 +904,19 @@
     };
 
     [Radar trackVerifiedWithCompletionHandler:completionHandler];
+}
+
+- (void)trackVerifiedToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTrackTokenCompletionHandler completionHandler = ^(RadarStatus status, NSString* token) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            [dict setObject:token forKey:@"token"];
+            result(dict);
+        }
+    };
+
+    [Radar trackVerifiedTokenWithCompletionHandler:completionHandler];
 }
 
 -(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
