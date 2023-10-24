@@ -115,6 +115,8 @@
         [self trackVerified:call withResult:result];    
     } else if ([@"trackVerifiedToken" isEqualToString:call.method]) {
         [self trackVerifiedToken:call withResult:result];    
+    } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
+        [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"attachListeners" isEqualToString:call.method]) {
         [self attachListeners:call withResult:result];
     } else if ([@"detachListeners" isEqualToString:call.method]) {
@@ -367,6 +369,11 @@
 - (void)isTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isTracking = [Radar isTracking];
     result(@(isTracking));
+}
+
+- (void)isUsingRemoteTrackingOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL isRemoteTracking = [Radar isUsingRemoteTrackingOptions];
+    result(@(isRemoteTracking));
 }
 
 - (void)getTrackingOptions:(FlutterMethodCall *)call withResult:(FlutterResult)result {
