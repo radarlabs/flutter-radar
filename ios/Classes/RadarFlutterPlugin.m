@@ -111,6 +111,8 @@
         [self getMatrix:call withResult:result];        
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
+    } else if ([@"trackVerified" isEqualToString:call.method]) {
+        [self trackVerified:call withResult:result];    
     } else if ([@"attachListeners" isEqualToString:call.method]) {
         [self attachListeners:call withResult:result];
     } else if ([@"detachListeners" isEqualToString:call.method]) {
@@ -879,6 +881,27 @@
         }
         result(dict);
     }];    
+}
+
+- (void)trackVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            if (location) {
+                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
+            }
+            if (events) {
+                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+            }
+            if (user) {
+                [dict setObject:[user dictionaryValue] forKey:@"user"];
+            }
+            result(dict);
+        }
+    };
+
+    [Radar trackVerifiedWithCompletionHandler:completionHandler];
 }
 
 -(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
