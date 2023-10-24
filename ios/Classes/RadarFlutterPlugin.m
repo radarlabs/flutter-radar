@@ -117,6 +117,8 @@
         [self trackVerifiedToken:call withResult:result];    
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
+    } else if ([@"validateAddress" isEqualToString:call.method]) {
+        [self validateAddress:call withResult:result];    
     } else if ([@"attachListeners" isEqualToString:call.method]) {
         [self attachListeners:call withResult:result];
     } else if ([@"detachListeners" isEqualToString:call.method]) {
@@ -924,6 +926,24 @@
     };
 
     [Radar trackVerifiedTokenWithCompletionHandler:completionHandler];
+}
+
+- (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+  RadarValidateAddressCompletionHandler completionHandler = ^(RadarStatus status, RadarAddress * _Nullable address, RadarAddressVerificationStatus verificationStatus) {
+      NSMutableDictionary *dict = [NSMutableDictionary new];
+      [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+      if (address) {
+        [dict setObject:[address dictionaryValue] forKey:@"address"];
+      }
+      [dict setObject:[Radar stringForVerificationStatus:verificationStatus] forKey:@"verificationStatus"];
+      result(dict);
+  };
+
+  NSDictionary *argsDict = call.arguments;
+
+  NSDictionary *addressDict = argsDict[@"address"];
+  RadarAddress *address = [RadarAddress addressFromObject:addressDict];
+  [Radar validateAddress:address completionHandler:completionHandler];
 }
 
 -(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
