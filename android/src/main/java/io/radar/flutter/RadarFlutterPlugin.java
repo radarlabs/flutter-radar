@@ -67,16 +67,6 @@ import io.flutter.view.FlutterCallbackInformation;
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
     private static FlutterEngine sBackgroundFlutterEngine;
-    private static EventChannel sEventsChannel;
-    private static EventChannel.EventSink sEventsSink;
-    private static EventChannel sLocationChannel;
-    private static EventChannel.EventSink sLocationSink;
-    private static EventChannel sClientLocationChannel;
-    private static EventChannel.EventSink sClientLocationSink;
-    private static EventChannel sErrorChannel;
-    private static EventChannel.EventSink sErrorSink;
-    private static EventChannel sLogChannel;
-    private static EventChannel.EventSink sLogSink;
 
     private Activity mActivity;
     private Context mContext;
