@@ -1,4 +1,4 @@
-# 3.1.8
+# 3.2.0
 
 - Bump iOS version from 3.5.9 to 3.8.9
 - Bump android version from 3.5.9 to 3.8.12
