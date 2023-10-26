@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
 
 void callbackDispatcher() {
   const MethodChannel _backgroundChannel =
