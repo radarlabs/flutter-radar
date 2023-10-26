@@ -16,7 +16,7 @@ var resp = await Radar.logConversion(
 ```
 
 ```dart
-// 3.1.x - logging conversions
+// 3.1.x - sending events
 var resp = await Radar.sendEvent(
     customType: "in_app_purchase",
     location: {
