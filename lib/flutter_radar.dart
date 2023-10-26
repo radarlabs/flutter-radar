@@ -22,12 +22,6 @@ void callbackDispatcher() {
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
-  static Function(Map res)? _eventsCallback;
-  static Function(Map res)? _locationCallback;
-  static Function(Map res)? _clientLocationCallback;
-  static Function(Map res)? _errorCallback;
-  static Function(Map res)? _logCallback;
-
   static Future initialize(String publishableKey) async {
     try {
       await _channel.invokeMethod('initialize', {
@@ -118,14 +112,6 @@ class Radar {
   static Future setAnonymousTrackingEnabled(bool enabled) async {
     try {
       await _channel.invokeMethod('setAnonymousTrackingEnabled', {'enabled': enabled});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future setAdIdEnabled(bool enabled) async {
-    try {
-      await _channel.invokeMethod('setAdIdEnabled', {'enabled': enabled});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -302,10 +288,10 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers}) async {
+      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers, bool? expandUnits}) async {
     try {
       return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers});
+          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers, 'expandUnits': expandUnits});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -360,10 +346,13 @@ class Radar {
     }
   }
 
-  static Future<Map?> sendEvent({required String customType, Map<String, dynamic>? location, required Map<String, dynamic> metadata}) async {
+  static Future<Map?> logConversion(
+      {required String name,
+      double? revenue,
+      required Map<String, dynamic> metadata}) async {
     try {
-      return await _channel
-          .invokeMethod('sendEvent', {'customType': customType, 'location': location, 'metadata': metadata});
+      return await _channel.invokeMethod('logConversion',
+          {'name': name, 'revenue': revenue, 'metadata': metadata});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -391,6 +380,40 @@ class Radar {
         'setForegroundServiceOptions', foregroundServiceOptions);
     } on PlatformException catch (e) {
       print(e);
+    }
+  }
+
+  static Future<Map?> trackVerified() async {
+    try {
+      return await _channel
+          .invokeMethod('trackVerified');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> trackVerifiedToken() async {
+    try {
+      return await _channel
+          .invokeMethod('trackVerifiedToken');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<bool?> isUsingRemoteTrackingOptions() async {
+    return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
+  }
+
+  static Future<Map?> validateAddress(Map address) async {
+    try {
+      return await _channel
+          .invokeMethod('validateAddress', {'address': address});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
     }
   }
 

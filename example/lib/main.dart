@@ -200,17 +200,13 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                var resp = await Radar.sendEvent(
-                  customType: "in_app_purchase",
-                  location: {
-                    "latitude": 35.0,
-                    "longitude": -75.0
-                  },
-                  metadata: {"price": "150USD"}
-                );
-                print("sendEvent: $resp");
+                var resp = await Radar.logConversion(
+                    name: "in_app_purchase",
+                    revenue: 0.2,
+                    metadata: {"price": "150USD"});
+                print("logConversion: $resp");
               },
-              child: Text('sendEvent'),
+              child: Text('logConversion'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
@@ -242,7 +238,8 @@ class _MyAppState extends State<MyApp> {
                   },
                   limit: 10,
                   layers: ['address', 'street'],
-                  country: 'US'
+                  country: 'US',
+                  expandUnits: false
                 );
                 print("autocomplete: $resp");
               },
@@ -341,7 +338,46 @@ class _MyAppState extends State<MyApp> {
                 print(location);
               },
               child: Text('getLocation()'),
-            )
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.trackVerified();
+                print("trackVerified: $resp");
+              },
+              child: Text('trackVerified'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.trackVerifiedToken();
+                print("trackVerifiedToken: $resp");
+              },
+              child: Text('trackVerifiedToken'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                bool? resp = await Radar.isUsingRemoteTrackingOptions();
+                print("isUsingRemoteTrackingOptions: $resp");
+              },
+              child: Text('isUsingRemoteTrackingOptions'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Map? resp = await Radar.validateAddress({
+                  "city": "NEW YORK",
+                  "stateCode": "NY",
+                  "postalCode": "10003",
+                  "countryCode": "US",
+                  "street": "BROADWAY",
+                  "number": "841",
+                });
+                print("validateAddress: $resp");
+              },
+              child: Text('validateAddress'),
+            ),
           ]),
         )
       ),

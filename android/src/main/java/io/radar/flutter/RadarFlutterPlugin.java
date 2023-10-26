@@ -67,16 +67,6 @@ import io.flutter.view.FlutterCallbackInformation;
 public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
 
     private static FlutterEngine sBackgroundFlutterEngine;
-    private static EventChannel sEventsChannel;
-    private static EventChannel.EventSink sEventsSink;
-    private static EventChannel sLocationChannel;
-    private static EventChannel.EventSink sLocationSink;
-    private static EventChannel sClientLocationChannel;
-    private static EventChannel.EventSink sClientLocationSink;
-    private static EventChannel sErrorChannel;
-    private static EventChannel.EventSink sErrorSink;
-    private static EventChannel sLogChannel;
-    private static EventChannel.EventSink sLogSink;
 
     private Activity mActivity;
     private Context mContext;
@@ -208,9 +198,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "setAnonymousTrackingEnabled":
                     setAnonymousTrackingEnabled(call, result);
                     break;
-                case "setAdIdEnabled":
-                    // do nothing
-                    break;
                 case "getLocation":
                     getLocation(call, result);
                     break;
@@ -228,6 +215,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     break;
                 case "isTracking":
                     isTracking(result);
+                    break;
+                case "isUsingRemoteTrackingOptions":
+                    isUsingRemoteTrackingOptions(result);
                     break;
                 case "getTrackingOptions":
                     getTrackingOptions(result);
@@ -274,14 +264,23 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "getDistance":
                     getDistance(call, result);
                     break;
-                case "sendEvent":
-                    sendEvent(call, result);
+                case "logConversion":
+                    logConversion(call, result);
                     break;
                 case "getMatrix":
                     getMatrix(call, result);
                     break;
                 case "setForegroundServiceOptions":
                     setForegroundServiceOptions(call, result);
+                    break;
+                case "trackVerified":
+                    trackVerified(call, result);
+                    break;
+                case "trackVerifiedToken":
+                    trackVerifiedToken(call, result);
+                    break;
+                case "validateAddress":
+                    validateAddress(call, result);
                     break;
                 case "attachListeners":
                     attachListeners(call, result);
@@ -877,8 +876,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String country = call.argument("country");
         ArrayList layersList = (ArrayList)call.argument("layers");
         String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
+        Boolean expandUnits = call.argument("expandUnits");
 
-        Radar.autocomplete(query, near, layers, limit, country, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, expandUnits, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -1043,24 +1043,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    public void sendEvent(MethodCall call, final Result result) throws JSONException  {
-        Radar.RadarSendEventCallback callback = new Radar.RadarSendEventCallback() {
+    public void logConversion(MethodCall call, final Result result) throws JSONException  {
+        Radar.RadarLogConversionCallback callback = new Radar.RadarLogConversionCallback() {
             @Override
-            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable Location location, @Nullable RadarEvent[] events, @Nullable RadarUser user) {
+            public void onComplete(@NonNull Radar.RadarStatus status, @Nullable RadarEvent event) {
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("status", status.toString());
-                            if (location != null) {
-                                obj.put("location", Radar.jsonForLocation(location));
-                            }
-                            if (events != null) {
-                                obj.put("events", RadarEvent.toJson(events));
-                            }
-                            if (user != null) {
-                                obj.put("user", user.toJson());
+                            if (event != null) {
+                                obj.put("event", event.toJson());
                             }
       
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
@@ -1073,15 +1067,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        String customType = call.argument("customType");
+        String name = call.argument("name");
         HashMap metadataMap= call.argument("metadata");
         JSONObject metadataJson = jsonForMap(metadataMap);        
-        if (call.hasArgument("location") && call.argument("location") != null) {
-            HashMap locationMap = (HashMap)call.argument("location");
-            Location location = locationForMap(locationMap);
-            Radar.sendEvent(customType, location, metadataJson, callback);
+        if (call.hasArgument("revenue") && call.argument("revenue") != null) {
+            double revenue = (Double)call.argument("revenue");
+            Radar.logConversion(name, revenue, metadataJson, callback);
         } else {
-            Radar.sendEvent(customType, metadataJson, callback);
+            Radar.logConversion(name, metadataJson, callback);
         }
     }
 
@@ -1137,6 +1130,100 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 });
             }
         });
+    }
+
+    public void trackVerified(MethodCall call, final Result result) {
+        Radar.RadarTrackCallback callback = new Radar.RadarTrackCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final Location location, final RadarEvent[] events, final RadarUser user) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (location != null) {
+                                obj.put("location", Radar.jsonForLocation(location));
+                            }
+                            obj.put("events", RadarEvent.toJson(events));
+                            if ( user != null) {
+                                obj.put("user", user.toJson());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        Radar.trackVerified(callback);
+    }
+
+    public void trackVerifiedToken(MethodCall call, final Result result) {
+        Radar.RadarTrackTokenCallback callback = new Radar.RadarTrackTokenCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final String token) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            obj.put("token", token);
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        Radar.trackVerifiedToken(callback);
+    }
+
+    private void isUsingRemoteTrackingOptions(Result result) {
+        Boolean isRemoteTracking = Radar.isUsingRemoteTrackingOptions();
+        result.success(isRemoteTracking);
+    }
+
+    public void validateAddress(MethodCall call, final Result result) throws JSONException {
+        Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final Radar.RadarAddressVerificationStatus verificationStatus) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (address != null) {
+                                obj.put("address", address.toJson());
+                            }
+                            if (verificationStatus != null) {
+                                obj.put("verificationStatus", verificationStatus.toString());
+                            }
+
+                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+
+        HashMap addressMap= call.argument("address");
+        JSONObject addressJSON = jsonForMap(addressMap);
+        RadarAddress address = RadarAddress.fromJson(addressJSON);
+        Radar.validateAddress(address, callback);
     }
 
     private Location locationForMap(HashMap locationMap) {

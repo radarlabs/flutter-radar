@@ -8,7 +8,8 @@
     <application
         android:name=".MainApplication"
         android:label="flutter_radar_example"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
