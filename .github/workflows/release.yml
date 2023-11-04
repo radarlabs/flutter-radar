@@ -7,20 +7,28 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# token from https://dart.dev/tools/pub/automated-publishing
 jobs:
-  publishing:
-    permissions:
-      id-token: write # Required for authentication using OIDC
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      #- uses: dart-lang/setup-dart@v1
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v2
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
-      - run: flutter pub get
-      - run: flutter build
-      # Here you can insert custom steps you need
-      # - run: dart tool/generate-code.dart
-      - run: dart pub publish --force
+          flutter-version: '3.3.3'
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Run tests
+        run: flutter test
+      - name: Format code
+        run: dart format --fix .
+      - name: Check Publish Warnings
+        run: dart pub publish --dry-run
+      - name: Publish
+        uses: k-paxian/dart-package-publisher@v1.5.1
+        with:
+          credentialJson: ${{ secrets.CREDENTIAL_JSON }}
+          flutter: true
+          skipTests: true
