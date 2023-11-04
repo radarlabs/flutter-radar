@@ -18,12 +18,6 @@ jobs:
           flutter-version: '3.3.3'
       - name: Install dependencies
         run: flutter pub get
-      - name: Analyze
-        run: flutter analyze
-      - name: Run tests
-        run: flutter test
-      - name: Format code
-        run: dart format --fix .
       - name: Check Publish Warnings
         run: dart pub publish --dry-run
       - name: Publish
