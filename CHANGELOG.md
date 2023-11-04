@@ -1,3 +1,7 @@
+# 3.8.1
+
+- Update github release action
+
 # 3.8.0
 
 - Bump iOS version from 3.5.9 to 3.8.9
