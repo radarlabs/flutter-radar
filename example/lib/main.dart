@@ -239,7 +239,7 @@ class _MyAppState extends State<MyApp> {
                   limit: 10,
                   layers: ['address', 'street'],
                   country: 'US',
-                  expandUnits: false
+                  mailable: false
                 );
                 print("autocomplete: $resp");
               },
@@ -311,6 +311,13 @@ class _MyAppState extends State<MyApp> {
                 });
               },
               child: Text('startTrackingCustom()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () {
+                Radar.startTrackingVerified(token: true);
+              },
+              child: Text('startTrackingVerified(token: true)'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
