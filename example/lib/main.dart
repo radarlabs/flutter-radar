@@ -11,7 +11,7 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
     primary: Colors.blueAccent,
     minimumSize: Size(88, 36),
@@ -26,6 +26,18 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     initRadar();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      Radar.logResigningActive();
+    } else if (state == AppLifecycleState.paused) {
+      Radar.logBackgrounding();
+    }
+  }
+
+  // Add this to iOS callback for termination; Android calls this automatically
+  // Radar.logTermination();
 
   static void onLocation(Map res) {
     print('📍📍 onLocation: $res');
@@ -212,15 +224,6 @@ class _MyAppState extends State<MyApp> {
                 print("logConversion: $resp");
               },
               child: Text('logConversion'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                await Radar.logTermination();
-                await Radar.logBackgrounding();
-                await Radar.logResigningActive();
-              },
-              child: Text('log lifecycle'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
