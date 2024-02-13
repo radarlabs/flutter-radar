@@ -110,8 +110,16 @@
         [self getDistance:call withResult:result];
     } else if ([@"logConversion" isEqualToString:call.method]) {
         [self logConversion:call withResult:result];        
+    } else if ([@"logTermination" isEqualToString:call.method]) {
+        [self logTermination:result];        
+    } else if ([@"logBackgrounding" isEqualToString:call.method]) {
+        [self logBackgrounding:result];        
+    } else if ([@"logResigningActive" isEqualToString:call.method]) {
+        [self logResigningActive:result];        
     } else if ([@"getMatrix" isEqualToString:call.method]) {
         [self getMatrix:call withResult:result];        
+    } else if ([@"setNotificationOptions" isEqualToString:call.method]) {
+        // do nothing
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
@@ -862,6 +870,21 @@
     } else {
         [Radar logConversionWithName:name metadata:metadata completionHandler:completionHandler];
     }
+}
+
+- (void)logTermination:(FlutterResult)result {
+    [Radar logTermination];
+    result(nil);
+}
+
+- (void)logBackgrounding:(FlutterResult)result {
+    [Radar logBackgrounding];
+    result(nil);
+}
+
+- (void)logResigningActive:(FlutterResult)result {
+    [Radar logResigningActive];
+    result(nil);
 }
 
 - (void)getMatrix:(FlutterMethodCall *)call withResult:(FlutterResult)result {

@@ -216,6 +216,24 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
+                await Radar.logTermination();
+                await Radar.logBackgrounding();
+                await Radar.logResigningActive();
+              },
+              child: Text('log lifecycle'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                await Radar.setNotificationOptions({
+                  'iconString': 'icon'
+                });
+              },
+              child: Text('setNotificationOptions'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
                 var resp = await Radar.searchPlaces(
                   near: {
                     'latitude': 40.783826,

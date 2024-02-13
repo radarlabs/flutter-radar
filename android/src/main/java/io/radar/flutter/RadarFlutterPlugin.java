@@ -45,6 +45,7 @@ import io.flutter.view.FlutterMain;
 import io.radar.sdk.Radar;
 import io.radar.sdk.RadarReceiver;
 import io.radar.sdk.RadarVerifiedReceiver;
+import io.radar.sdk.RadarNotificationOptions;
 import io.radar.sdk.RadarTrackingOptions;
 import io.radar.sdk.RadarTripOptions;
 import io.radar.sdk.model.RadarAddress;
@@ -271,8 +272,20 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "logConversion":
                     logConversion(call, result);
                     break;
+                case "logTermination":
+                    // do nothing
+                    break;
+                case "logBackgrounding":
+                    logBackgrounding(result);
+                    break;
+                case "logResigningActive":
+                    logResigningActive(result);
+                    break;
                 case "getMatrix":
                     getMatrix(call, result);
+                    break;
+                case "setNotificationOptions":
+                    setNotificationOptions(call, result);
                     break;
                 case "setForegroundServiceOptions":
                     setForegroundServiceOptions(call, result);
@@ -310,6 +323,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
         Radar.initialize(mContext, publishableKey);
+        result.success(true);
+    }
+
+    private void setNotificationOptions(MethodCall call, Result result) {
+        HashMap notificationOptionsMap = (HashMap)call.arguments;
+        JSONObject notificationOptionsJson = new JSONObject(notificationOptionsMap);
+        RadarNotificationOptions options = RadarNotificationOptions.fromJson(notificationOptionsJson);
+        Radar.setNotificationOptions(options);
         result.success(true);
     }
 
@@ -1088,6 +1109,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         } else {
             Radar.logConversion(name, metadataJson, callback);
         }
+    }
+
+    public void logBackgrounding(Result result) {
+        Radar.logBackgrounding();
+        result.success(true);
+    }
+
+    public void logResigningActive(Result result) {
+        Radar.logResigningActive();
+        result.success(true);
     }
 
     public void getMatrix(MethodCall call, final Result result) throws JSONException {

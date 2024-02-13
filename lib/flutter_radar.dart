@@ -370,6 +370,40 @@ class Radar {
     }
   }
 
+  // iOS only
+  static Future logTermination() async {
+    try {
+      await _channel.invokeMethod('logTermination');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future logBackgrounding() async {
+    try {
+      await _channel.invokeMethod('logBackgrounding');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future logResigningActive() async {
+    try {
+      await _channel.invokeMethod('logResigningActive');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  // Android only
+  static Future setNotificationOptions(Map<String, dynamic> notificationOptions) async {
+    try {
+      await _channel.invokeMethod('setNotificationOptions', notificationOptions);
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<Map?> getMatrix(
     {required List origins,
     required List destinations,
