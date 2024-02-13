@@ -531,4 +531,25 @@ class Radar {
       print(e);
     }
   }
+
+  static onToken(Function(Map res) callback) async {
+    try {
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'token',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static offToken() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'token'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
 }

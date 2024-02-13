@@ -47,6 +47,10 @@ class _MyAppState extends State<MyApp> {
     print('📍📍 onEvents: $res');
   }
 
+  static void onToken(Map res) {
+    print('📍📍 onToken: $res');
+  }
+
   Future<void> initRadar() async {
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
@@ -61,6 +65,7 @@ class _MyAppState extends State<MyApp> {
     Radar.onError(onError);
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
+    Radar.onToken(onToken);
     
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
