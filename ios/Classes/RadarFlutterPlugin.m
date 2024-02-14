@@ -147,6 +147,8 @@
     NSDictionary *argsDict = call.arguments;
 
     NSString *publishableKey = argsDict[@"publishableKey"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.0" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
