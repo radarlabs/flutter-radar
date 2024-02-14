@@ -1,3 +1,13 @@
+# 3.9.0
+
+- Bump iOS version from 3.8.9 to 3.9.6
+- Bump Android version from 3.8.12 to 3.9.4
+- Add `beacons` param to `trackVerified` and `trackVerifiedToken`
+- Add `startTrackingVerified`
+- Add `token` listener
+- Add lifecycle methods `logTermination`, `logBackgrounding`, and `logResigningActive`
+- Add `setNotificationOptions` for Android
+
 # 3.8.1
 
 - Update github release action

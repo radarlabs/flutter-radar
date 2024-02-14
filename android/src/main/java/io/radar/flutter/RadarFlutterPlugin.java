@@ -44,6 +44,8 @@ import io.flutter.view.FlutterMain;
 
 import io.radar.sdk.Radar;
 import io.radar.sdk.RadarReceiver;
+import io.radar.sdk.RadarVerifiedReceiver;
+import io.radar.sdk.RadarNotificationOptions;
 import io.radar.sdk.RadarTrackingOptions;
 import io.radar.sdk.RadarTripOptions;
 import io.radar.sdk.model.RadarAddress;
@@ -210,6 +212,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "startTrackingCustom":
                     startTrackingCustom(call, result);
                     break;
+                case "startTrackingVerified":
+                    startTrackingVerified(call, result);
+                    break;
                 case "stopTracking":
                     stopTracking(result);
                     break;
@@ -267,8 +272,20 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "logConversion":
                     logConversion(call, result);
                     break;
+                case "logTermination":
+                    // do nothing
+                    break;
+                case "logBackgrounding":
+                    logBackgrounding(result);
+                    break;
+                case "logResigningActive":
+                    logResigningActive(result);
+                    break;
                 case "getMatrix":
                     getMatrix(call, result);
+                    break;
+                case "setNotificationOptions":
+                    setNotificationOptions(call, result);
                     break;
                 case "setForegroundServiceOptions":
                     setForegroundServiceOptions(call, result);
@@ -305,7 +322,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     private void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
+        SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
+        editor.putString("x_platform_sdk_type", "Flutter");
+        editor.putString("x_platform_sdk_version", "3.9.0");
+        editor.apply();
         Radar.initialize(mContext, publishableKey);
+        result.success(true);
+    }
+
+    private void setNotificationOptions(MethodCall call, Result result) {
+        HashMap notificationOptionsMap = (HashMap)call.arguments;
+        JSONObject notificationOptionsJson = new JSONObject(notificationOptionsMap);
+        RadarNotificationOptions options = RadarNotificationOptions.fromJson(notificationOptionsJson);
+        Radar.setNotificationOptions(options);
         result.success(true);
     }
 
@@ -536,6 +565,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         JSONObject optionsJson = new JSONObject(optionsMap);
         RadarTrackingOptions options = RadarTrackingOptions.fromJson(optionsJson);
         Radar.startTracking(options);
+        result.success(true);
+    }
+
+    private void startTrackingVerified(MethodCall call, Result result) {
+        Boolean token = call.hasArgument("token") ? call.argument("token") : false;
+        int interval = call.hasArgument("interval") && call.argument("interval") != null ? (int)call.argument("interval") : 1;
+        Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
+        Radar.startTrackingVerified(token, interval, beacons);
         result.success(true);
     }
 
@@ -876,9 +913,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String country = call.argument("country");
         ArrayList layersList = (ArrayList)call.argument("layers");
         String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
-        Boolean expandUnits = call.argument("expandUnits");
+        Boolean mailable = call.argument("mailable");
 
-        Radar.autocomplete(query, near, layers, limit, country, expandUnits, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, true, mailable, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -1078,6 +1115,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
+    public void logBackgrounding(Result result) {
+        Radar.logBackgrounding();
+        result.success(true);
+    }
+
+    public void logResigningActive(Result result) {
+        Radar.logResigningActive();
+        result.success(true);
+    }
+
     public void getMatrix(MethodCall call, final Result result) throws JSONException {
         ArrayList<HashMap> originsArr = call.argument("origins"); 
         Location[] origins = new Location[originsArr.size()];
@@ -1133,6 +1180,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void trackVerified(MethodCall call, final Result result) {
+        Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
+
         Radar.RadarTrackCallback callback = new Radar.RadarTrackCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final RadarEvent[] events, final RadarUser user) {
@@ -1160,10 +1209,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        Radar.trackVerified(callback);
+        Radar.trackVerified(beacons, callback);
     }
 
     public void trackVerifiedToken(MethodCall call, final Result result) {
+        Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
+
         Radar.RadarTrackTokenCallback callback = new Radar.RadarTrackTokenCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final String token) {
@@ -1185,7 +1236,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        Radar.trackVerifiedToken(callback);
+        Radar.trackVerifiedToken(beacons, callback);
     }
 
     private void isUsingRemoteTrackingOptions(Result result) {
@@ -1402,6 +1453,42 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 
                 JSONObject obj = new JSONObject();
                 obj.put("message", message);
+
+                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                synchronized(lock) {
+                    final ArrayList args = new ArrayList();
+                    args.add(callbackHandle);
+                    args.add(res);
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sBackgroundChannel.invokeMethod("", args);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
+
+    }
+
+    public static class RadarFlutterVerifiedReceiver extends RadarVerifiedReceiver {
+
+        @Override
+        public void onTokenUpdated(Context context, String token) {
+            try {
+                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
+                long callbackHandle = sharedPrefs.getLong("token", 0L);
+
+                if (callbackHandle == 0L) {
+                    return;
+                }
+
+                RadarFlutterPlugin.initializeBackgroundEngine(context);
+                
+                JSONObject obj = new JSONObject();
+                obj.put("token", token);
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
                 synchronized(lock) {

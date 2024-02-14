@@ -152,6 +152,18 @@ class Radar {
     }
   }
 
+  static Future startTrackingVerified({bool? token, int? interval, bool? beacons}) async {
+    try {
+      await _channel.invokeMethod('startTrackingVerified', {
+        'token': token,
+        'interval': interval,
+        'beacons': beacons
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future stopTracking() async {
     try {
       await _channel.invokeMethod('stopTracking');
@@ -287,10 +299,10 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers, bool? expandUnits}) async {
+      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers, bool? mailable}) async {
     try {
       return await _channel.invokeMethod(
-          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers, 'expandUnits': expandUnits});
+          'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers, 'mailable': mailable});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -358,6 +370,40 @@ class Radar {
     }
   }
 
+  // iOS only
+  static Future logTermination() async {
+    try {
+      await _channel.invokeMethod('logTermination');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future logBackgrounding() async {
+    try {
+      await _channel.invokeMethod('logBackgrounding');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future logResigningActive() async {
+    try {
+      await _channel.invokeMethod('logResigningActive');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  // Android only
+  static Future setNotificationOptions(Map<String, dynamic> notificationOptions) async {
+    try {
+      await _channel.invokeMethod('setNotificationOptions', notificationOptions);
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<Map?> getMatrix(
     {required List origins,
     required List destinations,
@@ -382,20 +428,20 @@ class Radar {
     }
   }
 
-  static Future<Map?> trackVerified() async {
+  static Future<Map?> trackVerified({bool? beacons}) async {
     try {
       return await _channel
-          .invokeMethod('trackVerified');
+          .invokeMethod('trackVerified', {'beacons': beacons});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
     }
   }
 
-  static Future<Map?> trackVerifiedToken() async {
+  static Future<Map?> trackVerifiedToken({bool? beacons}) async {
     try {
       return await _channel
-          .invokeMethod('trackVerifiedToken');
+          .invokeMethod('trackVerifiedToken', {'beacons': beacons});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -515,6 +561,27 @@ class Radar {
   static offEvents() async {
     try {
       await _channel.invokeMethod('off', {'listener': 'events'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static onToken(Function(Map res) callback) async {
+    try {
+      final CallbackHandle handle = PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod('on', {
+        'listener': 'token',
+        'callbackHandle':
+            handle.toRawHandle()
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static offToken() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'token'});
     } on PlatformException catch (e) {
       print(e);
     }

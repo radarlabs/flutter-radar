@@ -11,7 +11,7 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
     primary: Colors.blueAccent,
     minimumSize: Size(88, 36),
@@ -26,6 +26,18 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     initRadar();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      Radar.logResigningActive();
+    } else if (state == AppLifecycleState.paused) {
+      Radar.logBackgrounding();
+    }
+  }
+
+  // Add this to iOS callback for termination; Android calls this automatically
+  // Radar.logTermination();
 
   static void onLocation(Map res) {
     print('📍📍 onLocation: $res');
@@ -47,7 +59,12 @@ class _MyAppState extends State<MyApp> {
     print('📍📍 onEvents: $res');
   }
 
+  static void onToken(Map res) {
+    print('📍📍 onToken: $res');
+  }
+
   Future<void> initRadar() async {
+    Radar.initialize('prj_test_pk_0000000000000000000000000000000000000000');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
@@ -61,6 +78,7 @@ class _MyAppState extends State<MyApp> {
     Radar.onError(onError);
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
+    Radar.onToken(onToken);
     
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
@@ -211,6 +229,15 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
+                await Radar.setNotificationOptions({
+                  'iconString': 'icon'
+                });
+              },
+              child: Text('setNotificationOptions'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
                 var resp = await Radar.searchPlaces(
                   near: {
                     'latitude': 40.783826,
@@ -239,7 +266,7 @@ class _MyAppState extends State<MyApp> {
                   limit: 10,
                   layers: ['address', 'street'],
                   country: 'US',
-                  expandUnits: false
+                  mailable: false
                 );
                 print("autocomplete: $resp");
               },
@@ -311,6 +338,13 @@ class _MyAppState extends State<MyApp> {
                 });
               },
               child: Text('startTrackingCustom()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () {
+                Radar.startTrackingVerified(token: true);
+              },
+              child: Text('startTrackingVerified(token: true)'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,

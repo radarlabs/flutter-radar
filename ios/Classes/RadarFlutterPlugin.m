@@ -2,7 +2,7 @@
 
 #import <RadarSDK/RadarSDK.h>
 
-@interface RadarFlutterPlugin() <RadarDelegate>
+@interface RadarFlutterPlugin() <RadarDelegate, RadarVerifiedDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 @property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
@@ -30,6 +30,7 @@
     self.locationManager = [CLLocationManager new];
     self.locationManager.delegate = self;
     [Radar setDelegate:self];
+    [Radar setVerifiedDelegate:self];
     return self;
 }
 
@@ -71,6 +72,8 @@
         [self startTracking:call withResult:result];
     } else if ([@"startTrackingCustom" isEqualToString:call.method]) {
         [self startTrackingCustom:call withResult:result];
+    } else if ([@"startTrackingVerified" isEqualToString:call.method]) {
+        [self startTrackingVerified:call withResult:result];
     } else if ([@"stopTracking" isEqualToString:call.method]) {
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
@@ -107,8 +110,16 @@
         [self getDistance:call withResult:result];
     } else if ([@"logConversion" isEqualToString:call.method]) {
         [self logConversion:call withResult:result];        
+    } else if ([@"logTermination" isEqualToString:call.method]) {
+        [self logTermination:result];        
+    } else if ([@"logBackgrounding" isEqualToString:call.method]) {
+        [self logBackgrounding:result];        
+    } else if ([@"logResigningActive" isEqualToString:call.method]) {
+        [self logResigningActive:result];        
     } else if ([@"getMatrix" isEqualToString:call.method]) {
         [self getMatrix:call withResult:result];        
+    } else if ([@"setNotificationOptions" isEqualToString:call.method]) {
+        // do nothing
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
@@ -136,6 +147,8 @@
     NSDictionary *argsDict = call.arguments;
 
     NSString *publishableKey = argsDict[@"publishableKey"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.0" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -360,6 +373,31 @@
     NSDictionary *optionsDict = call.arguments;
     RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
+    result(nil);
+}
+
+- (void)startTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    BOOL token = NO;
+    NSNumber *tokenNumber = argsDict[@"token"];
+    if (tokenNumber != nil && [tokenNumber isKindOfClass:[NSNumber class]]) {
+        token = [tokenNumber boolValue];
+    }
+
+    BOOL beacons = NO;
+    NSNumber *beaconsNumber = argsDict[@"beacons"];
+    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
+        beacons = [beaconsNumber boolValue];
+    }
+
+    double interval = 1;
+    NSNumber *intervalNumber = argsDict[@"interval"];
+    if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
+        interval = [intervalNumber doubleValue];
+    }
+
+    [Radar startTrackingVerified:token interval:interval beacons:beacons];
     result(nil);
 }
 
@@ -694,10 +732,10 @@
     };
 
     
-    NSNumber *expandUnitsNumber = argsDict[@"expandUnits"];
-    if (expandUnitsNumber != nil && [expandUnitsNumber isKindOfClass:[NSNumber class]]) {
-        BOOL expandUnits = [expandUnitsNumber boolValue];
-        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country expandUnits:expandUnits completionHandler:completionHandler];
+    NSNumber *mailableNumber = argsDict[@"mailable"];
+    if (mailableNumber != nil && [mailableNumber isKindOfClass:[NSNumber class]]) {
+        BOOL mailable = [mailableNumber boolValue];
+        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country mailable:mailable completionHandler:completionHandler];
     } else {
         [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country completionHandler:completionHandler];
     }
@@ -836,6 +874,21 @@
     }
 }
 
+- (void)logTermination:(FlutterResult)result {
+    [Radar logTermination];
+    result(nil);
+}
+
+- (void)logBackgrounding:(FlutterResult)result {
+    [Radar logBackgrounding];
+    result(nil);
+}
+
+- (void)logResigningActive:(FlutterResult)result {
+    [Radar logResigningActive];
+    result(nil);
+}
+
 - (void)getMatrix:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
     
@@ -895,6 +948,14 @@
 }
 
 - (void)trackVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    BOOL beacons = NO;
+    NSNumber *beaconsNumber = argsDict[@"beacons"];
+    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
+        beacons = [beaconsNumber boolValue];
+    }
+
     RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
         if (status == RadarStatusSuccess) {
             NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -912,10 +973,18 @@
         }
     };
 
-    [Radar trackVerifiedWithCompletionHandler:completionHandler];
+    [Radar trackVerifiedWithBeacons:beacons completionHandler:completionHandler];
 }
 
 - (void)trackVerifiedToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    
+    BOOL beacons = NO;
+    NSNumber *beaconsNumber = argsDict[@"beacons"];
+    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
+        beacons = [beaconsNumber boolValue];
+    }
+
     RadarTrackTokenCompletionHandler completionHandler = ^(RadarStatus status, NSString* token) {
         if (status == RadarStatusSuccess) {
             NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -925,7 +994,7 @@
         }
     };
 
-    [Radar trackVerifiedTokenWithCompletionHandler:completionHandler];
+    [Radar trackVerifiedTokenWithBeacons:beacons completionHandler:completionHandler];
 }
 
 - (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1035,6 +1104,17 @@
     NSDictionary *dict = @{@"message": message};    
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSNumber* callbackHandle = [userDefaults objectForKey:@"log"];
+    if (callbackHandle == 0) {
+        return;
+    }
+    NSArray* args = @[callbackHandle, dict];
+    [self.backgroundChannel invokeMethod:@"" arguments:args];
+}
+
+- (void)didUpdateToken:(NSString *)token {
+    NSDictionary *dict = @{@"token": token};    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSNumber* callbackHandle = [userDefaults objectForKey:@"token"];
     if (callbackHandle == 0) {
         return;
     }

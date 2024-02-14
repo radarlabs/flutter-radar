@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_radar'
-  s.version          = '3.8.0'
+  s.version          = '3.9.0'
   s.summary          = 'Flutter package for Radar, the leading geofencing and location tracking platform'
   s.description      = 'Flutter package for Radar, the leading geofencing and location tracking platform'
   s.homepage         = 'http://example.com'
@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'RadarSDK', '3.8.9'
+  s.dependency 'RadarSDK', '3.9.7'
   s.platform = :ios, '10.0'
   s.static_framework = true
 
