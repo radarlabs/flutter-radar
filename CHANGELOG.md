@@ -1,6 +1,6 @@
 # 3.9.1
 
-- Bump iOS version from 3.9.7 to 3.9.12
+- Bump iOS version from 3.9.7 to 3.9.13
 - Bump Android version from 3.9.4 to 3.9.8
 
 # 3.9.0
