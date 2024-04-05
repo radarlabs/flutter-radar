@@ -18,6 +18,7 @@ void callbackDispatcher() {
   });
 }
 
+@pragma("vm:entry-point")
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
