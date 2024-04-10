@@ -13,7 +13,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-    primary: Colors.blueAccent,
     minimumSize: Size(88, 36),
     padding: EdgeInsets.symmetric(horizontal: 16),
     shape: const RoundedRectangleBorder(
@@ -38,27 +37,32 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   // Add this to iOS callback for termination; Android calls this automatically
   // Radar.logTermination();
-
+  @pragma('vm:entry-point')
   static void onLocation(Map res) {
     print('📍📍 onLocation: $res');
   }
 
+  @pragma('vm:entry-point')
   static void onClientLocation(Map res) {
     print('📍📍 onClientLocation: $res');
   }
-  
+
+  @pragma('vm:entry-point')
   static void onError(Map res) {
     print('📍📍 onError: $res');
   }
 
+  @pragma('vm:entry-point')
   static void onLog(Map res) {
     print('📍📍 onLog: $res');
   }
 
+  @pragma('vm:entry-point')
   static void onEvents(Map res) {
     print('📍📍 onEvents: $res');
   }
 
+  @pragma('vm:entry-point')
   static void onToken(Map res) {
     print('📍📍 onToken: $res');
   }
@@ -427,7 +431,6 @@ class Permissions extends StatefulWidget {
 class _PermissionsState extends State<Permissions> {
   String? _status = 'NOT_DETERMINED';
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-    primary: Colors.blueAccent,
     minimumSize: Size(88, 36),
     padding: EdgeInsets.symmetric(horizontal: 16),
     shape: const RoundedRectangleBorder(
@@ -476,7 +479,6 @@ class TrackOnce extends StatefulWidget {
 
 class _TrackOnceState extends State<TrackOnce> {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-    primary: Colors.blueAccent,
     minimumSize: Size(88, 36),
     padding: EdgeInsets.symmetric(horizontal: 16),
     shape: const RoundedRectangleBorder(
