@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+@pragma('vm:entry-point')
 void callbackDispatcher() {
   const MethodChannel _backgroundChannel =
       MethodChannel('flutter_radar_background');
