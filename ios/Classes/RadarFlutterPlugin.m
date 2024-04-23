@@ -482,7 +482,7 @@
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
     NSDictionary *trackingOptionsDict = argsDict[@"trackingOptions"];
     RadarTrackingOptions *trackingOptions;
-    if (trackingOptionsDict) {
+    if (trackingOptionsDict && [trackingOptionsDict isKindOfClass:[NSDictionary class]]) {
         trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
     }
 
@@ -583,7 +583,7 @@
     NSDictionary *argsDict = call.arguments;
 
     NSDictionary *locationDict = argsDict[@"location"];
-    if (locationDict) {
+    if (locationDict && [locationDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = locationDict[@"latitude"];
         NSNumber *longitudeNumber = locationDict[@"longitude"];
         NSNumber *accuracyNumber = locationDict[@"accuracy"];
@@ -616,7 +616,7 @@
 
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
+    if (nearDict && [nearDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
@@ -666,7 +666,7 @@
 
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
+    if (nearDict && [nearDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
@@ -705,7 +705,7 @@
     NSString *query = argsDict[@"query"];
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
+    if (nearDict && [nearDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
@@ -768,7 +768,7 @@
   NSDictionary *argsDict = call.arguments;
 
   NSDictionary *locationDict = argsDict[@"location"];
-  if (locationDict) {
+  if (locationDict && [locationDict isKindOfClass:[NSDictionary class]]) {
       NSNumber *latitudeNumber = locationDict[@"latitude"];
       NSNumber *longitudeNumber = locationDict[@"longitude"];
       double latitude = [latitudeNumber doubleValue];
@@ -807,7 +807,7 @@
 
   CLLocation *origin;
   NSDictionary *originDict = argsDict[@"origin"];
-  if (originDict) {
+  if (originDict && [originDict isKindOfClass:[NSDictionary class]]) {
       NSNumber *originLatitudeNumber = originDict[@"latitude"];
       NSNumber *originLongitudeNumber = originDict[@"longitude"];
       double originLatitude = [originLatitudeNumber doubleValue];

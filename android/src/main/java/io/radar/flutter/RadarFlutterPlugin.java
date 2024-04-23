@@ -801,7 +801,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        if (call.hasArgument("location")) {
+        if (call.hasArgument("location") && call.argument("location") != null) {
             HashMap locationMap = (HashMap)call.argument("location");
             Location location = locationForMap(locationMap);
             Radar.getContext(location, callback);
@@ -838,7 +838,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         };
 
         Location near = null;
-        if (call.hasArgument("near")) {
+        if (call.hasArgument("near") && call.argument("near") != null){
             HashMap nearMap = (HashMap)call.argument("near");
             near = locationForMap(nearMap);
         }
@@ -907,8 +907,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     public void autocomplete(MethodCall call, final Result result) {
         String query = call.argument("query");
-        HashMap nearMap = (HashMap)call.argument("near");
-        Location near = locationForMap(nearMap);
+        Location near = null;
+        if (call.hasArgument("near") && call.argument("near") != null){
+            Log.d("RadarFlutterPlugin", "autocomplete: near");
+            HashMap nearMap = (HashMap)call.argument("near");
+            near = locationForMap(nearMap);
+        }
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
         String country = call.argument("country");
         ArrayList layersList = (ArrayList)call.argument("layers");
