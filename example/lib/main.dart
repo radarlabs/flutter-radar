@@ -83,24 +83,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
     Radar.onToken(onToken);
+
+    await Radar.requestPermissions(false);
     
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
       var b = await Radar.startTrackingCustom({
-        "desiredStoppedUpdateInterval": 180,
-        "desiredMovingUpdateInterval": 1,
-        "desiredSyncInterval": 10,
-        "desiredAccuracy": 'high',
-        "stopDuration": 140,
-        "stopDistance": 70,
-        "sync": 'all',
-        "replay": 'none',
+        ... Radar.presetResponsive,
         "showBlueBar": true,
-        "foregroundServiceEnabled": true,
-        "beacons": true,
-        "fastestMovingUpdateInterval": 10,
       });
+      //Radar.startTracking('continuous');
 
       var c = await Radar.getTrackingOptions();
       print("Tracking options $c");
