@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import './radar_classes.dart';
+export './radar_classes.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -145,7 +147,7 @@ class Radar {
     }
   }
 
-  static Future startTrackingCustom(Map<String, dynamic> options) async {
+  static Future startTrackingCustom(RadarTrackingOptions options) async {
     try {
       await _channel.invokeMethod('startTrackingCustom', options);
     } on PlatformException catch (e) {
@@ -206,7 +208,7 @@ class Radar {
     }
   }
 
-  static Future<Map?> startTrip({Map<String, dynamic>? tripOptions, Map<String, dynamic>? trackingOptions}) async {
+  static Future<Map?> startTrip({required RadarTripOptions tripOptions, RadarTrackingOptions? trackingOptions}) async {
     try {
       return await _channel.invokeMethod('startTrip', {'tripOptions': tripOptions, 'trackingOptions': trackingOptions});
     } on PlatformException catch (e) {
@@ -215,7 +217,7 @@ class Radar {
     }
   }
 
-  static Future<Map?> updateTrip({required Map<String, dynamic> options, required String status}) async {
+  static Future<Map?> updateTrip({required RadarTripOptions options, required String status}) async {
     try {
       return await _channel.invokeMethod('updateTrip', {'tripOptions': options, 'status': status});
     } on PlatformException catch (e) {
@@ -246,7 +248,7 @@ class Radar {
     }
   }
 
-  static Future<Map?> getContext(Map<String, dynamic> location) async {
+  static Future<Map?> getContext(RadarLocation location) async {
     try {
       return await _channel.invokeMethod('getContext', {'location': location});
     } on PlatformException catch (e) {
@@ -256,7 +258,7 @@ class Radar {
   }
 
   static Future<Map?> searchGeofences(
-      {Map<String, dynamic>? near,
+      {RadarNear? near,
       int? radius,
       List? tags,
       Map<String, dynamic>? metadata,
@@ -276,7 +278,7 @@ class Radar {
   }
 
   static Future<Map?> searchPlaces(
-      {Map<String, dynamic>? near,
+      {RadarNear? near,
       int? radius,
       int? limit,
       List? chains,
@@ -300,7 +302,7 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query, Map<String, dynamic>? near, int? limit, String? country, List? layers, bool? mailable}) async {
+      {String? query, RadarNear? near, int? limit, String? country, List? layers, bool? mailable}) async {
     try {
       return await _channel.invokeMethod(
           'autocomplete', {'query': query, 'near': near, 'limit': limit, 'country': country, 'layers': layers, 'mailable': mailable});
@@ -321,7 +323,7 @@ class Radar {
     }
   }
 
-  static Future<Map?> reverseGeocode(Map<String, dynamic> location) async {
+  static Future<Map?> reverseGeocode(RadarLocation location) async {
     try {
       return await _channel
           .invokeMethod('reverseGeocode', {'location': location});
@@ -397,7 +399,7 @@ class Radar {
   }
 
   // Android only
-  static Future setNotificationOptions(Map<String, dynamic> notificationOptions) async {
+  static Future setNotificationOptions(RadarNotificationOptions notificationOptions) async {
     try {
       await _channel.invokeMethod('setNotificationOptions', notificationOptions);
     } on PlatformException catch (e) {
@@ -420,7 +422,7 @@ class Radar {
   }
 
   static Future setForegroundServiceOptions(
-    Map<String, dynamic> foregroundServiceOptions) async {
+    RadarForegroundServiceOptions foregroundServiceOptions) async {
     try {
       await _channel.invokeMethod(
         'setForegroundServiceOptions', foregroundServiceOptions);

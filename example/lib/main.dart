@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_radar/flutter_radar.dart';
+import 'package:flutter_radar/radar_classes.dart';
 
 void main() => runApp(MyApp());
 
@@ -68,7 +69,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> initRadar() async {
-    Radar.initialize('prj_test_pk_0000000000000000000000000000000000000000');
+    Radar.initialize('prj_test_pk_4899327d5733b7741a3bfa223157f3859273be46');
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
@@ -87,20 +88,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
-      var b = await Radar.startTrackingCustom({
-        "desiredStoppedUpdateInterval": 180,
-        "desiredMovingUpdateInterval": 1,
-        "desiredSyncInterval": 10,
-        "desiredAccuracy": 'high',
-        "stopDuration": 140,
-        "stopDistance": 70,
-        "sync": 'all',
-        "replay": 'none',
-        "showBlueBar": true,
-        "foregroundServiceEnabled": true,
-        "beacons": true,
-        "fastestMovingUpdateInterval": 10,
-      });
+      var customTrackingOptions = RadarTrackingOptions(desiredStoppedUpdateInterval: 180, 
+      desiredMovingUpdateInterval: 120, desiredSyncInterval: 10, 
+      desiredAccuracy: 'high', stopDuration: 140, stopDistance: 70, replay: 'none',
+       syncLocations: 'all', showBlueBar: true, useStoppedGeofence: true, stoppedGeofenceRadius: 120,
+        useMovingGeofence: true, movingGeofenceRadius: 20, 
+        syncGeofences: true, useVisits: false, 
+        useSignificantLocationChanges: true, 
+        beacons: false);
+      var b = await Radar.startTrackingCustom(customTrackingOptions);
+
+
 
       var c = await Radar.getTrackingOptions();
       print("Tracking options $c");
@@ -136,45 +134,62 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                Radar.setForegroundServiceOptions({
-                  'title': 'Tracking',
-                  'text': 'Trip tracking started',
-                  'icon': 2131165271,
-                  'importance': 2,
-                  'updatesOnly': false,
-                  'activity': 'io.radar.example.MainActivity'
-                });
-                var resp = await Radar.startTrip(
-                    tripOptions: {
-                    "externalId": '299',
-                    "destinationGeofenceTag": 'store',
-                    "destinationGeofenceExternalId": '123',
-                    "mode": 'car',
-                    "scheduledArrivalAt": "2020-08-20T10:30:55.837Z",
-                    "metadata": {"test": 123}
-                    },
-                    trackingOptions: {
-                      "desiredStoppedUpdateInterval": 30,
-                      "fastestStoppedUpdateInterval": 30,
-                      "desiredMovingUpdateInterval": 30,
-                      "fastestMovingUpdateInterval": 30,
-                      "desiredSyncInterval": 20,
-                      "desiredAccuracy": "high",
-                      "stopDuration": 0,
-                      "stopDistance": 0,
-                      "replay": "none",
-                      "sync": "all",
-                      "showBlueBar": true,
-                      "useStoppedGeofence": false,
-                      "stoppedGeofenceRadius": 0,
-                      "useMovingGeofence": false,
-                      "movingGeofenceRadius": 0,
-                      "syncGeofences": false,
-                      "syncGeofencesLimit": 0,
-                      "beacons": false,
-                      "foregroundServiceEnabled": true
-                    }
+                // Radar.setForegroundServiceOptions({
+                //   'title': 'Tracking',
+                //   'text': 'Trip tracking started',
+                //   'icon': 2131165271,
+                //   'importance': 2,
+                //   'updatesOnly': false,
+                //   'activity': 'io.radar.example.MainActivity'
+                // });
+                Radar.setForegroundServiceOptions(RadarForegroundServiceOptions(
+                  title: 'Tracking',
+                  text: 'Trip tracking started',
+                  importance: 2,
+                  updatesOnly: false,
+                  activity: 'io.radar.example.MainActivity'
+                ));
+                // var resp = await Radar.startTrip(
+                //     tripOptions: {
+                //     "externalId": '299',
+                //     "destinationGeofenceTag": 'store',
+                //     "destinationGeofenceExternalId": '123',
+                //     "mode": 'car',
+                //     "scheduledArrivalAt": "2020-08-20T10:30:55.837Z",
+                //     "metadata": {"test": 123}
+                //     },
+                //     trackingOptions: {
+                //       "desiredStoppedUpdateInterval": 30,
+                //       "fastestStoppedUpdateInterval": 30,
+                //       "desiredMovingUpdateInterval": 30,
+                //       "fastestMovingUpdateInterval": 30,
+                //       "desiredSyncInterval": 20,
+                //       "desiredAccuracy": "high",
+                //       "stopDuration": 0,
+                //       "stopDistance": 0,
+                //       "replay": "none",
+                //       "sync": "all",
+                //       "showBlueBar": true,
+                //       "useStoppedGeofence": false,
+                //       "stoppedGeofenceRadius": 0,
+                //       "useMovingGeofence": false,
+                //       "movingGeofenceRadius": 0,
+                //       "syncGeofences": false,
+                //       "syncGeofencesLimit": 0,
+                //       "beacons": false,
+                //       "foregroundServiceEnabled": true
+                //     }
+                // );
+                var customTripOptions = RadarTripOptions(
+                  externalId: '299',
+                  destinationGeofenceTag: 'store',
+                  destinationGeofenceExternalId: '123',
+                  mode: 'car',
+                  scheduledArrivalAt: "2020-08-20T10:30:55.837Z",
+                  metadata: {"test": 123}
                 );
+                var tripTrackingOptions = RadarTrackingOptions.fromMap({ ...RadarTrackingOptions.presetContinuous, 'foregroundServiceEnabled': true });
+                var resp = await Radar.startTrip(tripOptions: customTripOptions, trackingOptions: tripTrackingOptions);
                 print("startTrip: $resp");
               },
               child: Text('startTrip'),
@@ -206,14 +221,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
+                var newTripOptions = RadarTripOptions(externalId: '299',metadata: {"test": 123});
                 var resp = await Radar.updateTrip(
                   status:'arrived',
-                  options: {
-                    "externalId": '299',
-                    "metadata": {
-                      "parkingSpot": '5'
-                    }
-                  }
+                  options: newTripOptions
                 );
                 print("updateTrip: $resp");
               },
@@ -233,9 +244,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                await Radar.setNotificationOptions({
-                  'iconString': 'icon'
-                });
+                await Radar.setNotificationOptions(
+                  RadarNotificationOptions(iconString: 'icon')
+                );
               },
               child: Text('setNotificationOptions'),
             ),
@@ -243,10 +254,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               style: raisedButtonStyle,
               onPressed: () async {
                 var resp = await Radar.searchPlaces(
-                  near: {
-                    'latitude': 40.783826,
-                    'longitude': -73.975363,
-                  },
+                  near: RadarNear(latitude: 40.78382, longitude:  -73.975363)
+                ,
                   radius: 1000,
                   chains: ["starbucks"],
                   chainMetadata: {
@@ -263,10 +272,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               onPressed: () async {
                 var resp = await Radar.autocomplete(
                   query: 'brooklyn roasting',
-                  near: {
-                    'latitude': 40.783826,
-                    'longitude': -73.975363,
-                  },
+                  near: null,
                   limit: 10,
                   layers: ['address', 'street'],
                   country: 'US',
@@ -318,15 +324,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               style: raisedButtonStyle,
               onPressed: () {
                 
-                Radar.setForegroundServiceOptions({
+                Radar.setForegroundServiceOptions(RadarForegroundServiceOptions.fromMap({
                   'title': 'Tracking',
                   'text': 'Continuous tracking started',
                   'icon': 2131165271,
                   'importance': 2,
                   'updatesOnly': false,
                   'activity': 'io.radar.example.MainActivity'
-                });
-                Radar.startTrackingCustom({
+                }));
+                Radar.startTrackingCustom(RadarTrackingOptions.fromMap({
                   'desiredStoppedUpdateInterval': 120,
                   'fastestStoppedUpdateInterval': 120,
                   'desiredMovingUpdateInterval': 30,
@@ -339,7 +345,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   'replay': 'none',
                   'showBlueBar': true,
                   'foregroundServiceEnabled': true
-                });
+                }));
               },
               child: Text('startTrackingCustom()'),
             ),
