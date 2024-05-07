@@ -284,7 +284,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 print("getContext: $resp");
               },
               child: Text('getContext'),
-            ),  
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.reverseGeocode(RadarLocation(latitude: 40.78382, longitude: -73.97536));
+                print("reverseGeocode: $resp");
+              },
+              child: Text('reverseGeocode'),
+            ),   
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
