@@ -250,6 +250,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               },
               child: Text('setNotificationOptions'),
             ),
+             ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                await Radar.setForegroundServiceOptions(
+                  RadarForegroundServiceOptions(
+                    title: 'Tracking',
+                    text: 'Continuous tracking started',
+                    importance: 2,
+                    updatesOnly: false,
+                    activity: 'io.radar.example.MainActivity')
+                );
+              },
+              child: Text('setForegroundServiceOptions'),
+            ),
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
