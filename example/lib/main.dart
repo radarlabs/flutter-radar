@@ -91,7 +91,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       var customTrackingOptions = RadarTrackingOptions(desiredStoppedUpdateInterval: 180, 
       desiredMovingUpdateInterval: 120, desiredSyncInterval: 10, 
       desiredAccuracy: 'high', stopDuration: 140, stopDistance: 70, replay: 'none',
-       syncLocations: 'all', showBlueBar: true, useStoppedGeofence: true, stoppedGeofenceRadius: 120,
+       sync: 'all', showBlueBar: true, useStoppedGeofence: true, stoppedGeofenceRadius: 120,
         useMovingGeofence: true, movingGeofenceRadius: 20, 
         syncGeofences: true, useVisits: false, 
         useSignificantLocationChanges: true, 

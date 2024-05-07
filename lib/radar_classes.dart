@@ -33,7 +33,7 @@ class RadarLocation {
       'latitude': latitude,
       'longitude': longitude,
       'accuracy': accuracy,
-    };
+    }..removeWhere((_, value) => value == null);
   }
 
   static RadarLocation fromMap(Map<String, dynamic> map) {
@@ -55,7 +55,7 @@ class RadarTrackingOptions {
   String? startTrackingAfter;
   String? stopTrackingAfter;
   String replay; // Assuming RadarTrackingOptionsReplay is an enum, you might want to create a Dart enum and use it here
-  String syncLocations; // Assuming RadarTrackingOptionsSyncLocations is an enum, you might want to create a Dart enum and use it here
+  String sync; // Assuming RadarTrackingOptionssync is an enum, you might want to create a Dart enum and use it here
   bool showBlueBar;
   bool useStoppedGeofence;
   int stoppedGeofenceRadius;
@@ -76,7 +76,7 @@ class RadarTrackingOptions {
     this.startTrackingAfter,
     this.stopTrackingAfter,
     required this.replay,
-    required this.syncLocations,
+    required this.sync,
     required this.showBlueBar,
     required this.useStoppedGeofence,
     required this.stoppedGeofenceRadius,
@@ -99,7 +99,7 @@ class RadarTrackingOptions {
       'startTrackingAfter': startTrackingAfter,
       'stopTrackingAfter': stopTrackingAfter,
       'replay': replay,
-      'syncLocations': syncLocations,
+      'sync': sync,
       'showBlueBar': showBlueBar,
       'useStoppedGeofence': useStoppedGeofence,
       'stoppedGeofenceRadius': stoppedGeofenceRadius,
@@ -109,7 +109,7 @@ class RadarTrackingOptions {
       'useVisits': useVisits,
       'useSignificantLocationChanges': useSignificantLocationChanges,
       'beacons': beacons,
-    };
+    }..removeWhere((_, value) => value == null);
   }
 
   static RadarTrackingOptions fromMap(Map<String, dynamic> map) {
@@ -123,7 +123,7 @@ class RadarTrackingOptions {
       startTrackingAfter: map['startTrackingAfter'] as String?,
       stopTrackingAfter: map['stopTrackingAfter'] as String?,
       replay: map['replay'] as String,
-      syncLocations: map['syncLocations'] as String,
+      sync: map['sync'] as String,
       showBlueBar: map['showBlueBar'] as bool,
       useStoppedGeofence: map['useStoppedGeofence'] as bool,
       stoppedGeofenceRadius: map['stoppedGeofenceRadius'] as int,
@@ -135,50 +135,50 @@ class RadarTrackingOptions {
       beacons: map['beacons'] as bool,
     );
   }
-    static Map<String, dynamic> presetContinuousIOS = {
-  "desiredStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy":'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "useStoppedGeofence": false,
-  "showBlueBar": true,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": false,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+  static Map<String, dynamic> presetContinuousIOS = {
+    "desiredStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy":'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "useStoppedGeofence": false,
+    "showBlueBar": true,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": false,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
   static Map<String, dynamic> presetContinuousAndroid =  {
-  "desiredStoppedUpdateInterval": 30,
-  "fastestStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "fastestMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy": 'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 0,
-  "foregroundServiceEnabled": true,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+    "desiredStoppedUpdateInterval": 30,
+    "fastestStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "fastestMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy": 'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 0,
+    "foregroundServiceEnabled": true,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsiveIOS = {
     "desiredStoppedUpdateInterval": 0,
@@ -226,55 +226,55 @@ class RadarTrackingOptions {
   };
 
   static Map<String, dynamic> presetEfficientIOS = {
-  "desiredStoppedUpdateInterval": 0,
-  "desiredMovingUpdateInterval": 0,
-  "desiredSyncInterval": 0,
-  "desiredAccuracy": "medium",
-  "stopDuration": 0,
-  "stopDistance": 0,
-  "replay": 'stops',
-  "useStoppedGeofence": false,
-  "showBlueBar": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": true,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+    "desiredStoppedUpdateInterval": 0,
+    "desiredMovingUpdateInterval": 0,
+    "desiredSyncInterval": 0,
+    "desiredAccuracy": "medium",
+    "stopDuration": 0,
+    "stopDistance": 0,
+    "replay": 'stops',
+    "useStoppedGeofence": false,
+    "showBlueBar": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": true,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
   static Map<String, dynamic> presetEfficientAndroid ={
-  "desiredStoppedUpdateInterval": 3600,
-  "fastestStoppedUpdateInterval": 1200,
-  "desiredMovingUpdateInterval": 1200,
-  "fastestMovingUpdateInterval": 360,
-  "desiredSyncInterval": 140,
-  "desiredAccuracy": 'medium',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'stops',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 10,
-  "foregroundServiceEnabled": false,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+    "desiredStoppedUpdateInterval": 3600,
+    "fastestStoppedUpdateInterval": 1200,
+    "desiredMovingUpdateInterval": 1200,
+    "fastestMovingUpdateInterval": 360,
+    "desiredSyncInterval": 140,
+    "desiredAccuracy": 'medium',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'stops',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 10,
+    "foregroundServiceEnabled": false,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsive =
       Platform.isIOS ? presetResponsiveIOS : presetResponsiveAndroid;
   static Map<String, dynamic> presetContinuous =
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
-    static Map<String, dynamic> presetEfficient=
+  static Map<String, dynamic> presetEfficient=
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
 }
 
@@ -299,14 +299,14 @@ class RadarTripOptions {
 
   Map<String, dynamic> toMap() {
     return {
-      'externalId': externalId,
-      'metadata': metadata,
-      'destinationGeofenceTag': destinationGeofenceTag,
-      'destinationGeofenceExternalId': destinationGeofenceExternalId,
-      'scheduledArrivalAt': scheduledArrivalAt,
-      'mode': mode,
-      'approachingThreshold': approachingThreshold,
-    };
+    'externalId': externalId,
+    'metadata': metadata,
+    'destinationGeofenceTag': destinationGeofenceTag,
+    'destinationGeofenceExternalId': destinationGeofenceExternalId,
+    'scheduledArrivalAt': scheduledArrivalAt,
+    'mode': mode,
+    'approachingThreshold': approachingThreshold,
+    }..removeWhere((_, value) => value == null);
   }
 
   static RadarTripOptions fromMap(Map<String, dynamic> map) {
@@ -347,7 +347,7 @@ class RadarNotificationOptions{
       'foregroundServiceIconColor': foregroundServiceIconColor,
       'eventIconString': eventIconString,
       'eventIconColor': eventIconColor,
-    };
+    }..removeWhere((_, value) => value == null);
   }
 
   static RadarNotificationOptions fromMap(Map<String, dynamic> map) {
@@ -408,7 +408,7 @@ class RadarForegroundServiceOptions{
       'importance': importance,
       'id': id,
       'channelName': channelName,
-    };
+    }..removeWhere((_, value) => value == null);
   }
 
   static RadarForegroundServiceOptions fromMap(Map<String, dynamic> map) {
