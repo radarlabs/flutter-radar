@@ -270,7 +270,7 @@ class Radar {
         'limit': limit,
         'tags': tags,
         'metadata': metadata
-      });
+      }..removeWhere((_, value) => value == null));
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -294,7 +294,7 @@ class Radar {
         'chainMetadata': chainMetadata,
         'categories': categories,
         'groups': groups
-      });
+      }..removeWhere((_, value) => value == null));
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};

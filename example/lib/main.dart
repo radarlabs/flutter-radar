@@ -254,19 +254,37 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               style: raisedButtonStyle,
               onPressed: () async {
                 var resp = await Radar.searchPlaces(
-                  near: RadarNear(latitude: 40.78382, longitude:  -73.975363)
-                ,
+                  near: RadarNear(latitude: 40.78382, longitude:  -73.975363),
                   radius: 1000,
                   chains: ["starbucks"],
                   chainMetadata: {
                     "customFlag": "true"
                   },
-                  limit: 10,
                 );
                 print("searchPlaces: $resp");
               },
               child: Text('searchPlaces'),
             ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.searchGeofences(
+                  near: RadarNear(latitude:40.73579226049364, longitude:  -73.9903616556155),
+                  radius: 1000,
+                  limit: 10,
+                );
+                print("searchGeofences: $resp");
+              },
+              child: Text('searchGeofences'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.getContext(RadarLocation(latitude: 40.78382, longitude: -73.97536));
+                print("getContext: $resp");
+              },
+              child: Text('getContext'),
+            ),  
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
