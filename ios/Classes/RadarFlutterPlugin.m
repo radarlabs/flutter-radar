@@ -148,7 +148,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.2-beta.1" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -1067,8 +1067,8 @@
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
-- (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
-    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
+- (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user locationMetadata:(NSDictionary *)locationMetadata{
+    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue], @"locationMetadata": locationMetadata};
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
     if (callbackHandle == 0) {
