@@ -847,13 +847,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String[] tags = (String[])tagsList.toArray(new String[0]);
         HashMap metadataMap = (HashMap)call.argument("metadata");
         JSONObject metadata = jsonForMap(metadataMap);
-        int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
+        int limit = call.hasArgument("limit") ? (int)call.argument("limit") : -1;
 
-        if (near != null) {
-            Radar.searchGeofences(near, radius, tags, metadata, limit, callback);
-        } else {
-            Radar.searchGeofences(radius, tags, metadata, limit, callback);
-        }
+        // includeGeoemtry boolean
+        boolean includeGeometry = call.hasArgument("includeGeometry") ? (boolean)call.argument("includeGeometry") : false;
+        Radar.searchGeofences(near, radius, tags, metadata, limit, includeGeoemtry, callback);
     }
 
     public void searchPlaces(MethodCall call, final Result result) {

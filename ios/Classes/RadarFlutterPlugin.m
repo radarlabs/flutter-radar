@@ -637,14 +637,17 @@
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
     } else {
-        limit = 10;
+        limit = -1;
     }
 
-    if (near != nil) {
-        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
-    } else {
-        [Radar searchGeofencesWithRadius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+    // boolean for includeGeofences
+    BOOL includeGeofences = NO;
+    NSNumber *includeGeofencesNumber = argsDict[@"includeGeofences"];
+    if (includeGeofencesNumber != nil && [includeGeofencesNumber isKindOfClass:[NSNumber class]]) {
+        includeGeofences = [includeGeofencesNumber boolValue];
     }
+
+    [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeofences:includeGeofences completionHandler:completionHandler];
 }
 
 - (void)searchPlaces:(FlutterMethodCall *)call withResult:(FlutterResult)result {
