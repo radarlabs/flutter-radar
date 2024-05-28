@@ -324,7 +324,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.9.2-beta.3");
+        editor.putString("x_platform_sdk_version", "3.9.2-beta.4");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
         result.success(true);
