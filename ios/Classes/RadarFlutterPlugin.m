@@ -1071,7 +1071,18 @@
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user locationMetadata:(NSDictionary *)locationMetadata{
-    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue], @"locationMetadata": locationMetadata};
+
+    NSMutableDictionary *dict = [NSMutableDictionary new];
+    if ([Radar dictionaryForLocation:location]) {
+        [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
+    }
+    if ([user dictionaryValue]) {
+        [dict setObject:[user dictionaryValue] forKey:@"user"];
+    }
+    if (locationMetadata) {
+        [dict setObject:locationMetadata forKey:@"locationMetadata"];
+    }
+    
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
     if (callbackHandle == 0) {
