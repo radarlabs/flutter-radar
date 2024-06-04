@@ -22,12 +22,18 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>YOUR TEXT</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>YOUR TEXT</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Your iOS 11 and higher background location usage description goes here. e.g., "This app uses your location in the background to recommend places nearby."</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Your iOS 10 and lower background location usage description goes here. e.g., "This app uses your location in the background to recommend places nearby."</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your foreground location usage description goes here. e.g., "This app uses your location in the foreground to recommend places nearby."</string>
+	<key>NSMotionUsageDescription</key>
+	<string>We use motion data to improve the accuracy of locations</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -78,5 +84,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

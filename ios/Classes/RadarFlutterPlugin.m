@@ -148,7 +148,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.2-beta.5" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -637,14 +637,17 @@
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
     } else {
-        limit = 10;
+        limit = -1;
     }
 
-    if (near != nil) {
-        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
-    } else {
-        [Radar searchGeofencesWithRadius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+    // boolean for includeGeometry
+    BOOL includeGeometry = NO;
+    NSNumber *includeGeometryNumber = argsDict[@"includeGeometry"];
+    if (includeGeometryNumber != nil && [includeGeometryNumber isKindOfClass:[NSNumber class]]) {
+        includeGeometry = [includeGeometryNumber boolValue];
     }
+
+    [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeometry:includeGeometry completionHandler:completionHandler];
 }
 
 - (void)searchPlaces:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -705,12 +708,14 @@
     NSString *query = argsDict[@"query"];
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
+    if (nearDict != nil && [nearDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
         double longitude = [longitudeNumber doubleValue];
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
+    } else {
+        near = nil;
     }
     NSNumber *limitNumber = argsDict[@"limit"];
     int limit;
@@ -1067,8 +1072,19 @@
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
-- (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
-    NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
+- (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user locationMetadata:(NSDictionary *)locationMetadata{
+
+    NSMutableDictionary *dict = [NSMutableDictionary new];
+    if ([Radar dictionaryForLocation:location]) {
+        [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
+    }
+    if ([user dictionaryValue]) {
+        [dict setObject:[user dictionaryValue] forKey:@"user"];
+    }
+    if (locationMetadata) {
+        [dict setObject:locationMetadata forKey:@"locationMetadata"];
+    }
+    
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
     if (callbackHandle == 0) {
