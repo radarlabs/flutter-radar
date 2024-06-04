@@ -324,7 +324,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.9.2-beta.4");
+        editor.putString("x_platform_sdk_version", "3.9.2-beta.5");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
         result.success(true);
@@ -849,9 +849,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         JSONObject metadata = jsonForMap(metadataMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : -1;
 
-        // includeGeoemtry boolean
         boolean includeGeometry = call.hasArgument("includeGeometry") ? (boolean)call.argument("includeGeometry") : false;
-        Radar.searchGeofences(near, radius, tags, metadata, limit, includeGeoemtry, callback);
+        Radar.searchGeofences(near, radius, tags, metadata, limit, includeGeometry, callback);
     }
 
     public void searchPlaces(MethodCall call, final Result result) {
@@ -906,7 +905,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     public void autocomplete(MethodCall call, final Result result) {
         String query = call.argument("query");
         HashMap nearMap = (HashMap)call.argument("near");
-        Location near = locationForMap(nearMap);
+        Location near = null;
+        if (nearMap != null) {
+            near = locationForMap(nearMap);
+        }
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
         String country = call.argument("country");
         ArrayList layersList = (ArrayList)call.argument("layers");
