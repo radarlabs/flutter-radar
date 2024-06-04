@@ -40,6 +40,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @pragma('vm:entry-point')
   static void onLocation(Map res) {
     print('📍📍 onLocation: $res');
+    print("METADATA: $res['locationMetadata']");
   }
 
   @pragma('vm:entry-point')
@@ -255,7 +256,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               style: raisedButtonStyle,
               onPressed: () async {
                 var resp = await Radar.autocomplete(
-                  query: 'brooklyn roasting',
+                  query: '841 Broadwa',
                   near: {
                     'latitude': 40.783826,
                     'longitude': -73.975363,
@@ -269,6 +270,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               },
               child: Text('autocomplete'),
             ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.autocomplete(
+                  query: '841 Broadwa',
+                  near: {},
+                  limit: 10,
+                  layers: ['address', 'street'],
+                  country: 'US',
+                  mailable: false
+                );
+                print("autocomplete: $resp");
+              },
+              child: Text('autocomplete without near'),
+            ),
+
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
