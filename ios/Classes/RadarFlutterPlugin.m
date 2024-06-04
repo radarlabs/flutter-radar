@@ -708,7 +708,7 @@
     NSString *query = argsDict[@"query"];
     CLLocation *near;
     NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
+    if (nearDict != nil && [nearDict isKindOfClass:[NSDictionary class]]) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
         double latitude = [latitudeNumber doubleValue];
