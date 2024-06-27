@@ -162,8 +162,7 @@ class Radar {
     }
   }
 
-  static Future startTrackingVerified(
-      {int? interval, bool? beacons}) async {
+  static Future startTrackingVerified(int interval, bool beacons) async {
     try {
       await _channel.invokeMethod('startTrackingVerified',
           {'interval': interval, 'beacons': beacons});

@@ -216,6 +216,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
+                var resp = await Radar.getLocationPermissionStatus();
+                print("status: $resp"); 
+              },
+              child: Text('getLocationPermissionStatus'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
                 var resp = await Radar.cancelTrip();
                 print("cancelTrip: $resp");
               },
@@ -372,7 +380,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () {
-                Radar.startTrackingVerified();
+                Radar.startTrackingVerified(30, false);
               },
               child: Text('startTrackingVerified()'),
             ),
