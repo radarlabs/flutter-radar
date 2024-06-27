@@ -163,10 +163,10 @@ class Radar {
   }
 
   static Future startTrackingVerified(
-      {bool? token, int? interval, bool? beacons}) async {
+      {int? interval, bool? beacons}) async {
     try {
       await _channel.invokeMethod('startTrackingVerified',
-          {'token': token, 'interval': interval, 'beacons': beacons});
+          {'interval': interval, 'beacons': beacons});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -175,6 +175,14 @@ class Radar {
   static Future stopTracking() async {
     try {
       await _channel.invokeMethod('stopTracking');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future stopTrackingVerified() async {
+    try {
+      await _channel.invokeMethod('stopTrackingVerified');
     } on PlatformException catch (e) {
       print(e);
     }
@@ -272,14 +280,16 @@ class Radar {
       int? radius,
       List? tags,
       Map<String, dynamic>? metadata,
-      int? limit}) async {
+      int? limit,
+      bool? includeGeometry}) async {
     try {
       return await _channel.invokeMethod('searchGeofences', <String, dynamic>{
         'near': near,
         'radius': radius,
         'limit': limit,
         'tags': tags,
-        'metadata': metadata
+        'metadata': metadata,
+        'includeGeometry': includeGeometry
       });
     } on PlatformException catch (e) {
       print(e);
@@ -467,16 +477,6 @@ class Radar {
     }
   }
 
-  static Future<Map?> trackVerifiedToken({bool? beacons}) async {
-    try {
-      return await _channel
-          .invokeMethod('trackVerifiedToken', {'beacons': beacons});
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
-  }
-
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
@@ -485,6 +485,39 @@ class Radar {
     try {
       return await _channel
           .invokeMethod('validateAddress', {'address': address});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future requestForegroundLocationPermission() async {
+    try {
+      await _channel.invokeMethod('requestForegroundLocationPermission');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future requestBackgroundLocationPermission() async {
+    try {
+      await _channel.invokeMethod('requestBackgroundLocationPermission');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future openAppSettings() async {
+    try {
+      await _channel.invokeMethod('openAppSettings');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<Map?> getLocationPermissionStatus() async {
+    try {
+      return await _channel.invokeMethod('getLocationPermissionStatus');
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -602,6 +635,25 @@ class Radar {
   static offToken() async {
     try {
       await _channel.invokeMethod('off', {'listener': 'token'});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static onLocationPermissionStatus(Function(Map res) callback) async {
+    try {
+      final CallbackHandle handle =
+          PluginUtilities.getCallbackHandle(callback)!;
+      await _channel.invokeMethod(
+          'on', {'listener': 'locationPermissionStatus', 'callbackHandle': handle.toRawHandle()});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static offLocationPermissionStatus() async {
+    try {
+      await _channel.invokeMethod('off', {'listener': 'locationPermissionStatus'});
     } on PlatformException catch (e) {
       print(e);
     }

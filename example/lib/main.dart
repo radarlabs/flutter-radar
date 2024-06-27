@@ -67,6 +67,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     print('📍📍 onToken: $res');
   }
 
+  @pragma('vm:entry-point')
+  static void onLocationPermissionStatus(Map res) {
+    print('📍📍 onLocationPermissionStatus: $res');
+  }
+
   Future<void> initRadar() async {
     Radar.initialize('prj_test_pk_0000000000000000000000000000000000000000');
     Radar.setUserId('flutter');
@@ -83,21 +88,25 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
     Radar.onToken(onToken);
+    Radar.onLocationPermissionStatus(onLocationPermissionStatus);
 
-    await Radar.requestPermissions(false);
+    //await Radar.requestPermissions(false);
     
-    await Radar.requestPermissions(true);
-    var permissionStatus = await Radar.getPermissionsStatus();
-    if (permissionStatus != "DENIED") {
-      var b = await Radar.startTrackingCustom({
-        ... Radar.presetResponsive,
-        "showBlueBar": true,
-      });
-      //Radar.startTracking('continuous');
+    //await Radar.requestPermissions(true);
+    // var permissionStatus = await Radar.getPermissionsStatus();
+    // if (permissionStatus != "DENIED") {
+    //   var b = await Radar.startTrackingCustom({
+    //     ... Radar.presetResponsive,
+    //     "showBlueBar": true,
+    //   });
+    //   //Radar.startTracking('continuous');
 
-      var c = await Radar.getTrackingOptions();
-      print("Tracking options $c");
-    }
+    //   var c = await Radar.getTrackingOptions();
+    //   print("Tracking options $c");
+    // }
+   var permissionStatus = await Radar.getLocationPermissionStatus();
+   print(permissionStatus);
+   //await Radar.requestForegroundLocationPermission(); 
   }
 
   @override
@@ -179,6 +188,30 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 print("completeTrip: $resp");
               },
               child: Text('completeTrip'),
+            ),
+             ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Radar.requestForegroundLocationPermission();
+                
+              },
+              child: Text('get foreground'),
+            ),
+             ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Radar.requestBackgroundLocationPermission();
+                
+              },
+              child: Text('get background'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                Radar.openAppSettings();
+                
+              },
+              child: Text('openAppSettings'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
@@ -339,9 +372,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () {
-                Radar.startTrackingVerified(token: true);
+                Radar.startTrackingVerified();
               },
-              child: Text('startTrackingVerified(token: true)'),
+              child: Text('startTrackingVerified()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () {
+                Radar.stopTrackingVerified();
+              },
+              child: Text('stopTrackingVerified()'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
@@ -378,14 +418,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               },
               child: Text('trackVerified'),
             ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Map? resp = await Radar.trackVerifiedToken();
-                print("trackVerifiedToken: $resp");
-              },
-              child: Text('trackVerifiedToken'),
-            ),
+            
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
