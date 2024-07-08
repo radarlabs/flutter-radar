@@ -1074,7 +1074,9 @@
         return;
     }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.channel invokeMethod:@"location" arguments:args];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"location" arguments:args];
+    }
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
@@ -1086,7 +1088,9 @@
         return;
     }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.channel invokeMethod:@"clientLocation" arguments:args];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"clientLocation" arguments:args];
+    }
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
