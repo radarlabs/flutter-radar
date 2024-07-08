@@ -1027,6 +1027,7 @@
     self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
 
     FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
+    self.backgroundChannel = backgroundChannel;
     [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath];
     result(nil);
 }
