@@ -1070,12 +1070,12 @@
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
-    if (callbackHandle == 0) {
-        return;
-    }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
     if (self.channel != nil) {
         [self.channel invokeMethod:@"location" arguments:args];
+    }
+    if (callbackHandle == 0) {
+        return;
     }
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
@@ -1084,12 +1084,12 @@
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger callbackHandle = [userDefaults integerForKey:@"clientLocation"];
-    if (callbackHandle == 0) {
-        return;
-    }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
     if (self.channel != nil) {
         [self.channel invokeMethod:@"clientLocation" arguments:args];
+    }
+    if (callbackHandle == 0) {
+        return;
     }
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
