@@ -1027,9 +1027,7 @@
     self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
 
     FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
-    self.backgroundChannel = backgroundChannel;
-
-    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath] ;    
+    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath];
     result(nil);
 }
 
@@ -1075,6 +1073,7 @@
         return;
     }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.channel invokeMethod:@"location" arguments:args];
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
@@ -1086,6 +1085,7 @@
         return;
     }
     NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    [self.channel invokeMethod:@"clientLocation" arguments:args];
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
