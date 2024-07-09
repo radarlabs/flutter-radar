@@ -76,7 +76,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     private static final String TAG = "RadarFlutterPlugin";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
     private static MethodChannel sBackgroundChannel;
-    private static MethodChannel channel;
+    private MethodChannel channel;
 
     private static final Object lock = new Object();
 
@@ -108,10 +108,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        Radar.setReceiver(new RadarFlutterReceiver());
         mContext = binding.getApplicationContext();
-        RadarFlutterPlugin.channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
-        RadarFlutterPlugin.channel.setMethodCallHandler(this);
+        channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
+        Radar.setReceiver(new RadarFlutterReceiver(channel));
+        channel.setMethodCallHandler(this);
     }
 
     @Override
@@ -328,7 +328,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         editor.putString("x_platform_sdk_version", "3.9.1");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
-        Radar.setReceiver(new RadarFlutterReceiver());
+        Radar.setReceiver(new RadarFlutterReceiver(channel));
         result.success(true);
     }
 
@@ -1308,6 +1308,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public static class RadarFlutterReceiver extends RadarReceiver {
+
+        private MethodChannel channel;
+
+        RadarFlutterReceiver(MethodChannel channel) {
+            this.channel = channel;
+        }
 
         @Override
         public void onEventsReceived(Context context, RadarEvent[] events, RadarUser user) {
