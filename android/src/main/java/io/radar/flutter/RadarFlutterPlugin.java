@@ -1525,7 +1525,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public void attachListeners(MethodCall call, Result result) {
-        Log.e(TAG, "attaching listeners");
         SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
         long callbackDispatcherHandle = ((Number)call.argument("callbackDispatcherHandle")).longValue();
         sharedPrefs.edit().putLong(CALLBACK_DISPATCHER_HANDLE_KEY, callbackDispatcherHandle).commit();
