@@ -1312,6 +1312,40 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 Log.e(TAG, e.toString());
             }
         }
+
+        @Override
+        public void onLocationUpdated(Context context, Location location, RadarUser user) {
+            try {
+                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
+                long callbackHandle = sharedPrefs.getLong("location", 0L);
+
+                if (callbackHandle == 0L) {
+                    Log.e(TAG, "callback handle is empty");
+                    return;
+                }
+
+                RadarFlutterPlugin.initializeBackgroundEngine(context);
+
+                JSONObject obj = new JSONObject();
+                obj.put("location", Radar.jsonForLocation(location));
+                obj.put("user", user.toJson());
+
+                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                synchronized(lock) {
+                    final ArrayList args = new ArrayList();
+                    args.add(callbackHandle);
+                    args.add(res);
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sBackgroundChannel.invokeMethod("", args);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
     
 
         public void onClientLocationUpdated(Context context, Location location, boolean stopped, Radar.RadarLocationSource source) {
@@ -1410,40 +1444,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 Log.e(TAG, e.toString());
             }
         }
-
-        @Override 
-        public void onLocationPermissionStatusUpdated(Context context, RadarLocationPermissionStatus status) {
-            try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("locationPermissionStatus", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
-                JSONObject obj = status.toJson();
-                
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, e.toString());
-            }
-        }
-
     }
-
+    
     public static class RadarFlutterVerifiedReceiver extends RadarVerifiedReceiver {
 
         @Override
