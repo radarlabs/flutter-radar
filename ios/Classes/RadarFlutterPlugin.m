@@ -1087,8 +1087,8 @@
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
-- (void)didUpdateToken:(NSString *)token {
-    NSDictionary *dict = @{@"token": token};    
+- (void)didUpdateToken:(RadarVerifiedLocationToken *)token {
+    NSDictionary *dict = [token dictionaryValue];    
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSNumber* callbackHandle = [userDefaults objectForKey:@"token"];
     if (callbackHandle == 0) {

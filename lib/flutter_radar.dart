@@ -469,7 +469,7 @@ class Radar {
 
   static Future<Map?> trackVerified({bool? beacons}) async {
     try {
-      return await _channel.invokeMethod('trackVerified', {'beacons': beacons});
+      return await _channel.invokeMethod('trackVerified', {'beacons': beacons != null ? beacons : false});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
