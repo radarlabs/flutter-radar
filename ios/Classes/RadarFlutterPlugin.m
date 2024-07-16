@@ -770,9 +770,30 @@
       result(dict);
   };
 
-  NSDictionary *argsDict = call.arguments;
+    NSDictionary *argsDict = call.arguments;
 
-  NSDictionary *locationDict = argsDict[@"location"];
+    NSArray<NSString *> *layers = nil;
+    id layersValue = argsDict[@"layers"];
+    if (layersValue != nil && [layersValue isKindOfClass:[NSArray class]]) {
+        NSArray *tempLayers = (NSArray *)layersValue;
+        // Further check if the array contains only NSString objects
+        BOOL allStrings = YES;
+        for (id item in tempLayers) {
+            if (![item isKindOfClass:[NSString class]]) {
+                allStrings = NO;
+                break;
+            }
+        }
+        if (allStrings) {
+            layers = tempLayers;
+        }
+    }
+
+  NSDictionary *locationDict = nil;
+  id locationDictValue = argsDict[@"location"];
+  if (locationDictValue != nil && [locationDictValue isKindOfClass:[NSDictionary class]]) {
+      locationDict = (NSDictionary *)locationDictValue;
+  }
   if (locationDict) {
       NSNumber *latitudeNumber = locationDict[@"latitude"];
       NSNumber *longitudeNumber = locationDict[@"longitude"];
@@ -780,9 +801,9 @@
       double longitude = [longitudeNumber doubleValue];
       CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
 
-      [Radar reverseGeocodeLocation:location completionHandler:completionHandler];
+      [Radar reverseGeocodeLocation:location layers:layers completionHandler:completionHandler];
   } else {
-      [Radar reverseGeocodeWithCompletionHandler:completionHandler];
+      [Radar reverseGeocodeWithLayers:layers completionHandler:completionHandler];
   }
 }
 

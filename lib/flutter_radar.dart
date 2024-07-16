@@ -164,8 +164,8 @@ class Radar {
 
   static Future startTrackingVerified(int interval, bool beacons) async {
     try {
-      await _channel.invokeMethod('startTrackingVerified',
-          {'interval': interval, 'beacons': beacons});
+      await _channel.invokeMethod(
+          'startTrackingVerified', {'interval': interval, 'beacons': beacons});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -353,10 +353,14 @@ class Radar {
     }
   }
 
-  static Future<Map?> reverseGeocode(Map<String, dynamic> location) async {
+  static Future<Map?> reverseGeocode(
+      {Map<String, dynamic>? location, List? layers}) async {
     try {
-      return await _channel
-          .invokeMethod('reverseGeocode', {'location': location});
+      final Map<String, dynamic> arguments = {
+        'location': location != null ? location : null,
+        'layers': layers != null ? layers : null
+      };
+      return await _channel.invokeMethod('reverseGeocode', arguments);
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -469,7 +473,8 @@ class Radar {
 
   static Future<Map?> trackVerified({bool? beacons}) async {
     try {
-      return await _channel.invokeMethod('trackVerified', {'beacons': beacons != null ? beacons : false});
+      return await _channel.invokeMethod(
+          'trackVerified', {'beacons': beacons != null ? beacons : false});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -497,7 +502,6 @@ class Radar {
       print(e);
     }
   }
-
 
   static onLocation(Function(Map res) callback) async {
     try {
@@ -616,49 +620,49 @@ class Radar {
   }
 
   static Map<String, dynamic> presetContinuousIOS = {
-  "desiredStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy":'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "useStoppedGeofence": false,
-  "showBlueBar": true,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": false,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+    "desiredStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy": 'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "useStoppedGeofence": false,
+    "showBlueBar": true,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": false,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
-  static Map<String, dynamic> presetContinuousAndroid =  {
-  "desiredStoppedUpdateInterval": 30,
-  "fastestStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "fastestMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy": 'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 0,
-  "foregroundServiceEnabled": true,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+  static Map<String, dynamic> presetContinuousAndroid = {
+    "desiredStoppedUpdateInterval": 30,
+    "fastestStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "fastestMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy": 'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 0,
+    "foregroundServiceEnabled": true,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsiveIOS = {
     "desiredStoppedUpdateInterval": 0,
@@ -706,54 +710,54 @@ class Radar {
   };
 
   static Map<String, dynamic> presetEfficientIOS = {
-  "desiredStoppedUpdateInterval": 0,
-  "desiredMovingUpdateInterval": 0,
-  "desiredSyncInterval": 0,
-  "desiredAccuracy": "medium",
-  "stopDuration": 0,
-  "stopDistance": 0,
-  "replay": 'stops',
-  "useStoppedGeofence": false,
-  "showBlueBar": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": true,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+    "desiredStoppedUpdateInterval": 0,
+    "desiredMovingUpdateInterval": 0,
+    "desiredSyncInterval": 0,
+    "desiredAccuracy": "medium",
+    "stopDuration": 0,
+    "stopDistance": 0,
+    "replay": 'stops',
+    "useStoppedGeofence": false,
+    "showBlueBar": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": true,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
-  static Map<String, dynamic> presetEfficientAndroid ={
-  "desiredStoppedUpdateInterval": 3600,
-  "fastestStoppedUpdateInterval": 1200,
-  "desiredMovingUpdateInterval": 1200,
-  "fastestMovingUpdateInterval": 360,
-  "desiredSyncInterval": 140,
-  "desiredAccuracy": 'medium',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'stops',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 10,
-  "foregroundServiceEnabled": false,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+  static Map<String, dynamic> presetEfficientAndroid = {
+    "desiredStoppedUpdateInterval": 3600,
+    "fastestStoppedUpdateInterval": 1200,
+    "desiredMovingUpdateInterval": 1200,
+    "fastestMovingUpdateInterval": 360,
+    "desiredSyncInterval": 140,
+    "desiredAccuracy": 'medium',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'stops',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 10,
+    "foregroundServiceEnabled": false,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsive =
       Platform.isIOS ? presetResponsiveIOS : presetResponsiveAndroid;
   static Map<String, dynamic> presetContinuous =
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
-    static Map<String, dynamic> presetEfficient=
+  static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
 }
