@@ -49,7 +49,7 @@ android {
     }
 
     dependencies {
-        implementation 'io.radar:sdk:3.13.1'
+        implementation 'io.radar:sdk:3.14.0'
         implementation "com.google.android.play:integrity:1.2.0"
     }
 }

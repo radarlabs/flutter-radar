@@ -57,7 +57,6 @@ import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarRouteMatrix;
-import io.radar.sdk.model.RadarLocationPermissionStatus;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 import io.radar.sdk.model.RadarVerifiedLocationToken;
 
@@ -106,7 +105,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         }
     }
-    
+
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         Radar.setReceiver(new RadarFlutterReceiver());
@@ -300,18 +299,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                     break;
                 case "validateAddress":
                     validateAddress(call, result);
-                    break;
-                case "requestForegroundLocationPermission":
-                    requestForegroundLocationPermission(result);
-                    break;
-                case "requestBackgroundLocationPermission":
-                    requestBackgroundLocationPermission(result);
-                    break;
-                case "openAppSettings":
-                    openAppSettings(result);
-                    break;
-                case "getLocationPermissionStatus":
-                    getLocationPermissionStatus(result);
                     break;
                 case "attachListeners":
                     attachListeners(call, result);
@@ -1230,28 +1217,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(isRemoteTracking);
     }
 
-    private void requestForegroundLocationPermission (Result result) {
-        Radar.requestForegroundLocationPermission();
-        result.success(true);
-    }
-
-    private void requestBackgroundLocationPermission (Result result) {
-        Radar.requestBackgroundLocationPermission();
-        result.success(true);
-    }
-
-    private void openAppSettings (Result result) {
-        Radar.openAppSettings();
-        result.success(true);
-    }
-
-    private void  getLocationPermissionStatus (Result result) {
-        RadarLocationPermissionStatus status = Radar.getLocationPermissionStatus();
-        JSONObject obj = status.toJson();
-        HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-        result.success(map);
-    }
-
     public void validateAddress(MethodCall call, final Result result) throws JSONException {
         Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
             @Override
@@ -1348,39 +1313,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         }
     
-        @Override
-        public void onLocationUpdated(Context context, Location location, RadarUser user) {
-            try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("location", 0L);
-
-                if (callbackHandle == 0L) {
-                    Log.e(TAG, "callback handle is empty");
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
-                JSONObject obj = new JSONObject();
-                obj.put("location", Radar.jsonForLocation(location));
-                obj.put("user", user.toJson());
-
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, e.toString());
-            }
-        }
 
         public void onClientLocationUpdated(Context context, Location location, boolean stopped, Radar.RadarLocationSource source) {
             try {

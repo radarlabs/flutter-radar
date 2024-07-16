@@ -67,11 +67,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     print('📍📍 onToken: $res');
   }
 
-  @pragma('vm:entry-point')
-  static void onLocationPermissionStatus(Map res) {
-    print('📍📍 onLocationPermissionStatus: $res');
-  }
-
   Future<void> initRadar() async {
     Radar.initialize('prj_test_pk_0000000000000000000000000000000000000000');
     Radar.setUserId('flutter');
@@ -88,25 +83,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.onEvents(onEvents);
     Radar.onLog(onLog);
     Radar.onToken(onToken);
-    Radar.onLocationPermissionStatus(onLocationPermissionStatus);
 
-    //await Radar.requestPermissions(false);
-    
-    //await Radar.requestPermissions(true);
-    // var permissionStatus = await Radar.getPermissionsStatus();
-    // if (permissionStatus != "DENIED") {
-    //   var b = await Radar.startTrackingCustom({
-    //     ... Radar.presetResponsive,
-    //     "showBlueBar": true,
-    //   });
-    //   //Radar.startTracking('continuous');
+    await Radar.requestPermissions(false);
 
-    //   var c = await Radar.getTrackingOptions();
-    //   print("Tracking options $c");
-    // }
-   var permissionStatus = await Radar.getLocationPermissionStatus();
-   print(permissionStatus);
-   //await Radar.requestForegroundLocationPermission(); 
+    await Radar.requestPermissions(true);
+    var permissionStatus = await Radar.getPermissionsStatus();
+    if (permissionStatus != "DENIED") {
+      var b = await Radar.startTrackingCustom({
+        ... Radar.presetResponsive,
+        "showBlueBar": true,
+      });
+      //Radar.startTracking('continuous');
+
+      var c = await Radar.getTrackingOptions();
+      print("Tracking options $c");
+    }
   }
 
   @override
@@ -188,38 +179,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 print("completeTrip: $resp");
               },
               child: Text('completeTrip'),
-            ),
-             ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Radar.requestForegroundLocationPermission();
-                
-              },
-              child: Text('get foreground'),
-            ),
-             ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Radar.requestBackgroundLocationPermission();
-                
-              },
-              child: Text('get background'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Radar.openAppSettings();
-                
-              },
-              child: Text('openAppSettings'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.getLocationPermissionStatus();
-                print("status: $resp"); 
-              },
-              child: Text('getLocationPermissionStatus'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,

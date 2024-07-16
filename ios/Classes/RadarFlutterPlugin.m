@@ -130,14 +130,6 @@
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
         [self validateAddress:call withResult:result];
-    } else if ([@"getLocationPermissionStatus" isEqualToString:call.method]) {
-        [self getLocationPermissionStatus:result];
-    } else if ([@"requestForegroundLocationPermission" isEqualToString:call.method]) {
-        [self requestForegroundLocationPermission:result];
-    } else if ([@"requestBackgroundLocationPermission" isEqualToString:call.method]) {
-        [self requestBackgroundLocationPermission:result];
-    } else if ([@"openAppSettings" isEqualToString:call.method]) { 
-        [self openAppSettings:result];
     } else if ([@"attachListeners" isEqualToString:call.method]) {
         [self attachListeners:call withResult:result];
     } else if ([@"detachListeners" isEqualToString:call.method]) {
@@ -999,26 +991,6 @@
   [Radar validateAddress:address completionHandler:completionHandler];
 }
 
--(void)requestForegroundLocationPermission:(FlutterResult)result {
-    [Radar requestForegroundLocationPermission];
-    result(nil);
-}
-
--(void)requestBackgroundLocationPermission:(FlutterResult)result {
-    [Radar requestBackgroundLocationPermission];
-    result(nil);
-}
-
--(void)getLocationPermissionStatus:(FlutterResult)result {
-    RadarLocationPermissionStatus *status = [Radar getLocationPermissionStatus];
-    result([status dictionaryValue]);
-}
-
--(void)openAppSettings:(FlutterResult)result {
-    [Radar openAppSettings];
-    result(nil);
-}
-
 -(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
     NSNumber* callbackDispatcherHandle = call.arguments[@"callbackDispatcherHandle"];
 
@@ -1122,20 +1094,6 @@
     if (callbackHandle == 0) {
         return;
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
-}
-
-- (void)didUpdateLocationPermissionStatus:(RadarLocationPermissionStatus *)status {
-    NSDictionary *dict = @{@"status": [status dictionaryValue]};
-    NSLog(@"didUpdateLocationPermissionStatus");
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"locationPermissionStatus"];
-    if (callbackHandle == 0) {
-        NSLog(@"callbackHandle is 0");
-        return;
-    }
-    NSLog(@"calling background channel");
     NSArray* args = @[callbackHandle, dict];
     [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
