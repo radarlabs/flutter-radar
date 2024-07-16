@@ -498,30 +498,6 @@ class Radar {
     }
   }
 
-  static Future requestBackgroundLocationPermission() async {
-    try {
-      await _channel.invokeMethod('requestBackgroundLocationPermission');
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future openAppSettings() async {
-    try {
-      await _channel.invokeMethod('openAppSettings');
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future<Map?> getLocationPermissionStatus() async {
-    try {
-      return await _channel.invokeMethod('getLocationPermissionStatus');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
-  }
 
   static onLocation(Function(Map res) callback) async {
     try {
@@ -634,25 +610,6 @@ class Radar {
   static offToken() async {
     try {
       await _channel.invokeMethod('off', {'listener': 'token'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static onLocationPermissionStatus(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'locationPermissionStatus', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static offLocationPermissionStatus() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'locationPermissionStatus'});
     } on PlatformException catch (e) {
       print(e);
     }
