@@ -50,7 +50,7 @@ class Radar {
     }
   }
 
-  static Future<Object?> _handleMethodCall(MethodCall call) async {
+  static Future<void> _handleMethodCall(MethodCall call) async {
     final args = call.arguments;
     switch (call.method) {
       case 'location':
