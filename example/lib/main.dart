@@ -75,8 +75,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.setLogLevel('info');
     Radar.setAnonymousTrackingEnabled(false);
 
-    Radar.attachListeners();
-
     Radar.onLocation(onLocation);
     Radar.onClientLocation(onClientLocation);
     Radar.onError(onError);
