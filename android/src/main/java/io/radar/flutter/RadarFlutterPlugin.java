@@ -292,7 +292,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.10.0");
+        editor.putString("x_platform_sdk_version", "3.10.0-beta.1");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
