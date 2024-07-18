@@ -20,35 +20,59 @@ void callbackDispatcher() {
   });
 }
 
+typedef LocationCallback = void Function(Map<dynamic, dynamic> locationEvent);
+typedef ClientLocationCallback = void Function(
+  Map<dynamic, dynamic> locationEvent,
+);
+typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
+typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
+typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
+typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
+
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
+
+  static LocationCallback? foregroundLocationCallback;
+  static ClientLocationCallback? foregroundClientLocationCallback;
+  static ErrorCallback? foregroundErrorCallback;
+  static LogCallback? foregroundLogCallback;
+  static EventsCallback? foregroundEventsCallback;
+  static TokenCallback? foregroundTokenCallback;
 
   static Future initialize(String publishableKey) async {
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
       });
+      _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
       print(e);
     }
   }
 
-  static attachListeners() async {
-    try {
-      await _channel.invokeMethod('attachListeners', {
-        'callbackDispatcherHandle':
-            PluginUtilities.getCallbackHandle(callbackDispatcher)?.toRawHandle()
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future detachListeners() async {
-    try {
-      await _channel.invokeMethod('detachListeners');
-    } on PlatformException catch (e) {
-      print(e);
+  static Future<Object?> _handleMethodCall(MethodCall call) async {
+    final args = call.arguments;
+    switch (call.method) {
+      case 'location':
+        foregroundLocationCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'clientLocation':
+        foregroundClientLocationCallback?.call(
+          args[1] as Map<dynamic, dynamic>,
+        );
+        break;
+      case 'error':
+        foregroundErrorCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'log':
+        foregroundLogCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'events':
+        foregroundEventsCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'token':
+        foregroundTokenCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
     }
   }
 
@@ -495,128 +519,70 @@ class Radar {
     }
   }
 
-  static Future requestForegroundLocationPermission() async {
-    try {
-      await _channel.invokeMethod('requestForegroundLocationPermission');
-    } on PlatformException catch (e) {
-      print(e);
+  static onLocation(LocationCallback callback) {
+    if (foregroundLocationCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundLocationCallback = callback;
   }
 
-  static onLocation(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod('on',
-          {'listener': 'location', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offLocation() {
+    foregroundLocationCallback = null;
   }
 
-  static offLocation() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'location'});
-    } on PlatformException catch (e) {
-      print(e);
+  static void onClientLocation(ClientLocationCallback callback) {
+    if (foregroundClientLocationCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundClientLocationCallback = callback;
   }
 
-  static onClientLocation(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod('on', {
-        'listener': 'clientLocation',
-        'callbackHandle': handle.toRawHandle()
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offClientLocation() {
+    foregroundClientLocationCallback = null;
   }
 
-  static offClientLocation() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'clientLocation'});
-    } on PlatformException catch (e) {
-      print(e);
+  static onError(ErrorCallback callback) {
+    if (foregroundErrorCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundErrorCallback = callback;
   }
 
-  static onError(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'error', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offError() {
+    foregroundErrorCallback = null;
   }
 
-  static offError() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'error'});
-    } on PlatformException catch (e) {
-      print(e);
+  static onLog(LogCallback callback) {
+    if (foregroundLogCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundLogCallback = callback;
   }
 
-  static onLog(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'log', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
+  static offLog() {
+    foregroundLogCallback = null;
+  }
+  
+  static onEvents(EventsCallback callback) {
+    if (foregroundEventsCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundEventsCallback = callback;
   }
 
-  static offLog() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'log'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offEvents() {
+    foregroundEventsCallback = null;
   }
 
-  static onEvents(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'events', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
+  static onToken(TokenCallback callback) {
+    if (foregroundTokenCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundTokenCallback = callback;
   }
 
-  static offEvents() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'events'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static onToken(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'token', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static offToken() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'token'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offToken() {
+    foregroundTokenCallback = null;
   }
 
   static Map<String, dynamic> presetContinuousIOS = {
@@ -760,4 +726,11 @@ class Radar {
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
   static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
+}
+
+class RadarExistingCallbackException implements Exception {
+  @override
+  String toString() {
+    return 'Existing callback already exists for this event. Please call the corresponding `off` method first.';
+  }
 }
