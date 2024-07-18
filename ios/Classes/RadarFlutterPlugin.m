@@ -130,14 +130,6 @@
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
         [self validateAddress:call withResult:result];    
-    } else if ([@"attachListeners" isEqualToString:call.method]) {
-        [self attachListeners:call withResult:result];
-    } else if ([@"detachListeners" isEqualToString:call.method]) {
-        [self detachListeners:call withResult:result];
-    } else if ([@"on" isEqualToString:call.method]) {
-        [self on:call withResult:result];
-    } else if ([@"off" isEqualToString:call.method]) {
-        [self off:call withResult:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -1015,116 +1007,52 @@
   [Radar validateAddress:address completionHandler:completionHandler];
 }
 
--(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSNumber* callbackDispatcherHandle = call.arguments[@"callbackDispatcherHandle"];
-
-    // Retrieve the callback information
-    FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackDispatcherHandle longValue]];
-
-    // Create the background Flutter engine
-    FlutterEngine *sBackgroundFlutterEngine;
-    sBackgroundFlutterEngine = [[FlutterEngine alloc] init];
-    self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
-
-    FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
-    self.backgroundChannel = backgroundChannel;
-    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath];
-    result(nil);
-}
-
--(void)detachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    self.backgroundChannel = nil;
-    result(nil);
-}
-
--(void)on:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSNumber *callbackHandleNumber = argsDict[@"callbackHandle"];
-    long callbackHandle = [callbackHandleNumber longValue];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:callbackHandleNumber forKey:listener];
-    result(nil);
-}
-
--(void)off:(FlutterMethodCall *)call withResult:(FlutterResult)result { 
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:nil forKey:listener];   
-    result(nil);
-}
-
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"events"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"events" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    NSArray* args = @[@0, dict];
     if (self.channel != nil) {
         [self.channel invokeMethod:@"location" arguments:args];
     }
-    if (callbackHandle == 0) {
-        return;
-    }
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"clientLocation"];
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
+    NSArray* args = @[@0, dict];
     if (self.channel != nil) {
         [self.channel invokeMethod:@"clientLocation" arguments:args];
     }
-    if (callbackHandle == 0) {
-        return;
-    }
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"error"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"error" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didLogMessage:(NSString *)message {
     NSDictionary *dict = @{@"message": message};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"log"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"log" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateToken:(NSString *)token {
     NSDictionary *dict = @{@"token": token};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"token"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"token" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 @end
