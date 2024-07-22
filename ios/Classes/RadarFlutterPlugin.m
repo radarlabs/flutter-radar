@@ -74,6 +74,8 @@
         [self startTrackingCustom:call withResult:result];
     } else if ([@"startTrackingVerified" isEqualToString:call.method]) {
         [self startTrackingVerified:call withResult:result];
+    } else if ([@"stopTrackingVerified" isEqualToString:call.method]) {
+        [self stopTrackingVerified:call withResult:result];
     } else if ([@"stopTracking" isEqualToString:call.method]) {
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
@@ -92,6 +94,10 @@
         [self completeTrip:call withResult:result];
     } else if ([@"cancelTrip" isEqualToString:call.method]) {
         [self cancelTrip:call withResult:result];
+    } else if ([@"acceptEvent" isEqualToString:call.method]) {
+        [self acceptEvent:call withResult:result];
+    } else if ([@"rejectEvent" isEqualToString:call.method]) {
+        [self rejectEvent:call withResult:result];
     } else if ([@"getContext" isEqualToString:call.method]) {
         [self getContext:call withResult:result];
     } else if ([@"searchGeofences" isEqualToString:call.method]) {
@@ -124,31 +130,67 @@
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
         [self trackVerified:call withResult:result];    
-    } else if ([@"trackVerifiedToken" isEqualToString:call.method]) {
-        [self trackVerifiedToken:call withResult:result];    
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
         [self validateAddress:call withResult:result];    
-    } else if ([@"attachListeners" isEqualToString:call.method]) {
-        [self attachListeners:call withResult:result];
-    } else if ([@"detachListeners" isEqualToString:call.method]) {
-        [self detachListeners:call withResult:result];
-    } else if ([@"on" isEqualToString:call.method]) {
-        [self on:call withResult:result];
-    } else if ([@"off" isEqualToString:call.method]) {
-        [self off:call withResult:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
 }
 
+- (NSString *)getStringValueForKey:(NSDictionary *)dictionary key:(NSString *)key {
+    id value = [dictionary objectForKey:key];
+    
+    if (value && [value isKindOfClass:[NSString class]]) {
+        return (NSString *)value;
+    }
+    
+    return nil;
+}
+
+- (BOOL)getBoolValueForKey:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(BOOL)defaultValue {
+    id value = [dictionary objectForKey:key];
+    if (value && [value isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)value boolValue];
+    }
+    
+    return defaultValue;
+}
+
+- (NSDictionary *)getDictionaryValueForKey:(NSDictionary *)dictionary key:(NSString *)key {
+    id value = [dictionary objectForKey:key];
+    if (value && [value isKindOfClass:[NSDictionary class]]) {
+        return (NSDictionary *)value;
+    }
+    
+    return nil;
+}
+
+- (NSArray *)getArrayValueForKey:(NSDictionary *)dictionary key:(NSString *)key {
+    id value = [dictionary objectForKey:key];
+    if (value && [value isKindOfClass:[NSArray class]]) {
+        return (NSArray *)value;
+    }
+    
+    return nil;
+}
+
+- (int)getIntegerValueForKey:(NSDictionary *)dictionary key:(NSString *)key defaultValue:(int)defaultValue {
+    id value = [dictionary objectForKey:key];
+    if (value && [value isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)value intValue];
+    }
+    
+    return defaultValue;
+}
+
 - (void)initialize:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSString *publishableKey = argsDict[@"publishableKey"];
+    NSString *publishableKey = [self getStringValueForKey:argsDict key:@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.10.0-beta.1" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -156,7 +198,7 @@
 - (void)setLogLevel:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSString *logLevel = argsDict[@"logLevel"];
+    NSString *logLevel = [self getStringValueForKey:argsDict key:@"logLevel"];
     if (!logLevel) {
         [Radar setLogLevel:RadarLogLevelNone];
     } else if ([logLevel isEqualToString:@"debug"]) {
@@ -207,9 +249,8 @@
     self.permissionsRequestResult = result;
 
     NSDictionary *argsDict = call.arguments;
+    BOOL background = [self getBoolValueForKey:argsDict key:@"background" defaultValue:NO];
 
-    NSNumber *backgroundNumber = argsDict[@"background"];
-    BOOL background = [backgroundNumber boolValue];
     CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
     if (background && status == kCLAuthorizationStatusAuthorizedWhenInUse) {
         [self.locationManager requestAlwaysAuthorization];
@@ -223,7 +264,7 @@
 - (void)setUserId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSString *userId = argsDict[@"userId"];
+    NSString *userId = [self getStringValueForKey:argsDict key:@"userId"];
     [Radar setUserId:userId];
     result(nil);
 }
@@ -236,7 +277,7 @@
 - (void)setDescription:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSString *description = argsDict[@"description"];
+    NSString *description = [self getStringValueForKey:argsDict key:@"description"];
     [Radar setDescription:description];
     result(nil);
 }
@@ -260,8 +301,7 @@
 - (void)setAnonymousTrackingEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSNumber* enabledNumber = argsDict[@"enabled"];
-    BOOL enabled = [enabledNumber boolValue];
+    BOOL enabled = [self getBoolValueForKey:argsDict key:@"enabled" defaultValue:NO];
     [Radar setAnonymousTrackingEnabled:enabled];
     result(nil);
 }
@@ -280,7 +320,7 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    NSString *accuracy = argsDict[@"accuracy"];
+    NSString *accuracy = [self getStringValueForKey:argsDict key:@"accuracy"];
     if (!accuracy) {
         [Radar getLocationWithCompletionHandler:completionHandler];
     } else if ([accuracy isEqualToString:@"high"]) {
@@ -314,8 +354,8 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    NSDictionary *locationDict = argsDict[@"location"];
-    if (locationDict != nil && [locationDict isKindOfClass:[NSDictionary class]]) {
+    NSDictionary *locationDict = [self getDictionaryValueForKey:argsDict key:@"location"];
+    if (locationDict != nil) {
         NSNumber *latitudeNumber = locationDict[@"latitude"];
         NSNumber *longitudeNumber = locationDict[@"longitude"];
         NSNumber *accuracyNumber = locationDict[@"accuracy"];
@@ -326,11 +366,11 @@
         [Radar trackOnceWithLocation:location completionHandler:completionHandler];
     } else {
         RadarTrackingOptionsDesiredAccuracy desiredAccuracy = RadarTrackingOptionsDesiredAccuracyMedium;
-        BOOL beaconsTrackingOption = NO;
+        BOOL beaconsTrackingOption = [self getBoolValueForKey:argsDict key:@"beacons" defaultValue:NO];
 
-        NSString *accuracy = argsDict[@"desiredAccuracy"];
+        NSString *accuracy =[self getStringValueForKey:argsDict key:@"desiredAccuracy"];
 
-        if (accuracy != nil && [accuracy isKindOfClass:[NSString class]]) {
+        if (accuracy != nil) {
             NSString *lowerAccuracy = [accuracy lowercaseString];
             if ([lowerAccuracy isEqualToString:@"high"]) {
                 desiredAccuracy = RadarTrackingOptionsDesiredAccuracyHigh;
@@ -340,13 +380,7 @@
                 desiredAccuracy = RadarTrackingOptionsDesiredAccuracyLow;
             }
         }
-        
-        BOOL beacons = argsDict[@"beacons"];
-
-        if (beacons) {
-            beaconsTrackingOption = beacons;
-        }
-        
+                
         [Radar trackOnceWithDesiredAccuracy:desiredAccuracy beacons:beaconsTrackingOption completionHandler:completionHandler];
     }
 }
@@ -354,7 +388,7 @@
 - (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
     NSDictionary *argsDict = call.arguments;
 
-    NSString *preset = argsDict[@"preset"];
+    NSString *preset = [self getStringValueForKey:argsDict key:@"preset"];
     if (!preset) {
         [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
     } else if ([preset isEqualToString:@"continuous"]) {
@@ -379,25 +413,16 @@
 - (void)startTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    BOOL token = NO;
-    NSNumber *tokenNumber = argsDict[@"token"];
-    if (tokenNumber != nil && [tokenNumber isKindOfClass:[NSNumber class]]) {
-        token = [tokenNumber boolValue];
-    }
+    BOOL beacons = [self getBoolValueForKey:argsDict key:@"beacons" defaultValue:NO];
 
-    BOOL beacons = NO;
-    NSNumber *beaconsNumber = argsDict[@"beacons"];
-    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
-        beacons = [beaconsNumber boolValue];
-    }
+    double interval = [argsDict[@"interval"] doubleValue];
 
-    double interval = 1;
-    NSNumber *intervalNumber = argsDict[@"interval"];
-    if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
-        interval = [intervalNumber doubleValue];
-    }
+    [Radar startTrackingVerifiedWithInterval:interval beacons:beacons];
+    result(nil);
+}
 
-    [Radar startTrackingVerified:token interval:interval beacons:beacons];
+- (void)stopTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar stopTrackingVerified];
     result(nil);
 }
 
@@ -424,19 +449,25 @@
 - (void)mockTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSDictionary *originDict = argsDict[@"origin"];
+    NSDictionary *originDict = [self getDictionaryValueForKey:argsDict key:@"origin"];
+    NSDictionary *destinationDict = [self getDictionaryValueForKey:argsDict key:@"destination"];
+    if (!originDict || !destinationDict) {
+        result(nil);
+        return;
+    }
     NSNumber *originLatitudeNumber = originDict[@"latitude"];
     NSNumber *originLongitudeNumber = originDict[@"longitude"];
     double originLatitude = [originLatitudeNumber doubleValue];
     double originLongitude = [originLongitudeNumber doubleValue];
     CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(originLatitude, originLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    NSDictionary *destinationDict = argsDict[@"destination"];
+    
     NSNumber *destinationLatitudeNumber = destinationDict[@"latitude"];
     NSNumber *destinationLongitudeNumber = destinationDict[@"longitude"];
     double destinationLatitude = [destinationLatitudeNumber doubleValue];
     double destinationLongitude = [destinationLongitudeNumber doubleValue];
     CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    NSString *modeStr = argsDict[@"mode"];
+    
+    NSString *modeStr = [self getStringValueForKey:argsDict key:@"mode"];
     RadarRouteMode mode = RadarRouteModeCar;
     if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
         mode = RadarRouteModeFoot;
@@ -445,20 +476,8 @@
     } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
         mode = RadarRouteModeCar;
     }
-    NSNumber *stepsNumber = argsDict[@"steps"];
-    int steps;
-    if (stepsNumber != nil && [stepsNumber isKindOfClass:[NSNumber class]]) {
-        steps = [stepsNumber intValue];
-    } else {
-        steps = 10;
-    }
-    NSNumber *intervalNumber = argsDict[@"interval"];
-    int interval;
-    if (intervalNumber != nil && [intervalNumber isKindOfClass:[NSNumber class]]) {
-        interval = [intervalNumber intValue];
-    } else {
-        interval = 1;
-    }
+    int steps = [argsDict[@"steps"] intValue];
+    int interval = [argsDict[@"interval"] intValue];
 
     [Radar mockTrackingWithOrigin:origin destination:destination mode:mode steps:steps interval:interval completionHandler:nil];
 }
@@ -478,9 +497,9 @@
         }
     };
     NSDictionary *argsDict = call.arguments;
-    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    NSDictionary *tripOptionsDict = [self getDictionaryValueForKey:argsDict key:@"tripOptions"]; 
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
-    NSDictionary *trackingOptionsDict = argsDict[@"trackingOptions"];
+    NSDictionary *trackingOptionsDict = [self getDictionaryValueForKey:argsDict key:@"trackingOptions"];
     RadarTrackingOptions *trackingOptions;
     if (trackingOptionsDict) {
         trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
@@ -504,9 +523,9 @@
         }
     };
     NSDictionary *argsDict = call.arguments;
-    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    NSDictionary *tripOptionsDict = [self getDictionaryValueForKey:argsDict key:@"tripOptions"];
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
-    NSString* statusStr = argsDict[@"status"];
+    NSString* statusStr = [self getStringValueForKey:argsDict key:@"status"];
     RadarTripStatus status = RadarTripStatusUnknown;
     statusStr = [statusStr lowercaseString];
     if ([statusStr isEqualToString:@"started"]) {
@@ -567,6 +586,21 @@
     [Radar cancelTripWithCompletionHandler:completionHandler];
 }
 
+- (void) acceptEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSString *eventId = [self getStringValueForKey:argsDict key:@"eventId"];
+    NSString *verifiedPlaceId = [self getStringValueForKey:argsDict key:@"verifiedPlaceId"];
+    [Radar acceptEventId:eventId verifiedPlaceId:verifiedPlaceId];
+    result(nil);
+}
+
+- (void) rejectEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSString *eventId = [self getStringValueForKey:argsDict key:@"eventId"];
+    [Radar rejectEventId:eventId];
+    result(nil);
+}
+
 - (void)getContext:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarContextCompletionHandler completionHandler = ^(RadarStatus status, CLLocation * _Nullable location, RadarContext * _Nullable context) {
         NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -582,7 +616,7 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    NSDictionary *locationDict = argsDict[@"location"];
+    NSDictionary *locationDict = [self getDictionaryValueForKey:argsDict key:@"location"];
     if (locationDict) {
         NSNumber *latitudeNumber = locationDict[@"latitude"];
         NSNumber *longitudeNumber = locationDict[@"longitude"];
@@ -615,7 +649,7 @@
     NSDictionary *argsDict = call.arguments;
 
     CLLocation *near;
-    NSDictionary *nearDict = argsDict[@"near"];
+    NSDictionary *nearDict = [self getDictionaryValueForKey:argsDict key:@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
@@ -623,27 +657,20 @@
         double longitude = [longitudeNumber doubleValue];
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
-    NSNumber *radiusNumber = argsDict[@"radius"];
-    int radius;
-    if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
-        radius = [radiusNumber intValue];
-    } else {
-        radius = 1000;
-    }
-    NSArray *tags = argsDict[@"tags"];
-    NSDictionary *metadata = argsDict[@"metadata"];
-    NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
-    if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
-        limit = [limitNumber intValue];
-    } else {
-        limit = 10;
-    }
+    int radius = [self getIntegerValueForKey:argsDict key:@"radius" defaultValue:1000];
+
+    NSArray *tags = [self getArrayValueForKey:argsDict key:@"tags"];
+
+    NSDictionary *metadata = [self getDictionaryValueForKey:argsDict key:@"metadata"];
+    
+    int limit = [self getIntegerValueForKey:argsDict key:@"limit" defaultValue:10];
+
+    BOOL includeGeometry = [self getBoolValueForKey:argsDict key:@"includeGeometry" defaultValue:NO];
 
     if (near != nil) {
-        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeometry:includeGeometry completionHandler:completionHandler];
     } else {
-        [Radar searchGeofencesWithRadius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+        [Radar searchGeofences:completionHandler];
     }
 }
 
@@ -665,7 +692,7 @@
     NSDictionary *argsDict = call.arguments;
 
     CLLocation *near;
-    NSDictionary *nearDict = argsDict[@"near"];
+    NSDictionary *nearDict = [self getDictionaryValueForKey:argsDict key:@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
@@ -673,25 +700,16 @@
         double longitude = [longitudeNumber doubleValue];
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
-    NSNumber *radiusNumber = argsDict[@"radius"];
-    int radius;
-    if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
-        radius = [radiusNumber intValue];
-    } else {
-        radius = 1000;
-    }
-    NSArray *chains = argsDict[@"chains"];
-    NSDictionary *chainMetadata = [argsDict[@"chainMetadata"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"chainMetadata"];
-    NSArray *categories = [argsDict[@"categories"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"categories"];
-    NSArray *groups = [argsDict[@"groups"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"groups"];
-    NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
-    if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
-        limit = [limitNumber intValue];
-    } else {
-        limit = 10;
-    }
+    
+    int radius = [self getIntegerValueForKey:argsDict key:@"radius" defaultValue:1000];
 
+    NSArray *chains = [self getArrayValueForKey:argsDict key:@"chains"];
+    NSDictionary *chainMetadata = [self getDictionaryValueForKey:argsDict key:@"chainMetadata"];
+    NSArray *categories = [self getArrayValueForKey:argsDict key:@"categories"];
+    NSArray *groups = [self getArrayValueForKey:argsDict key:@"groups"];
+    
+    int limit = [self getIntegerValueForKey:argsDict key:@"limit" defaultValue:10];
+   
     if (near != nil) {
         [Radar searchPlacesNear:near radius:radius chains:chains chainMetadata:chainMetadata categories:categories groups:groups limit:limit completionHandler:completionHandler];
     } else {
@@ -702,9 +720,9 @@
 - (void)autocomplete:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
     
-    NSString *query = argsDict[@"query"];
+    NSString *query = [self getStringValueForKey:argsDict key:@"query"];
     CLLocation *near;
-    NSDictionary *nearDict = argsDict[@"near"];
+    NSDictionary *nearDict = [self getDictionaryValueForKey:argsDict key:@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
         NSNumber *longitudeNumber = nearDict[@"longitude"];
@@ -712,15 +730,11 @@
         double longitude = [longitudeNumber doubleValue];
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
-    NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
-    if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
-        limit = [limitNumber intValue];
-    } else {
-        limit = 10;
-    }
-    NSArray *layers = [argsDict[@"layers"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"layers"];
-    NSString *country = [argsDict[@"country"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"country"];
+    
+    int limit = [self getIntegerValueForKey:argsDict key:@"limit" defaultValue:10];
+
+    NSArray *layers = [self getArrayValueForKey:argsDict key:@"layers"];
+    NSString *country = [self getStringValueForKey:argsDict key:@"country"];
     
     RadarGeocodeCompletionHandler completionHandler = ^(RadarStatus status, NSArray<RadarAddress *> * _Nullable addresses) {
         NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -731,20 +745,14 @@
         result(dict);
     };
 
-    
-    NSNumber *mailableNumber = argsDict[@"mailable"];
-    if (mailableNumber != nil && [mailableNumber isKindOfClass:[NSNumber class]]) {
-        BOOL mailable = [mailableNumber boolValue];
-        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country mailable:mailable completionHandler:completionHandler];
-    } else {
-        [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country completionHandler:completionHandler];
-    }
+    BOOL mailable = [self getBoolValueForKey:argsDict key:@"mailable" defaultValue:NO];
+    [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country mailable:mailable completionHandler:completionHandler];
 }
 
 - (void)geocode:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    NSString *query = argsDict[@"query"];
+    NSString *query = [self getStringValueForKey:argsDict key:@"query"];
     [Radar geocodeAddress:query completionHandler:^(RadarStatus status, NSArray<RadarAddress *> * _Nullable addresses) {
         NSMutableDictionary *dict = [NSMutableDictionary new];
         [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
@@ -765,19 +773,22 @@
       result(dict);
   };
 
-  NSDictionary *argsDict = call.arguments;
+    NSDictionary *argsDict = call.arguments;
 
-  NSDictionary *locationDict = argsDict[@"location"];
-  if (locationDict) {
+    NSArray<NSString *> *layers = [self getArrayValueForKey:argsDict key:@"layers"];
+
+    NSDictionary *locationDict = [self getDictionaryValueForKey:argsDict key:@"location"];
+  
+    if (locationDict) {
       NSNumber *latitudeNumber = locationDict[@"latitude"];
       NSNumber *longitudeNumber = locationDict[@"longitude"];
       double latitude = [latitudeNumber doubleValue];
       double longitude = [longitudeNumber doubleValue];
       CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
 
-      [Radar reverseGeocodeLocation:location completionHandler:completionHandler];
+      [Radar reverseGeocodeLocation:location layers:layers completionHandler:completionHandler];
   } else {
-      [Radar reverseGeocodeWithCompletionHandler:completionHandler];
+      [Radar reverseGeocodeWithLayers:layers completionHandler:completionHandler];
   }
 }
 
@@ -806,7 +817,7 @@
   NSDictionary *argsDict = call.arguments;
 
   CLLocation *origin;
-  NSDictionary *originDict = argsDict[@"origin"];
+  NSDictionary *originDict = [self getDictionaryValueForKey:argsDict key:@"origin"];
   if (originDict) {
       NSNumber *originLatitudeNumber = originDict[@"latitude"];
       NSNumber *originLongitudeNumber = originDict[@"longitude"];
@@ -814,13 +825,14 @@
       double originLongitude = [originLongitudeNumber doubleValue];
       origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(originLatitude, originLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
   }
-  NSDictionary *destinationDict = argsDict[@"destination"];
+  NSDictionary *destinationDict = [self getDictionaryValueForKey:argsDict key:@"destination"];
   NSNumber *destinationLatitudeNumber = destinationDict[@"latitude"];
   NSNumber *destinationLongitudeNumber = destinationDict[@"longitude"];
   double destinationLatitude = [destinationLatitudeNumber doubleValue];
   double destinationLongitude = [destinationLongitudeNumber doubleValue];
   CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-  NSArray *modesArr = argsDict[@"modes"];
+  
+  NSArray *modesArr = [self getArrayValueForKey:argsDict key:@"modes"];
   RadarRouteMode modes = 0;
   if (modesArr != nil) {
       if ([modesArr containsObject:@"FOOT"] || [modesArr containsObject:@"foot"]) {
@@ -835,7 +847,8 @@
   } else {
       modes = RadarRouteModeCar;
   }
-  NSString *unitsStr = argsDict[@"units"];
+
+  NSString *unitsStr = [self getStringValueForKey:argsDict key:@"units"];
   RadarRouteUnits units;
   if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
       units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
@@ -864,8 +877,8 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    NSDictionary *metadata = argsDict[@"metadata"];
-    NSString *name = argsDict[@"name"];
+    NSDictionary *metadata = [self getDictionaryValueForKey:argsDict key:@"metadata"];
+    NSString *name = [self getStringValueForKey:argsDict key:@"name"];
     NSNumber *revenueNumber = argsDict[@"revenue"];
     if (revenueNumber != nil && [revenueNumber isKindOfClass:[NSNumber class]]) {
         [Radar logConversionWithName:name revenue:revenueNumber metadata:metadata completionHandler:completionHandler];
@@ -892,7 +905,7 @@
 - (void)getMatrix:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
     
-    NSArray<NSDictionary *> *originsArr = argsDict[@"origins"];
+    NSArray<NSDictionary *> *originsArr = [self getArrayValueForKey:argsDict key:@"origins"];
     NSMutableArray<CLLocation *> *origins = [NSMutableArray new];
     for (NSDictionary *originDict in originsArr) {        
         NSNumber *latitudeNumber = originDict[@"latitude"];
@@ -904,7 +917,7 @@
         CLLocation *origin = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
         [origins addObject:origin];
     }
-    NSArray<NSDictionary *> *destinationsArr = argsDict[@"destinations"];
+    NSArray<NSDictionary *> *destinationsArr = [self getArrayValueForKey:argsDict key:@"destinations"];
     NSMutableArray<CLLocation *> *destinations = [NSMutableArray new];
     for (NSDictionary *destinationDict in destinationsArr) {
         NSNumber *latitudeNumber = destinationDict[@"latitude"];
@@ -916,7 +929,7 @@
         CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:accuracy verticalAccuracy:-1 timestamp:[NSDate date]];
         [destinations addObject:destination];
     }
-    NSString *modeStr = argsDict[@"mode"];
+    NSString *modeStr = [self getStringValueForKey:argsDict key:@"mode"];
     RadarRouteMode mode = RadarRouteModeCar;
     if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
         mode = RadarRouteModeFoot;
@@ -929,7 +942,7 @@
     } else if ([modeStr isEqualToString:@"MOTORBIKE"] || [modeStr isEqualToString:@"motorbike"]) {
         mode = RadarRouteModeMotorbike;
     }
-    NSString *unitsStr = argsDict[@"units"];
+    NSString *unitsStr = [self getStringValueForKey:argsDict key:@"units"];
     RadarRouteUnits units;
     if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
         units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
@@ -950,51 +963,18 @@
 - (void)trackVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    BOOL beacons = NO;
-    NSNumber *beaconsNumber = argsDict[@"beacons"];
-    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
-        beacons = [beaconsNumber boolValue];
-    }
+    BOOL beacons = [self getBoolValueForKey:argsDict key:@"beacons" defaultValue:NO];
 
-    RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
+    RadarTrackVerifiedCompletionHandler completionHandler = ^(RadarStatus status, RadarVerifiedLocationToken* token) {
         if (status == RadarStatusSuccess) {
             NSMutableDictionary *dict = [NSMutableDictionary new];
             [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (location) {
-                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            if (user) {
-                [dict setObject:[user dictionaryValue] forKey:@"user"];
-            }
+            [dict setObject:[token dictionaryValue] forKey:@"token"];
             result(dict);
         }
     };
 
     [Radar trackVerifiedWithBeacons:beacons completionHandler:completionHandler];
-}
-
-- (void)trackVerifiedToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;
-    
-    BOOL beacons = NO;
-    NSNumber *beaconsNumber = argsDict[@"beacons"];
-    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
-        beacons = [beaconsNumber boolValue];
-    }
-
-    RadarTrackTokenCompletionHandler completionHandler = ^(RadarStatus status, NSString* token) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            [dict setObject:token forKey:@"token"];
-            result(dict);
-        }
-    };
-
-    [Radar trackVerifiedTokenWithBeacons:beacons completionHandler:completionHandler];
 }
 
 - (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1010,116 +990,57 @@
 
   NSDictionary *argsDict = call.arguments;
 
-  NSDictionary *addressDict = argsDict[@"address"];
+  NSDictionary *addressDict = [self getDictionaryValueForKey:argsDict key:@"address"];
   RadarAddress *address = [RadarAddress addressFromObject:addressDict];
   [Radar validateAddress:address completionHandler:completionHandler];
 }
 
--(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSNumber* callbackDispatcherHandle = call.arguments[@"callbackDispatcherHandle"];
-
-    // Retrieve the callback information
-    FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackDispatcherHandle longValue]];
-
-    // Create the background Flutter engine
-    FlutterEngine *sBackgroundFlutterEngine;
-    sBackgroundFlutterEngine = [[FlutterEngine alloc] init];
-    self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
-
-    FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
-    self.backgroundChannel = backgroundChannel;
-
-    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath] ;    
-    result(nil);
-}
-
--(void)detachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    self.backgroundChannel = nil;
-    result(nil);
-}
-
--(void)on:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSNumber *callbackHandleNumber = argsDict[@"callbackHandle"];
-    long callbackHandle = [callbackHandleNumber longValue];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:callbackHandleNumber forKey:listener];
-    result(nil);
-}
-
--(void)off:(FlutterMethodCall *)call withResult:(FlutterResult)result { 
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:nil forKey:listener];   
-    result(nil);
-}
-
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"events"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"events" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"location" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"clientLocation"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"clientLocation" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"error"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"error" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didLogMessage:(NSString *)message {
     NSDictionary *dict = @{@"message": message};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"log"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"log" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateToken:(NSString *)token {
     NSDictionary *dict = @{@"token": token};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"token"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"token" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 @end
