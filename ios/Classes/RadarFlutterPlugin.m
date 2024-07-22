@@ -190,7 +190,7 @@
 
     NSString *publishableKey = [self getStringValueForKey:argsDict key:@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.10.0-beta.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.10.0-beta.2" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
