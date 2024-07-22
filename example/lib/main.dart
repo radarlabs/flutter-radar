@@ -528,6 +528,7 @@ class _PermissionsState extends State<Permissions> {
     setState(() {
       _status = status;
     });
+    print('Permissions status: $status');
   }
 }
 

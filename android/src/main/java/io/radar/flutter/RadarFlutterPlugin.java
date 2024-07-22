@@ -629,15 +629,18 @@ public class RadarFlutterPlugin
         } else {
             RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
             boolean beaconsTrackingOption = getBooleanFromMethodCall(call, "beacons", false);
-            String desiredAccuracy = (getStringFromMethodCall(call, "desiredAccuracy")).toLowerCase();
-            if (desiredAccuracy.equals("none")) {
-                accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.NONE;
-            } else if (desiredAccuracy.equals("low")) {
-                accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW;
-            } else if (desiredAccuracy.equals("medium")) {
-                accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
-            } else if (desiredAccuracy.equals("high")) {
-                accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.HIGH;
+            String desiredAccuracy = (getStringFromMethodCall(call, "desiredAccuracy"));
+            if (desiredAccuracy != null){
+                desiredAccuracy = desiredAccuracy.toLowerCase();
+                if (desiredAccuracy.equals("none")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.NONE;
+                } else if (desiredAccuracy.equals("low")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW;
+                } else if (desiredAccuracy.equals("medium")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+                } else if (desiredAccuracy.equals("high")) {
+                    accuracyLevel = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.HIGH;
+                }
             }
 
             Radar.trackOnce(accuracyLevel, beaconsTrackingOption, callback);
@@ -687,13 +690,16 @@ public class RadarFlutterPlugin
         Location destination = locationForMap(destinationMap);
         String modeStr = getStringFromMethodCall(call, "mode");
         Radar.RadarRouteMode mode = Radar.RadarRouteMode.CAR;
-        if (modeStr.equals("FOOT") || modeStr.equals("foot")) {
-            mode = Radar.RadarRouteMode.FOOT;
-        } else if (modeStr.equals("BIKE") || modeStr.equals("bike")) {
-            mode = Radar.RadarRouteMode.BIKE;
-        } else if (modeStr.equals("CAR") || modeStr.equals("car")) {
-            mode = Radar.RadarRouteMode.CAR;
+        if (modeStr != null) {
+            if (modeStr.equals("FOOT") || modeStr.equals("foot")) {
+                mode = Radar.RadarRouteMode.FOOT;
+            } else if (modeStr.equals("BIKE") || modeStr.equals("bike")) {
+                mode = Radar.RadarRouteMode.BIKE;
+            } else if (modeStr.equals("CAR") || modeStr.equals("car")) {
+                mode = Radar.RadarRouteMode.CAR;
+            }
         }
+        
         int steps = getIntFromMethodCall(call, "steps", 10);
         int interval = getIntFromMethodCall(call, "interval", 1);
 
@@ -770,17 +776,19 @@ public class RadarFlutterPlugin
         RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
         String statusStr = getStringFromMethodCall(call, "status");
         RadarTrip.RadarTripStatus status = RadarTrip.RadarTripStatus.UNKNOWN;
-        statusStr = statusStr.toLowerCase();
-        if (statusStr.equals("started")) {
-            status = RadarTrip.RadarTripStatus.STARTED;
-        } else if (statusStr.equals("approaching")) {
-            status = RadarTrip.RadarTripStatus.APPROACHING;
-        } else if (statusStr.equals("arrived")) {
-            status = RadarTrip.RadarTripStatus.ARRIVED;
-        } else if (statusStr.equals("completed")) {
-            status = RadarTrip.RadarTripStatus.COMPLETED;
-        } else if (statusStr.equals("canceled")) {
-            status = RadarTrip.RadarTripStatus.CANCELED;
+        if (statusStr != null){
+            statusStr = statusStr.toLowerCase();
+            if (statusStr.equals("started")) {
+                status = RadarTrip.RadarTripStatus.STARTED;
+            } else if (statusStr.equals("approaching")) {
+                status = RadarTrip.RadarTripStatus.APPROACHING;
+            } else if (statusStr.equals("arrived")) {
+                status = RadarTrip.RadarTripStatus.ARRIVED;
+            } else if (statusStr.equals("completed")) {
+                status = RadarTrip.RadarTripStatus.COMPLETED;
+            } else if (statusStr.equals("canceled")) {
+                status = RadarTrip.RadarTripStatus.CANCELED;
+            }
         }
 
         Radar.updateTrip(tripOptions, status, new Radar.RadarTripCallback() {
@@ -1167,7 +1175,7 @@ public class RadarFlutterPlugin
 
         Location origin = null;
         HashMap originMap = getHashMapFromMethodCall(call, "origin");
-        if (call.hasArgument("origin")) {
+        if (originMap != null) {
             origin = locationForMap(originMap);
         }
         HashMap destinationMap = getHashMapFromMethodCall(call, "destination");
@@ -1222,7 +1230,7 @@ public class RadarFlutterPlugin
         };
 
         String name = getStringFromMethodCall(call, "name");
-        JSONObject metadataJson;
+        JSONObject metadataJson = null;
         HashMap metadataMap = getHashMapFromMethodCall(call, "metadata");
         if (metadataMap == null) {
             metadataJson = jsonForMap(metadataMap);
