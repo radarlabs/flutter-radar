@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -39,10 +40,13 @@ class Radar {
   static EventsCallback? foregroundEventsCallback;
   static TokenCallback? foregroundTokenCallback;
 
-  static Future initialize(String publishableKey) async {
+  static Future initialize(
+      {required String publishableKey, bool fraud = false}) async {
+
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
+        'fraud': fraud,
       });
       _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
@@ -76,7 +80,7 @@ class Radar {
     }
   }
 
-  static Future setLogLevel(String logLevel) async {
+  static Future setLogLevel({required String logLevel}) async {
     try {
       await _channel.invokeMethod('setLogLevel', {'logLevel': logLevel});
     } on PlatformException catch (e) {
@@ -88,7 +92,7 @@ class Radar {
     return await _channel.invokeMethod('getPermissionsStatus');
   }
 
-  static Future requestPermissions(bool background) async {
+  static Future requestPermissions({required bool background}) async {
     try {
       return await _channel
           .invokeMethod('requestPermissions', {'background': background});
@@ -97,7 +101,7 @@ class Radar {
     }
   }
 
-  static Future setUserId(String userId) async {
+  static Future setUserId({required String userId}) async {
     try {
       await _channel.invokeMethod('setUserId', {'userId': userId});
     } on PlatformException catch (e) {
@@ -109,7 +113,7 @@ class Radar {
     return await _channel.invokeMethod('getUserId');
   }
 
-  static Future setDescription(String description) async {
+  static Future setDescription({required String description}) async {
     try {
       await _channel
           .invokeMethod('setDescription', {'description': description});
@@ -122,7 +126,7 @@ class Radar {
     return await _channel.invokeMethod('getDescription');
   }
 
-  static Future setMetadata(Map<String, dynamic> metadata) async {
+  static Future setMetadata({required Map<String, dynamic> metadata}) async {
     try {
       await _channel.invokeMethod('setMetadata', metadata);
     } on PlatformException catch (e) {
@@ -134,7 +138,7 @@ class Radar {
     return await _channel.invokeMethod('getMetadata');
   }
 
-  static Future setAnonymousTrackingEnabled(bool enabled) async {
+  static Future setAnonymousTrackingEnabled({required bool enabled}) async {
     try {
       await _channel
           .invokeMethod('setAnonymousTrackingEnabled', {'enabled': enabled});
@@ -143,7 +147,7 @@ class Radar {
     }
   }
 
-  static Future<Map?> getLocation([String? accuracy]) async {
+  static Future<Map?> getLocation({String? accuracy}) async {
     try {
       return await _channel.invokeMethod('getLocation', {'accuracy': accuracy});
     } on PlatformException catch (e) {
@@ -153,6 +157,7 @@ class Radar {
   }
 
   static Future<Map?> trackOnce(
+      // maybe type it more strongly in the future?
       {Map<String, dynamic>? location,
       String? desiredAccuracy,
       bool? beacons}) async {
@@ -168,7 +173,7 @@ class Radar {
     }
   }
 
-  static Future startTracking(String preset) async {
+  static Future startTracking({required String preset}) async {
     try {
       await _channel.invokeMethod('startTracking', {
         'preset': preset,
@@ -178,7 +183,8 @@ class Radar {
     }
   }
 
-  static Future startTrackingCustom(Map<String, dynamic> options) async {
+  static Future startTrackingCustom(
+      {required Map<String, dynamic> options}) async {
     try {
       await _channel.invokeMethod('startTrackingCustom', options);
     } on PlatformException catch (e) {
@@ -186,7 +192,8 @@ class Radar {
     }
   }
 
-  static Future startTrackingVerified(int interval, bool beacons) async {
+  static Future startTrackingVerified(
+      {required int interval, required bool beacons}) async {
     try {
       await _channel.invokeMethod(
           'startTrackingVerified', {'interval': interval, 'beacons': beacons});
@@ -225,11 +232,11 @@ class Radar {
   }
 
   static Future<Map?> mockTracking(
-      {Map<String, double>? origin,
-      Map<String, double>? destination,
-      String? mode,
-      int? steps,
-      int? interval}) async {
+      {required Map<String, double> origin,
+      required Map<String, double> destination,
+      required String mode,
+      required int steps,
+      required int interval}) async {
     try {
       return await _channel.invokeMethod('mockTracking', {
         'origin': origin,
@@ -245,7 +252,7 @@ class Radar {
   }
 
   static Future<Map?> startTrip(
-      {Map<String, dynamic>? tripOptions,
+      {required Map<String, dynamic> tripOptions,
       Map<String, dynamic>? trackingOptions}) async {
     try {
       return await _channel.invokeMethod('startTrip',
@@ -257,7 +264,7 @@ class Radar {
   }
 
   static Future<Map?> updateTrip(
-      {required Map<String, dynamic> options, required String status}) async {
+      {required String status, required Map<String, dynamic> options}) async {
     try {
       return await _channel.invokeMethod(
           'updateTrip', {'tripOptions': options, 'status': status});
@@ -289,7 +296,26 @@ class Radar {
     }
   }
 
-  static Future<Map?> getContext(Map<String, dynamic> location) async {
+  static Future acceptEvent(
+      {required String eventId, String? VerifiedPlaceId}) async {
+    try {
+      _channel.invokeMethod('acceptEvent',
+          {'eventId': eventId, 'VerifiedPlaceId': VerifiedPlaceId});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future rejectEvent({required String eventId}) async {
+    try {
+      _channel.invokeMethod('rejectEvent', {'eventId': eventId});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<Map?> getContext(
+      {required Map<String, dynamic> location}) async {
     try {
       return await _channel.invokeMethod('getContext', {'location': location});
     } on PlatformException catch (e) {
@@ -298,6 +324,7 @@ class Radar {
     }
   }
 
+  // you have to pass in all or none of the parameters
   static Future<Map?> searchGeofences(
       {Map<String, dynamic>? near,
       int? radius,
@@ -321,9 +348,9 @@ class Radar {
   }
 
   static Future<Map?> searchPlaces(
-      {Map<String, dynamic>? near,
-      int? radius,
-      int? limit,
+      {required int radius,
+      required limit,
+      Map<String, dynamic>? near,
       List? chains,
       Map<String, String>? chainMetadata,
       List? categories,
@@ -345,9 +372,9 @@ class Radar {
   }
 
   static Future<Map?> autocomplete(
-      {String? query,
+      {required String query,
+      required int limit,
       Map<String, dynamic>? near,
-      int? limit,
       String? country,
       List? layers,
       bool? mailable}) async {
@@ -366,10 +393,11 @@ class Radar {
     }
   }
 
-  static Future<Map?> geocode(String query) async {
+  static Future<Map?> geocode(
+      {required String query, List? layers, List? countries}) async {
     try {
-      final Map? geocodeResult =
-          await _channel.invokeMethod('forwardGeocode', {'query': query});
+      final Map? geocodeResult = await _channel.invokeMethod('forwardGeocode',
+          {'query': query, 'layers': layers, 'countries': countries});
       return geocodeResult;
     } on PlatformException catch (e) {
       print(e);
@@ -380,11 +408,8 @@ class Radar {
   static Future<Map?> reverseGeocode(
       {Map<String, dynamic>? location, List? layers}) async {
     try {
-      final Map<String, dynamic> arguments = {
-        'location': location != null ? location : null,
-        'layers': layers != null ? layers : null
-      };
-      return await _channel.invokeMethod('reverseGeocode', arguments);
+      return await _channel.invokeMethod(
+          'reverseGeocode', {'location': location, 'layers': layers});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -401,10 +426,10 @@ class Radar {
   }
 
   static Future<Map?> getDistance(
-      {Map<String, double>? origin,
-      Map<String, double>? destination,
-      List? modes,
-      String? units}) async {
+      {required Map<String, double> destination,
+      required List<String> modes,
+      required String units,
+      Map<String, double>? origin}) async {
     try {
       return await _channel.invokeMethod('getDistance', {
         'origin': origin,
@@ -421,7 +446,7 @@ class Radar {
   static Future<Map?> logConversion(
       {required String name,
       double? revenue,
-      required Map<String, dynamic> metadata}) async {
+      Map<String, dynamic>? metadata}) async {
     try {
       return await _channel.invokeMethod('logConversion',
           {'name': name, 'revenue': revenue, 'metadata': metadata});
@@ -458,7 +483,7 @@ class Radar {
 
   // Android only
   static Future setNotificationOptions(
-      Map<String, dynamic> notificationOptions) async {
+      {required Map<String, dynamic> notificationOptions}) async {
     try {
       await _channel.invokeMethod(
           'setNotificationOptions', notificationOptions);
@@ -468,10 +493,7 @@ class Radar {
   }
 
   static Future<Map?> getMatrix(
-      {required List origins,
-      required List destinations,
-      required String mode,
-      required String units}) async {
+      { required List origins, required List destinations,required String mode, required String units}) async {
     try {
       return await _channel.invokeMethod('getMatrix', {
         'origins': origins,
@@ -485,8 +507,9 @@ class Radar {
     }
   }
 
+  //Android only
   static Future setForegroundServiceOptions(
-      Map<String, dynamic> foregroundServiceOptions) async {
+      {required Map<String, dynamic> foregroundServiceOptions}) async {
     try {
       await _channel.invokeMethod(
           'setForegroundServiceOptions', foregroundServiceOptions);
@@ -505,11 +528,20 @@ class Radar {
     }
   }
 
+  static Future<Map?> getVerifiedLocationToken() async {
+    try {
+      return await _channel.invokeMethod('getVerifiedLocationToken');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
 
-  static Future<Map?> validateAddress(Map address) async {
+  static Future<Map?> validateAddress({required Map address}) async {
     try {
       return await _channel
           .invokeMethod('validateAddress', {'address': address});
