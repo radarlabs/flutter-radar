@@ -1,10 +1,10 @@
 name: flutter_radar
 description: Flutter package for Radar, the leading geofencing and location tracking platform
-version: 3.10.0
+version: 3.10.0-beta.1
 homepage: https://github.com/radarlabs/flutter-radar
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.12.0 <4.0.0'
   flutter: ">=1.20.0"
 
 dependencies:
