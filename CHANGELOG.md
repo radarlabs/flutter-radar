@@ -1,7 +1,7 @@
 # 3.10.0-beta.3
 
-- Bump iOS version from 3.9.14 to 3.16.0-beta.1
-- Bump Android version from 3.9.8 to 3.16.0-beta.1
+- Bump iOS version from 3.9.14 to 3.16.1-beta.1
+- Bump Android version from 3.9.8 to 3.16.1-beta.1
 
 # 3.9.1
 

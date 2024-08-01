@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_radar/flutter_radar.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(MyApp());
 
@@ -173,6 +174,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   print("completeTrip: $resp");
                 },
                 child: Text('completeTrip'),
+              ),
+              ElevatedButton(
+                style: raisedButtonStyle,
+                onPressed: () async {
+                  PermissionStatus status =
+                      await Permission.activityRecognition.request();
+                  if (status.isGranted) {
+                    print('Permission granted');
+                  } else {
+                    print('Permission denied');
+                  }
+                },
+                child: Text('request activity permissions'),
               ),
               ElevatedButton(
                 style: raisedButtonStyle,
@@ -418,7 +432,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ElevatedButton(
                 style: raisedButtonStyle,
                 onPressed: () async {
-                  Map? resp = await Radar.validateAddress(address:{
+                  Map? resp = await Radar.validateAddress(address: {
                     "city": "NEW YORK",
                     "stateCode": "NY",
                     "postalCode": "10003",
