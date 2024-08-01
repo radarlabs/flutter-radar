@@ -28,6 +28,8 @@
 	<string>Your iOS 10 and lower background location usage description goes here. e.g., "This app uses your location in the background to recommend places nearby."</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your foreground location usage description goes here. e.g., "This app uses your location in the foreground to recommend places nearby."</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Your motion usage description goes here.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
