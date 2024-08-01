@@ -384,7 +384,7 @@ public class RadarFlutterPlugin
         boolean fraud = getBooleanFromMethodCall(call, "fraud", false);
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.10.0-beta.2");
+        editor.putString("x_platform_sdk_version", "3.10.0-beta.3");
         editor.apply();
         Radar.initialize(mContext, publishableKey, null, Radar.RadarLocationServicesProvider.GOOGLE, fraud);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
