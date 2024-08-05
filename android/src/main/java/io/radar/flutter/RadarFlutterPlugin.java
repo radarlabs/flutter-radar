@@ -79,7 +79,7 @@ public class RadarFlutterPlugin
     private static final String TAG = "RadarFlutterPlugin";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
     private static MethodChannel sBackgroundChannel;
-    private MethodChannel channel;
+    private static MethodChannel channel;
 
     private static final Object lock = new Object();
 
@@ -89,10 +89,12 @@ public class RadarFlutterPlugin
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         mContext = binding.getApplicationContext();
-        channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
-        Radar.setReceiver(new RadarFlutterReceiver(channel));
-        Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
-        channel.setMethodCallHandler(this);
+        if (channel == null) {
+            channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
+            Radar.setReceiver(new RadarFlutterReceiver(channel));
+            Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
+            channel.setMethodCallHandler(this);
+        }
     }
 
     @Override
