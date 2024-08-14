@@ -118,13 +118,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     public static void registerWith(Registrar registrar) {
-        RadarFlutterPlugin plugin = new RadarFlutterPlugin();
-
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "radar_flutter_plugin");
+        mContext = registrar.context();
+        mActivity = registrar.activity();
+    
+        channel = new MethodChannel(registrar.messenger(), "flutter_radar");
         callHandler = new RadarMethodCallHandler();
         channel.setMethodCallHandler(callHandler);
-        plugin.mContext = registrar.context();
-        plugin.mActivity = registrar.activity();
     }
 
     private static void runOnMainThread(final Runnable runnable) {
