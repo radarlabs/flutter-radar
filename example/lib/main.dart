@@ -75,8 +75,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.setLogLevel('info');
     Radar.setAnonymousTrackingEnabled(false);
 
-    Radar.attachListeners();
-
     Radar.onLocation(onLocation);
     Radar.onClientLocation(onClientLocation);
     Radar.onError(onError);
@@ -85,7 +83,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     Radar.onToken(onToken);
 
     await Radar.requestPermissions(false);
-    
+
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
@@ -249,7 +247,43 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 );
                 print("searchPlaces: $resp");
               },
-              child: Text('searchPlaces'),
+              child: Text('searchPlaces()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.searchGeofences(
+                  near: {
+                    'latitude': 40.783826,
+                    'longitude': -73.975363,
+                  },
+                  radius: 1000,
+                  limit: 10,
+                  includeGeometry: true,
+                  tags: List.empty(),
+                  metadata: {},
+                );
+                print("searchGeofences: $resp");
+              },
+              child: Text('searchGeofences()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.geocode(
+                  '20 jay st brooklyn',
+                );
+                print("geocode: $resp");
+              },
+              child: Text('geocode()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.reverseGeocode();
+                print("reverseGeocode: $resp");
+              },
+              child: Text('reverseGeocode()'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
@@ -339,9 +373,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () {
-                Radar.startTrackingVerified(token: true);
+                Radar.startTrackingVerified(30, false);
               },
-              child: Text('startTrackingVerified(token: true)'),
+              child: Text('startTrackingVerified()'),
+            ),
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () {
+                Radar.stopTrackingVerified();
+              },
+              child: Text('stopTrackingVerified()'),
             ),
             ElevatedButton(
               style: raisedButtonStyle,
@@ -376,16 +417,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 Map? resp = await Radar.trackVerified();
                 print("trackVerified: $resp");
               },
-              child: Text('trackVerified'),
+              child: Text('trackVerified()'),
             ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Map? resp = await Radar.trackVerifiedToken();
-                print("trackVerifiedToken: $resp");
-              },
-              child: Text('trackVerifiedToken'),
-            ),
+            
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {

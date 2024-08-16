@@ -74,6 +74,8 @@
         [self startTrackingCustom:call withResult:result];
     } else if ([@"startTrackingVerified" isEqualToString:call.method]) {
         [self startTrackingVerified:call withResult:result];
+    } else if ([@"stopTrackingVerified" isEqualToString:call.method]) {
+        [self stopTrackingVerified:call withResult:result];
     } else if ([@"stopTracking" isEqualToString:call.method]) {
         [self stopTracking:call withResult:result];
     } else if ([@"isTracking" isEqualToString:call.method]) {
@@ -124,20 +126,10 @@
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
         [self trackVerified:call withResult:result];    
-    } else if ([@"trackVerifiedToken" isEqualToString:call.method]) {
-        [self trackVerifiedToken:call withResult:result];    
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
         [self validateAddress:call withResult:result];    
-    } else if ([@"attachListeners" isEqualToString:call.method]) {
-        [self attachListeners:call withResult:result];
-    } else if ([@"detachListeners" isEqualToString:call.method]) {
-        [self detachListeners:call withResult:result];
-    } else if ([@"on" isEqualToString:call.method]) {
-        [self on:call withResult:result];
-    } else if ([@"off" isEqualToString:call.method]) {
-        [self off:call withResult:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -148,7 +140,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.9.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.10.0" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -379,12 +371,6 @@
 - (void)startTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
-    BOOL token = NO;
-    NSNumber *tokenNumber = argsDict[@"token"];
-    if (tokenNumber != nil && [tokenNumber isKindOfClass:[NSNumber class]]) {
-        token = [tokenNumber boolValue];
-    }
-
     BOOL beacons = NO;
     NSNumber *beaconsNumber = argsDict[@"beacons"];
     if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
@@ -397,7 +383,12 @@
         interval = [intervalNumber doubleValue];
     }
 
-    [Radar startTrackingVerified:token interval:interval beacons:beacons];
+    [Radar startTrackingVerifiedWithInterval:interval beacons:beacons];
+    result(nil);
+}
+
+- (void)stopTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar stopTrackingVerified];
     result(nil);
 }
 
@@ -639,11 +630,17 @@
     } else {
         limit = 10;
     }
+    BOOL includeGeometry = NO;
+    NSNumber *includeGeometryNumber = argsDict[@"includeGeometry"];
+    if (includeGeometryNumber != nil && [includeGeometryNumber isKindOfClass:[NSNumber class]]) {
+        includeGeometry = [includeGeometryNumber boolValue];
+    }
+
 
     if (near != nil) {
-        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeometry:includeGeometry completionHandler:completionHandler];
     } else {
-        [Radar searchGeofencesWithRadius:radius tags:tags metadata:metadata limit:limit completionHandler:completionHandler];
+        [Radar searchGeofences:completionHandler];
     }
 }
 
@@ -765,9 +762,30 @@
       result(dict);
   };
 
-  NSDictionary *argsDict = call.arguments;
+    NSDictionary *argsDict = call.arguments;
 
-  NSDictionary *locationDict = argsDict[@"location"];
+    NSArray<NSString *> *layers = nil;
+    id layersValue = argsDict[@"layers"];
+    if (layersValue != nil && [layersValue isKindOfClass:[NSArray class]]) {
+        NSArray *tempLayers = (NSArray *)layersValue;
+        // Further check if the array contains only NSString objects
+        BOOL allStrings = YES;
+        for (id item in tempLayers) {
+            if (![item isKindOfClass:[NSString class]]) {
+                allStrings = NO;
+                break;
+            }
+        }
+        if (allStrings) {
+            layers = tempLayers;
+        }
+    }
+
+  NSDictionary *locationDict = nil;
+  id locationDictValue = argsDict[@"location"];
+  if (locationDictValue != nil && [locationDictValue isKindOfClass:[NSDictionary class]]) {
+      locationDict = (NSDictionary *)locationDictValue;
+  }
   if (locationDict) {
       NSNumber *latitudeNumber = locationDict[@"latitude"];
       NSNumber *longitudeNumber = locationDict[@"longitude"];
@@ -775,9 +793,9 @@
       double longitude = [longitudeNumber doubleValue];
       CLLocation *location = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
 
-      [Radar reverseGeocodeLocation:location completionHandler:completionHandler];
+      [Radar reverseGeocodeLocation:location layers:layers completionHandler:completionHandler];
   } else {
-      [Radar reverseGeocodeWithCompletionHandler:completionHandler];
+      [Radar reverseGeocodeWithLayers:layers completionHandler:completionHandler];
   }
 }
 
@@ -956,45 +974,16 @@
         beacons = [beaconsNumber boolValue];
     }
 
-    RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
+    RadarTrackVerifiedCompletionHandler completionHandler = ^(RadarStatus status, RadarVerifiedLocationToken* token) {
         if (status == RadarStatusSuccess) {
             NSMutableDictionary *dict = [NSMutableDictionary new];
             [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (location) {
-                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            if (user) {
-                [dict setObject:[user dictionaryValue] forKey:@"user"];
-            }
+            [dict setObject:[token dictionaryValue] forKey:@"token"];
             result(dict);
         }
     };
 
     [Radar trackVerifiedWithBeacons:beacons completionHandler:completionHandler];
-}
-
-- (void)trackVerifiedToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDictionary *argsDict = call.arguments;
-    
-    BOOL beacons = NO;
-    NSNumber *beaconsNumber = argsDict[@"beacons"];
-    if (beaconsNumber != nil && [beaconsNumber isKindOfClass:[NSNumber class]]) {
-        beacons = [beaconsNumber boolValue];
-    }
-
-    RadarTrackTokenCompletionHandler completionHandler = ^(RadarStatus status, NSString* token) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            [dict setObject:token forKey:@"token"];
-            result(dict);
-        }
-    };
-
-    [Radar trackVerifiedTokenWithBeacons:beacons completionHandler:completionHandler];
 }
 
 - (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1015,111 +1004,52 @@
   [Radar validateAddress:address completionHandler:completionHandler];
 }
 
--(void)attachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSNumber* callbackDispatcherHandle = call.arguments[@"callbackDispatcherHandle"];
-
-    // Retrieve the callback information
-    FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackDispatcherHandle longValue]];
-
-    // Create the background Flutter engine
-    FlutterEngine *sBackgroundFlutterEngine;
-    sBackgroundFlutterEngine = [[FlutterEngine alloc] init];
-    self.sBackgroundFlutterEngine = sBackgroundFlutterEngine;
-
-    FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar_background" binaryMessenger:[sBackgroundFlutterEngine binaryMessenger]];
-    self.backgroundChannel = backgroundChannel;
-
-    [self.sBackgroundFlutterEngine runWithEntrypoint:callbackInfo.callbackName libraryURI: callbackInfo.callbackLibraryPath] ;    
-    result(nil);
-}
-
--(void)detachListeners:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    self.backgroundChannel = nil;
-    result(nil);
-}
-
--(void)on:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSNumber *callbackHandleNumber = argsDict[@"callbackHandle"];
-    long callbackHandle = [callbackHandleNumber longValue];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:callbackHandleNumber forKey:listener];
-    result(nil);
-}
-
--(void)off:(FlutterMethodCall *)call withResult:(FlutterResult)result { 
-    NSDictionary *argsDict = call.arguments;
-    NSString* listener = argsDict[@"listener"];
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:nil forKey:listener];   
-    result(nil);
-}
-
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"events"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"events" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"location"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"location" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"clientLocation"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"clientLocation" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger callbackHandle = [userDefaults integerForKey:@"error"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"error" arguments:args];
     }
-    NSArray* args = @[[NSNumber numberWithInteger:callbackHandle], dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didLogMessage:(NSString *)message {
     NSDictionary *dict = @{@"message": message};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"log"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"log" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 - (void)didUpdateToken:(NSString *)token {
     NSDictionary *dict = @{@"token": token};    
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSNumber* callbackHandle = [userDefaults objectForKey:@"token"];
-    if (callbackHandle == 0) {
-        return;
+    NSArray* args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"token" arguments:args];
     }
-    NSArray* args = @[callbackHandle, dict];
-    [self.backgroundChannel invokeMethod:@"" arguments:args];
 }
 
 @end
