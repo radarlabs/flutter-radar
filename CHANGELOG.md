@@ -1,3 +1,8 @@
+# 3.11.0
+
+- Bump iOS version from 3.15.0 to 3.17.0
+- Bump Android version from 3.15.0 to 3.17.0
+
 # 3.10.0
 
 - Bump iOS version from 3.9.14 to 3.15.0

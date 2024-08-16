@@ -23,11 +23,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Your iOS 11 and higher background location usage description goes here. e.g., "This app uses your location in the background to recommend places nearby."</string>
+	<string>Your iOS 11 and higher background location usage description goes here. e.g., &quot;This app uses your location in the background to recommend places nearby.&quot;</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Your iOS 10 and lower background location usage description goes here. e.g., "This app uses your location in the background to recommend places nearby."</string>
+	<string>Your iOS 10 and lower background location usage description goes here. e.g., &quot;This app uses your location in the background to recommend places nearby.&quot;</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your foreground location usage description goes here. e.g., "This app uses your location in the foreground to recommend places nearby."</string>
+	<string>Your foreground location usage description goes here. e.g., &quot;This app uses your location in the foreground to recommend places nearby.&quot;</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
@@ -80,5 +80,7 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMotionUsageDescription</key>
+	<string>Your motion usage description goes here. e.g., &quot;This app uses your motion to enable features.&quot;</string>
 </dict>
 </plist>
