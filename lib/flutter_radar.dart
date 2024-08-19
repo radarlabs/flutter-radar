@@ -20,35 +20,59 @@ void callbackDispatcher() {
   });
 }
 
+typedef LocationCallback = void Function(Map<dynamic, dynamic> locationEvent);
+typedef ClientLocationCallback = void Function(
+  Map<dynamic, dynamic> locationEvent,
+);
+typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
+typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
+typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
+typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
+
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
+
+  static LocationCallback? foregroundLocationCallback;
+  static ClientLocationCallback? foregroundClientLocationCallback;
+  static ErrorCallback? foregroundErrorCallback;
+  static LogCallback? foregroundLogCallback;
+  static EventsCallback? foregroundEventsCallback;
+  static TokenCallback? foregroundTokenCallback;
 
   static Future initialize(String publishableKey) async {
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
       });
+      _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
       print(e);
     }
   }
 
-  static attachListeners() async {
-    try {
-      await _channel.invokeMethod('attachListeners', {
-        'callbackDispatcherHandle':
-            PluginUtilities.getCallbackHandle(callbackDispatcher)?.toRawHandle()
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static Future detachListeners() async {
-    try {
-      await _channel.invokeMethod('detachListeners');
-    } on PlatformException catch (e) {
-      print(e);
+  static Future _handleMethodCall(MethodCall call) async {
+    final args = call.arguments;
+    switch (call.method) {
+      case 'location':
+        foregroundLocationCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'clientLocation':
+        foregroundClientLocationCallback?.call(
+          args[1] as Map<dynamic, dynamic>,
+        );
+        break;
+      case 'error':
+        foregroundErrorCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'log':
+        foregroundLogCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'events':
+        foregroundEventsCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'token':
+        foregroundTokenCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
     }
   }
 
@@ -162,11 +186,10 @@ class Radar {
     }
   }
 
-  static Future startTrackingVerified(
-      {bool? token, int? interval, bool? beacons}) async {
+  static Future startTrackingVerified(int interval, bool beacons) async {
     try {
-      await _channel.invokeMethod('startTrackingVerified',
-          {'token': token, 'interval': interval, 'beacons': beacons});
+      await _channel.invokeMethod(
+          'startTrackingVerified', {'interval': interval, 'beacons': beacons});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -175,6 +198,14 @@ class Radar {
   static Future stopTracking() async {
     try {
       await _channel.invokeMethod('stopTracking');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future stopTrackingVerified() async {
+    try {
+      await _channel.invokeMethod('stopTrackingVerified');
     } on PlatformException catch (e) {
       print(e);
     }
@@ -272,14 +303,16 @@ class Radar {
       int? radius,
       List? tags,
       Map<String, dynamic>? metadata,
-      int? limit}) async {
+      int? limit,
+      bool? includeGeometry}) async {
     try {
       return await _channel.invokeMethod('searchGeofences', <String, dynamic>{
         'near': near,
         'radius': radius,
         'limit': limit,
         'tags': tags,
-        'metadata': metadata
+        'metadata': metadata,
+        'includeGeometry': includeGeometry
       });
     } on PlatformException catch (e) {
       print(e);
@@ -344,10 +377,14 @@ class Radar {
     }
   }
 
-  static Future<Map?> reverseGeocode(Map<String, dynamic> location) async {
+  static Future<Map?> reverseGeocode(
+      {Map<String, dynamic>? location, List? layers}) async {
     try {
-      return await _channel
-          .invokeMethod('reverseGeocode', {'location': location});
+      final Map<String, dynamic> arguments = {
+        'location': location != null ? location : null,
+        'layers': layers != null ? layers : null
+      };
+      return await _channel.invokeMethod('reverseGeocode', arguments);
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -460,17 +497,8 @@ class Radar {
 
   static Future<Map?> trackVerified({bool? beacons}) async {
     try {
-      return await _channel.invokeMethod('trackVerified', {'beacons': beacons});
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
-  }
-
-  static Future<Map?> trackVerifiedToken({bool? beacons}) async {
-    try {
-      return await _channel
-          .invokeMethod('trackVerifiedToken', {'beacons': beacons});
+      return await _channel.invokeMethod(
+          'trackVerified', {'beacons': beacons != null ? beacons : false});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -491,166 +519,116 @@ class Radar {
     }
   }
 
-  static onLocation(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod('on',
-          {'listener': 'location', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
+  static onLocation(LocationCallback callback) {
+    if (foregroundLocationCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundLocationCallback = callback;
   }
 
-  static offLocation() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'location'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offLocation() {
+    foregroundLocationCallback = null;
   }
 
-  static onClientLocation(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod('on', {
-        'listener': 'clientLocation',
-        'callbackHandle': handle.toRawHandle()
-      });
-    } on PlatformException catch (e) {
-      print(e);
+  static void onClientLocation(ClientLocationCallback callback) {
+    if (foregroundClientLocationCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundClientLocationCallback = callback;
   }
 
-  static offClientLocation() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'clientLocation'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offClientLocation() {
+    foregroundClientLocationCallback = null;
   }
 
-  static onError(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'error', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
+  static onError(ErrorCallback callback) {
+    if (foregroundErrorCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundErrorCallback = callback;
   }
 
-  static offError() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'error'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offError() {
+    foregroundErrorCallback = null;
   }
 
-  static onLog(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'log', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
+  static onLog(LogCallback callback) {
+    if (foregroundLogCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundLogCallback = callback;
   }
 
-  static offLog() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'log'});
-    } on PlatformException catch (e) {
-      print(e);
+  static offLog() {
+    foregroundLogCallback = null;
+  }
+  
+  static onEvents(EventsCallback callback) {
+    if (foregroundEventsCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundEventsCallback = callback;
   }
 
-  static onEvents(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'events', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offEvents() {
+    foregroundEventsCallback = null;
   }
 
-  static offEvents() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'events'});
-    } on PlatformException catch (e) {
-      print(e);
+  static onToken(TokenCallback callback) {
+    if (foregroundTokenCallback != null) {
+      throw RadarExistingCallbackException();
     }
+    foregroundTokenCallback = callback;
   }
 
-  static onToken(Function(Map res) callback) async {
-    try {
-      final CallbackHandle handle =
-          PluginUtilities.getCallbackHandle(callback)!;
-      await _channel.invokeMethod(
-          'on', {'listener': 'token', 'callbackHandle': handle.toRawHandle()});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
-  static offToken() async {
-    try {
-      await _channel.invokeMethod('off', {'listener': 'token'});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static offToken() {
+    foregroundTokenCallback = null;
   }
 
   static Map<String, dynamic> presetContinuousIOS = {
-  "desiredStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy":'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "useStoppedGeofence": false,
-  "showBlueBar": true,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": false,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+    "desiredStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy": 'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "useStoppedGeofence": false,
+    "showBlueBar": true,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": false,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
-  static Map<String, dynamic> presetContinuousAndroid =  {
-  "desiredStoppedUpdateInterval": 30,
-  "fastestStoppedUpdateInterval": 30,
-  "desiredMovingUpdateInterval": 30,
-  "fastestMovingUpdateInterval": 30,
-  "desiredSyncInterval": 20,
-  "desiredAccuracy": 'high',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'none',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 0,
-  "foregroundServiceEnabled": true,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+  static Map<String, dynamic> presetContinuousAndroid = {
+    "desiredStoppedUpdateInterval": 30,
+    "fastestStoppedUpdateInterval": 30,
+    "desiredMovingUpdateInterval": 30,
+    "fastestMovingUpdateInterval": 30,
+    "desiredSyncInterval": 20,
+    "desiredAccuracy": 'high',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'none',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 0,
+    "foregroundServiceEnabled": true,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsiveIOS = {
     "desiredStoppedUpdateInterval": 0,
@@ -698,54 +676,61 @@ class Radar {
   };
 
   static Map<String, dynamic> presetEfficientIOS = {
-  "desiredStoppedUpdateInterval": 0,
-  "desiredMovingUpdateInterval": 0,
-  "desiredSyncInterval": 0,
-  "desiredAccuracy": "medium",
-  "stopDuration": 0,
-  "stopDistance": 0,
-  "replay": 'stops',
-  "useStoppedGeofence": false,
-  "showBlueBar": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "useVisits": true,
-  "useSignificantLocationChanges": false,
-  "beacons": false,
-  "sync": 'all',
-};
+    "desiredStoppedUpdateInterval": 0,
+    "desiredMovingUpdateInterval": 0,
+    "desiredSyncInterval": 0,
+    "desiredAccuracy": "medium",
+    "stopDuration": 0,
+    "stopDistance": 0,
+    "replay": 'stops',
+    "useStoppedGeofence": false,
+    "showBlueBar": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "useVisits": true,
+    "useSignificantLocationChanges": false,
+    "beacons": false,
+    "sync": 'all',
+  };
 
-  static Map<String, dynamic> presetEfficientAndroid ={
-  "desiredStoppedUpdateInterval": 3600,
-  "fastestStoppedUpdateInterval": 1200,
-  "desiredMovingUpdateInterval": 1200,
-  "fastestMovingUpdateInterval": 360,
-  "desiredSyncInterval": 140,
-  "desiredAccuracy": 'medium',
-  "stopDuration": 140,
-  "stopDistance": 70,
-  "replay": 'stops',
-  "sync": 'all',
-  "useStoppedGeofence": false,
-  "stoppedGeofenceRadius": 0,
-  "useMovingGeofence": false,
-  "movingGeofenceRadius": 0,
-  "syncGeofences": true,
-  "syncGeofencesLimit": 10,
-  "foregroundServiceEnabled": false,
-  "beacons": false,
-  "startTrackingAfter": null,
-  "stopTrackingAfter": null,
-};
+  static Map<String, dynamic> presetEfficientAndroid = {
+    "desiredStoppedUpdateInterval": 3600,
+    "fastestStoppedUpdateInterval": 1200,
+    "desiredMovingUpdateInterval": 1200,
+    "fastestMovingUpdateInterval": 360,
+    "desiredSyncInterval": 140,
+    "desiredAccuracy": 'medium',
+    "stopDuration": 140,
+    "stopDistance": 70,
+    "replay": 'stops',
+    "sync": 'all',
+    "useStoppedGeofence": false,
+    "stoppedGeofenceRadius": 0,
+    "useMovingGeofence": false,
+    "movingGeofenceRadius": 0,
+    "syncGeofences": true,
+    "syncGeofencesLimit": 10,
+    "foregroundServiceEnabled": false,
+    "beacons": false,
+    "startTrackingAfter": null,
+    "stopTrackingAfter": null,
+  };
 
   static Map<String, dynamic> presetResponsive =
       Platform.isIOS ? presetResponsiveIOS : presetResponsiveAndroid;
   static Map<String, dynamic> presetContinuous =
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
-    static Map<String, dynamic> presetEfficient=
+  static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
+}
+
+class RadarExistingCallbackException implements Exception {
+  @override
+  String toString() {
+    return 'Existing callback already exists for this event. Please call the corresponding `off` method first.';
+  }
 }

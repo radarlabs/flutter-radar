@@ -58,6 +58,7 @@ import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarRouteMatrix;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
+import io.radar.sdk.model.RadarVerifiedLocationToken;
 
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
@@ -66,51 +67,27 @@ import io.flutter.view.FlutterNativeView;
 import io.flutter.view.FlutterRunArguments;
 import io.flutter.view.FlutterCallbackInformation;
 
-public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, RequestPermissionsResultListener {
+public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, RequestPermissionsResultListener {
 
-    private static FlutterEngine sBackgroundFlutterEngine;
-
-    private Activity mActivity;
-    private Context mContext;
+    private static Activity mActivity;
+    private static Context mContext;
 
     private static final String TAG = "RadarFlutterPlugin";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
-    private static MethodChannel sBackgroundChannel;
+    private static MethodChannel channel;
+    private static RadarMethodCallHandler callHandler;
 
     private static final Object lock = new Object();
 
     private static final int PERMISSIONS_REQUEST_CODE = 20160525;
-    private Result mPermissionsRequestResult;
-    
-    private static void initializeBackgroundEngine(Context context) {
-        synchronized(lock) {
-            if (sBackgroundFlutterEngine == null) {
-                FlutterMain.startInitialization(context.getApplicationContext());
-                FlutterMain.ensureInitializationComplete(context.getApplicationContext(), null);
-
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackDispatcherHandle = sharedPrefs.getLong(CALLBACK_DISPATCHER_HANDLE_KEY, 0);
-                if (callbackDispatcherHandle == 0) {
-                    Log.e(TAG, "Error looking up callback dispatcher handle");
-                    return;
-                }
-
-                FlutterCallbackInformation callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(callbackDispatcherHandle);
-                sBackgroundFlutterEngine = new FlutterEngine(context.getApplicationContext());
-
-                DartCallback callback = new DartCallback(context.getAssets(), FlutterMain.findAppBundlePath(context), callbackInfo);
-                sBackgroundFlutterEngine.getDartExecutor().executeDartCallback(callback);
-                sBackgroundChannel = new MethodChannel(sBackgroundFlutterEngine.getDartExecutor().getBinaryMessenger(), "flutter_radar_background");
-            }
-        }
-    }
+    private static Result mPermissionsRequestResult;
     
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        Radar.setReceiver(new RadarFlutterReceiver());
         mContext = binding.getApplicationContext();
-        MethodChannel channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), "flutter_radar");
-        channel.setMethodCallHandler(this);
+        channel = new MethodChannel(binding.getBinaryMessenger(), "flutter_radar");
+        callHandler = new RadarMethodCallHandler();
+        channel.setMethodCallHandler(callHandler);
     }
 
     @Override
@@ -141,12 +118,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
     public static void registerWith(Registrar registrar) {
-        RadarFlutterPlugin plugin = new RadarFlutterPlugin();
-
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "radar_flutter_plugin");
-        channel.setMethodCallHandler(plugin);
-        plugin.mContext = registrar.context();
-        plugin.mActivity = registrar.activity();
+        mContext = registrar.context();
+        mActivity = registrar.activity();
+    
+        channel = new MethodChannel(registrar.messenger(), "flutter_radar");
+        callHandler = new RadarMethodCallHandler();
+        channel.setMethodCallHandler(callHandler);
     }
 
     private static void runOnMainThread(final Runnable runnable) {
@@ -163,174 +140,166 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         return true;
     }
 
-    @Override
-    public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
-        try {
-            switch (call.method) {
-                case "initialize":
-                    initialize(call, result);
-                    break;
-                case "setLogLevel":
-                    setLogLevel(call, result);
-                    break;
-                case "getPermissionsStatus":
-                    getPermissionStatus(result);
-                    break;
-                case "requestPermissions":
-                    requestPermissions(call, result);
-                    break;
-                case "setUserId":
-                    setUserId(call, result);
-                    break;
-                case "getUserId":
-                    getUserId(result);
-                    break;
-                case "setDescription":
-                    setDescription(call, result);
-                    break;
-                case "getDescription":
-                    getDescription(result);
-                    break;
-                case "setMetadata":
-                    setMetadata(call, result);
-                    break;
-                case "getMetadata":
-                    getMetadata(result);
-                    break;
-                case "setAnonymousTrackingEnabled":
-                    setAnonymousTrackingEnabled(call, result);
-                    break;
-                case "getLocation":
-                    getLocation(call, result);
-                    break;
-                case "trackOnce":
-                    trackOnce(call, result);
-                    break;
-                case "startTracking":
-                    startTracking(call, result);
-                    break;
-                case "startTrackingCustom":
-                    startTrackingCustom(call, result);
-                    break;
-                case "startTrackingVerified":
-                    startTrackingVerified(call, result);
-                    break;
-                case "stopTracking":
-                    stopTracking(result);
-                    break;
-                case "isTracking":
-                    isTracking(result);
-                    break;
-                case "isUsingRemoteTrackingOptions":
-                    isUsingRemoteTrackingOptions(result);
-                    break;
-                case "getTrackingOptions":
-                    getTrackingOptions(result);
-                    break;
-                case "mockTracking":
-                    mockTracking(call, result);
-                    break;
-                case "startTrip":
-                    startTrip(call, result);
-                    break;
-                case "updateTrip":
-                    updateTrip(call, result);
-                    break;
-                case "getTripOptions":
-                    getTripOptions(result);
-                    break;
-                case "completeTrip":
-                    completeTrip(result);
-                    break;
-                case "cancelTrip":
-                    cancelTrip(result);
-                    break;
-                case "getContext":
-                    getContext(call, result);
-                    break;
-                case "searchGeofences":
-                    searchGeofences(call, result);
-                    break;
-                case "searchPlaces":
-                    searchPlaces(call, result);
-                    break;
-                case "autocomplete":
-                    autocomplete(call, result);
-                    break; 
-                case "forwardGeocode":
-                    geocode(call, result);
-                    break;
-                case "reverseGeocode":
-                    reverseGeocode(call, result);
-                    break;
-                case "ipGeocode":
-                    ipGeocode(call, result);
-                    break;
-                case "getDistance":
-                    getDistance(call, result);
-                    break;
-                case "logConversion":
-                    logConversion(call, result);
-                    break;
-                case "logTermination":
-                    // do nothing
-                    break;
-                case "logBackgrounding":
-                    logBackgrounding(result);
-                    break;
-                case "logResigningActive":
-                    logResigningActive(result);
-                    break;
-                case "getMatrix":
-                    getMatrix(call, result);
-                    break;
-                case "setNotificationOptions":
-                    setNotificationOptions(call, result);
-                    break;
-                case "setForegroundServiceOptions":
-                    setForegroundServiceOptions(call, result);
-                    break;
-                case "trackVerified":
-                    trackVerified(call, result);
-                    break;
-                case "trackVerifiedToken":
-                    trackVerifiedToken(call, result);
-                    break;
-                case "validateAddress":
-                    validateAddress(call, result);
-                    break;
-                case "attachListeners":
-                    attachListeners(call, result);
-                    break;
-                case "detachListeners":
-                    detachListeners(call, result);
-                    break;
-                case "on":
-                    on(call, result);
-                    break;
-                case "off":
-                    off(call, result);
-                    break;
-                default:
-                    result.notImplemented();
-                    break;
+    public static class RadarMethodCallHandler implements MethodCallHandler {
+        @Override
+        public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
+            try {
+                switch (call.method) {
+                    case "initialize":
+                        initialize(call, result);
+                        break;
+                    case "setLogLevel":
+                        setLogLevel(call, result);
+                        break;
+                    case "getPermissionsStatus":
+                        getPermissionStatus(result);
+                        break;
+                    case "requestPermissions":
+                        requestPermissions(call, result);
+                        break;
+                    case "setUserId":
+                        setUserId(call, result);
+                        break;
+                    case "getUserId":
+                        getUserId(result);
+                        break;
+                    case "setDescription":
+                        setDescription(call, result);
+                        break;
+                    case "getDescription":
+                        getDescription(result);
+                        break;
+                    case "setMetadata":
+                        setMetadata(call, result);
+                        break;
+                    case "getMetadata":
+                        getMetadata(result);
+                        break;
+                    case "setAnonymousTrackingEnabled":
+                        setAnonymousTrackingEnabled(call, result);
+                        break;
+                    case "getLocation":
+                        getLocation(call, result);
+                        break;
+                    case "trackOnce":
+                        trackOnce(call, result);
+                        break;
+                    case "startTracking":
+                        startTracking(call, result);
+                        break;
+                    case "startTrackingCustom":
+                        startTrackingCustom(call, result);
+                        break;
+                    case "startTrackingVerified":
+                        startTrackingVerified(call, result);
+                        break;
+                    case "stopTrackingVerified":
+                        stopTrackingVerified(call, result);
+                        break;
+                    case "stopTracking":
+                        stopTracking(result);
+                        break;
+                    case "isTracking":
+                        isTracking(result);
+                        break;
+                    case "isUsingRemoteTrackingOptions":
+                        isUsingRemoteTrackingOptions(result);
+                        break;
+                    case "getTrackingOptions":
+                        getTrackingOptions(result);
+                        break;
+                    case "mockTracking":
+                        mockTracking(call, result);
+                        break;
+                    case "startTrip":
+                        startTrip(call, result);
+                        break;
+                    case "updateTrip":
+                        updateTrip(call, result);
+                        break;
+                    case "getTripOptions":
+                        getTripOptions(result);
+                        break;
+                    case "completeTrip":
+                        completeTrip(result);
+                        break;
+                    case "cancelTrip":
+                        cancelTrip(result);
+                        break;
+                    case "getContext":
+                        getContext(call, result);
+                        break;
+                    case "searchGeofences":
+                        searchGeofences(call, result);
+                        break;
+                    case "searchPlaces":
+                        searchPlaces(call, result);
+                        break;
+                    case "autocomplete":
+                        autocomplete(call, result);
+                        break; 
+                    case "forwardGeocode":
+                        geocode(call, result);
+                        break;
+                    case "reverseGeocode":
+                        reverseGeocode(call, result);
+                        break;
+                    case "ipGeocode":
+                        ipGeocode(call, result);
+                        break;
+                    case "getDistance":
+                        getDistance(call, result);
+                        break;
+                    case "logConversion":
+                        logConversion(call, result);
+                        break;
+                    case "logTermination":
+                        // do nothing
+                        break;
+                    case "logBackgrounding":
+                        logBackgrounding(result);
+                        break;
+                    case "logResigningActive":
+                        logResigningActive(result);
+                        break;
+                    case "getMatrix":
+                        getMatrix(call, result);
+                        break;
+                    case "setNotificationOptions":
+                        setNotificationOptions(call, result);
+                        break;
+                    case "setForegroundServiceOptions":
+                        setForegroundServiceOptions(call, result);
+                        break;
+                    case "trackVerified":
+                        trackVerified(call, result);
+                        break;
+                    case "validateAddress":
+                        validateAddress(call, result);
+                        break;
+                    default:
+                        result.notImplemented();
+                        break;
+                }
+            } catch (Error | Exception e) {
+                result.error(e.toString(), e.getMessage(), e.getMessage());
             }
-        } catch (Error | Exception e) {
-            result.error(e.toString(), e.getMessage(), e.getMessage());
         }
     }
 
-    private void initialize(MethodCall call, Result result) {
+    private static void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.9.1");
+        editor.putString("x_platform_sdk_version", "3.11.0");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
+        Radar.setReceiver(new RadarFlutterReceiver(channel));
+        Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
         result.success(true);
     }
 
-    private void setNotificationOptions(MethodCall call, Result result) {
+    private static void setNotificationOptions(MethodCall call, Result result) {
         HashMap notificationOptionsMap = (HashMap)call.arguments;
         JSONObject notificationOptionsJson = new JSONObject(notificationOptionsMap);
         RadarNotificationOptions options = RadarNotificationOptions.fromJson(notificationOptionsJson);
@@ -338,7 +307,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(true);
     }
 
-    private void setForegroundServiceOptions(MethodCall call, Result result) {
+    private static void setForegroundServiceOptions(MethodCall call, Result result) {
         HashMap foregroundServiceOptionsMap = (HashMap)call.arguments;
         JSONObject foregroundServiceOptionsJson = new JSONObject(foregroundServiceOptionsMap);
         RadarTrackingOptionsForegroundService options = RadarTrackingOptionsForegroundService.fromJson(foregroundServiceOptionsJson);
@@ -346,7 +315,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(true);
     }
 
-    private void setLogLevel(MethodCall call, Result result) {
+    private static void setLogLevel(MethodCall call, Result result) {
         String logLevel = call.argument("logLevel");
         if (logLevel == null) {
             Radar.setLogLevel(Radar.RadarLogLevel.NONE);
@@ -365,7 +334,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
     }
 
 
-    private void getPermissionStatus(Result result) {
+    private static void getPermissionStatus(Result result) {
         String status = "NOT_DETERMINED";
         
         if (mActivity == null || result == null) {
@@ -389,7 +358,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(status);
     }
 
-    private void requestPermissions(MethodCall call, Result result) {
+    private static void requestPermissions(MethodCall call, Result result) {
         boolean background = call.argument("background");
         mPermissionsRequestResult = result;
         if (mActivity != null) {
@@ -403,36 +372,36 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    private void setUserId(MethodCall call, Result result) {
+    private static void setUserId(MethodCall call, Result result) {
         String userId = call.argument("userId");
         Radar.setUserId(userId);
         result.success(true);
     }
 
-    private void getUserId(Result result) {
+    private static void getUserId(Result result) {
         String userId = Radar.getUserId();
         result.success(userId);
     }
 
-    private void setDescription(MethodCall call, Result result) {
+    private static void setDescription(MethodCall call, Result result) {
         String description = call.argument("description");
         Radar.setDescription(description);
         result.success(true);
     }
 
-    private void getDescription(Result result) {
+    private static void getDescription(Result result) {
         String description = Radar.getDescription();
         result.success(description);
     }
 
-    private void setMetadata(MethodCall call, Result result) {
+    private static void setMetadata(MethodCall call, Result result) {
         HashMap metadataMap = (HashMap)call.arguments;
         JSONObject metadata = new JSONObject(metadataMap);
         Radar.setMetadata(metadata);
         result.success(true);
     }
 
-    private void getMetadata(Result result) {
+    private static void getMetadata(Result result) {
         JSONObject metadata = Radar.getMetadata();
         HashMap metadataMap = null;
         if (metadata != null) {
@@ -441,13 +410,13 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(metadataMap);
     }
 
-    private void setAnonymousTrackingEnabled(MethodCall call, Result result) {
+    private static void setAnonymousTrackingEnabled(MethodCall call, Result result) {
         boolean enabled = call.argument("enabled");
         Radar.setAnonymousTrackingEnabled(enabled);
         result.success(true);
     }
 
-    private void getLocation(MethodCall call, final Result result) {
+    private static void getLocation(MethodCall call, final Result result) {
         Radar.RadarLocationCallback callback = new Radar.RadarLocationCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final boolean stopped) {
@@ -486,7 +455,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    private void trackOnce(MethodCall call, final Result result) {
+    private static void trackOnce(MethodCall call, final Result result) {
         Radar.RadarTrackCallback callback = new Radar.RadarTrackCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final RadarEvent[] events, final RadarUser user) {
@@ -544,7 +513,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }      
 
-    private void startTracking(MethodCall call, Result result) {
+    private static void startTracking(MethodCall call, Result result) {
         String preset = call.argument("preset");
         if (preset == null) {
             Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
@@ -560,7 +529,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(true);
     }
 
-    private void startTrackingCustom(MethodCall call, Result result) {
+    private static void startTrackingCustom(MethodCall call, Result result) {
         HashMap optionsMap = (HashMap)call.arguments;
         JSONObject optionsJson = new JSONObject(optionsMap);
         RadarTrackingOptions options = RadarTrackingOptions.fromJson(optionsJson);
@@ -568,15 +537,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(true);
     }
 
-    private void startTrackingVerified(MethodCall call, Result result) {
-        Boolean token = call.hasArgument("token") ? call.argument("token") : false;
+    private static void startTrackingVerified(MethodCall call, Result result) {
         int interval = call.hasArgument("interval") && call.argument("interval") != null ? (int)call.argument("interval") : 1;
         Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
-        Radar.startTrackingVerified(token, interval, beacons);
+        Radar.startTrackingVerified(interval, beacons);
         result.success(true);
     }
 
-    public void mockTracking(MethodCall call, final Result result) {
+    private static void stopTrackingVerified(MethodCall call, Result result) {
+        Radar.stopTrackingVerified();
+        result.success(true);
+    }
+
+    public static void mockTracking(MethodCall call, final Result result) {
         HashMap originMap = (HashMap)call.argument("origin");
         Location origin = locationForMap(originMap);
         HashMap destinationMap = (HashMap)call.argument("destination");
@@ -601,17 +574,17 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    private void stopTracking(Result result) {
+    private static void stopTracking(Result result) {
         Radar.stopTracking();
         result.success(true);
     }
 
-    private void isTracking(Result result) {
+    private static void isTracking(Result result) {
         Boolean isTracking = Radar.isTracking();
         result.success(isTracking);
     }
 
-    private void getTrackingOptions(Result result) throws JSONException {     
+    private static void getTrackingOptions(Result result) throws JSONException {     
         RadarTrackingOptions options = Radar.getTrackingOptions();   
         JSONObject optionsJson = options.toJson();
         HashMap optionsMap = null;
@@ -621,7 +594,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         result.success(optionsMap);
     }
 
-    public void startTrip(MethodCall call, Result result) throws JSONException {
+    public static void startTrip(MethodCall call, Result result) throws JSONException {
         HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
         RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
@@ -660,7 +633,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void updateTrip(MethodCall call, Result result) throws JSONException {
+    public static void updateTrip(MethodCall call, Result result) throws JSONException {
         HashMap tripOptionsMap = (HashMap)call.argument("tripOptions");
         JSONObject tripOptionsJson = jsonForMap(tripOptionsMap);
         RadarTripOptions tripOptions = RadarTripOptions.fromJson(tripOptionsJson);
@@ -708,13 +681,13 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void getTripOptions(Result result) {
+    public static void getTripOptions(Result result) {
         RadarTripOptions tripOptions = Radar.getTripOptions();
         HashMap<String,Object> map = new Gson().fromJson(tripOptions.toJson().toString(), HashMap.class);
         result.success(map);
     }
 
-    public void completeTrip(Result result) {
+    public static void completeTrip(Result result) {
         Radar.completeTrip(new Radar.RadarTripCallback() {
             @Override
             public void onComplete(@NonNull Radar.RadarStatus status,
@@ -744,7 +717,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void cancelTrip(Result result) {
+    public static void cancelTrip(Result result) {
         Radar.cancelTrip(new Radar.RadarTripCallback() {
             @Override
             public void onComplete(@NonNull Radar.RadarStatus status,
@@ -774,7 +747,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void getContext(MethodCall call, final Result result) {
+    public static void getContext(MethodCall call, final Result result) {
         Radar.RadarContextCallback callback = new Radar.RadarContextCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final RadarContext context) {
@@ -810,7 +783,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    private void searchGeofences(MethodCall call, final Result result) throws JSONException {
+    private static void searchGeofences(MethodCall call, final Result result) throws JSONException {
         Radar.RadarSearchGeofencesCallback callback = new Radar.RadarSearchGeofencesCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final RadarGeofence[] geofences) {
@@ -848,15 +821,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         HashMap metadataMap = (HashMap)call.argument("metadata");
         JSONObject metadata = jsonForMap(metadataMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
+        boolean includeGeometry = call.hasArgument("includeGeometry") ? call.argument("includeGeometry") : false;
 
         if (near != null) {
-            Radar.searchGeofences(near, radius, tags, metadata, limit, callback);
+            Radar.searchGeofences(near, radius, tags, metadata, limit, includeGeometry, callback);
         } else {
-            Radar.searchGeofences(radius, tags, metadata, limit, callback);
+            Radar.searchGeofences(radius, tags, metadata, limit, includeGeometry, callback);
         }
     }
 
-    public void searchPlaces(MethodCall call, final Result result) {
+    public static void searchPlaces(MethodCall call, final Result result) {
         Radar.RadarSearchPlacesCallback callback = new Radar.RadarSearchPlacesCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final Location location, final RadarPlace[] places) {
@@ -905,7 +879,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    public void autocomplete(MethodCall call, final Result result) {
+    public static void autocomplete(MethodCall call, final Result result) {
         String query = call.argument("query");
         HashMap nearMap = (HashMap)call.argument("near");
         Location near = locationForMap(nearMap);
@@ -939,10 +913,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void geocode(MethodCall call, final Result result) {
+    public static void geocode(MethodCall call, final Result result) {
         String query = call.argument("query");
 
-        Radar.geocode(query, new Radar.RadarGeocodeCallback() {
+        Radar.geocode(query, null, null,  new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -966,7 +940,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void reverseGeocode(MethodCall call, final Result result) {
+    public static void reverseGeocode(MethodCall call, final Result result) {
         Radar.RadarGeocodeCallback callback = new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
@@ -990,16 +964,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         };
 
-        if (call.hasArgument("location")) {
-            HashMap locationMap = (HashMap)call.argument("location");
+        String[] layers = call.hasArgument("layers") && call.argument("layers") != null ? call.argument("layers")
+                : null;
+        if (call.hasArgument("location") && call.argument("location") != null) {
+            HashMap locationMap = (HashMap) call.argument("location");
             Location location = locationForMap(locationMap);
-            Radar.reverseGeocode(location, callback);
+            Radar.reverseGeocode(location, layers, callback);
         } else {
-            Radar.reverseGeocode(callback);
+            Radar.reverseGeocode(layers, callback);
         }
     }
 
-    public void ipGeocode(MethodCall call, final Result result) {
+    public static void ipGeocode(MethodCall call, final Result result) {
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
@@ -1025,7 +1001,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void getDistance(MethodCall call, final Result result) throws JSONException {
+    public static void getDistance(MethodCall call, final Result result) throws JSONException {
         Radar.RadarRouteCallback callback = new Radar.RadarRouteCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarRoutes routes) {
@@ -1080,7 +1056,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    public void logConversion(MethodCall call, final Result result) throws JSONException  {
+    public static void logConversion(MethodCall call, final Result result) throws JSONException  {
         Radar.RadarLogConversionCallback callback = new Radar.RadarLogConversionCallback() {
             @Override
             public void onComplete(@NonNull Radar.RadarStatus status, @Nullable RadarEvent event) {
@@ -1115,17 +1091,17 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
     }
 
-    public void logBackgrounding(Result result) {
+    public static void logBackgrounding(Result result) {
         Radar.logBackgrounding();
         result.success(true);
     }
 
-    public void logResigningActive(Result result) {
+    public static void logResigningActive(Result result) {
         Radar.logResigningActive();
         result.success(true);
     }
 
-    public void getMatrix(MethodCall call, final Result result) throws JSONException {
+    public static void getMatrix(MethodCall call, final Result result) throws JSONException {
         ArrayList<HashMap> originsArr = call.argument("origins"); 
         Location[] origins = new Location[originsArr.size()];
         for (int i = 0; i < originsArr.size(); i++) {
@@ -1179,25 +1155,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         });
     }
 
-    public void trackVerified(MethodCall call, final Result result) {
+    public static void trackVerified(MethodCall call, final Result result) {
         Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
 
-        Radar.RadarTrackCallback callback = new Radar.RadarTrackCallback() {
+        Radar.RadarTrackVerifiedCallback callback = new Radar.RadarTrackVerifiedCallback() {
             @Override
-            public void onComplete(final Radar.RadarStatus status, final Location location, final RadarEvent[] events, final RadarUser user) {
+            public void onComplete(final Radar.RadarStatus status, final RadarVerifiedLocationToken token) {
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("status", status.toString());
-                            if (location != null) {
-                                obj.put("location", Radar.jsonForLocation(location));
-                            }
-                            obj.put("events", RadarEvent.toJson(events));
-                            if ( user != null) {
-                                obj.put("user", user.toJson());
-                            }
+                            obj.put("token", token.toJson());
 
                             HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
                             result.success(map);
@@ -1212,39 +1182,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         Radar.trackVerified(beacons, callback);
     }
 
-    public void trackVerifiedToken(MethodCall call, final Result result) {
-        Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
-
-        Radar.RadarTrackTokenCallback callback = new Radar.RadarTrackTokenCallback() {
-            @Override
-            public void onComplete(final Radar.RadarStatus status, final String token) {
-                runOnMainThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            JSONObject obj = new JSONObject();
-                            obj.put("status", status.toString());
-                            obj.put("token", token);
-
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
-                            result.success(map);
-                        } catch (Exception e) {
-                            result.error(e.toString(), e.getMessage(), e.getMessage());
-                        }
-                    }
-                });
-            }
-        };
-
-        Radar.trackVerifiedToken(beacons, callback);
-    }
-
-    private void isUsingRemoteTrackingOptions(Result result) {
+    private static void isUsingRemoteTrackingOptions(Result result) {
         Boolean isRemoteTracking = Radar.isUsingRemoteTrackingOptions();
         result.success(isRemoteTracking);
     }
 
-    public void validateAddress(MethodCall call, final Result result) throws JSONException {
+    public static void validateAddress(MethodCall call, final Result result) throws JSONException {
         Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final Radar.RadarAddressVerificationStatus verificationStatus) {
@@ -1277,7 +1220,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         Radar.validateAddress(address, callback);
     }
 
-    private Location locationForMap(HashMap locationMap) {
+    private static Location locationForMap(HashMap locationMap) {
         double latitude = (Double)locationMap.get("latitude");
         double longitude = (Double)locationMap.get("longitude");
         Location location = new Location("RadarSDK");
@@ -1291,7 +1234,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         return location;
     }
 
-    private JSONObject jsonForMap(HashMap map) throws JSONException {
+    private static JSONObject jsonForMap(HashMap map) throws JSONException {
         JSONObject obj = new JSONObject();
         try {
             for (Object key : map.keySet()) {
@@ -1307,31 +1250,53 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
 
     public static class RadarFlutterReceiver extends RadarReceiver {
 
+        private MethodChannel channel;
+
+        RadarFlutterReceiver(MethodChannel channel) {
+            this.channel = channel;
+        }
+
         @Override
         public void onEventsReceived(Context context, RadarEvent[] events, RadarUser user) {
             try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("events", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
                 JSONObject obj = new JSONObject();
                 obj.put("events", RadarEvent.toJson(events));
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                final ArrayList eventsArgs = new ArrayList();
+                eventsArgs.add(0);
+                eventsArgs.add(res);
                 synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
+                            channel.invokeMethod("events", eventsArgs);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
+
+        @Override
+        public void onLocationUpdated(Context context, Location location, RadarUser user) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("location", Radar.jsonForLocation(location));
+                obj.put("user", user.toJson());
+
+                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+
+                final ArrayList locationArgs = new ArrayList();
+                locationArgs.add(0);
+                locationArgs.add(res);
+                synchronized(lock) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            channel.invokeMethod("location", locationArgs);
                         }
                     });
                 }
@@ -1340,65 +1305,24 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
             }
         }
     
-        @Override
-        public void onLocationUpdated(Context context, Location location, RadarUser user) {
-            try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("location", 0L);
-
-                if (callbackHandle == 0L) {
-                    Log.e(TAG, "callback handle is empty");
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
-                JSONObject obj = new JSONObject();
-                obj.put("location", Radar.jsonForLocation(location));
-                obj.put("user", user.toJson());
-
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, e.toString());
-            }
-        }
 
         public void onClientLocationUpdated(Context context, Location location, boolean stopped, Radar.RadarLocationSource source) {
             try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("clientLocation", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
                 JSONObject obj = new JSONObject();
                 obj.put("location", Radar.jsonForLocation(location));
                 obj.put("stopped", stopped);
                 obj.put("source", source.toString());
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
+
+                final ArrayList clientLocationArgs = new ArrayList();
+                clientLocationArgs.add(0);
+                clientLocationArgs.add(res);
+                synchronized(lock){
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
+                            channel.invokeMethod("clientLocation", clientLocationArgs);
                         }
                     });
                 }
@@ -1410,27 +1334,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         @Override
         public void onError(Context context, Radar.RadarStatus status) {
             try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("error", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
                 JSONObject obj = new JSONObject();
                 obj.put("status", status.toString());
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
+                final ArrayList errorArgs = new ArrayList();
+                errorArgs.add(0);
+                errorArgs.add(res);
+                synchronized(lock){
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
+                            channel.invokeMethod("error", errorArgs);
                         }
                     });
                 }
@@ -1442,27 +1357,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
         @Override
         public void onLog(Context context, String message) {
             try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("log", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
-                
                 JSONObject obj = new JSONObject();
                 obj.put("message", message);
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                final ArrayList logArgs = new ArrayList();
+                logArgs.add(0);
+                logArgs.add(res);
                 synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
+                            channel.invokeMethod("log", logArgs);
                         }
                     });
                 }
@@ -1470,72 +1376,41 @@ public class RadarFlutterPlugin implements FlutterPlugin, MethodCallHandler, Act
                 Log.e(TAG, e.toString());
             }
         }
-
     }
-
+    
     public static class RadarFlutterVerifiedReceiver extends RadarVerifiedReceiver {
 
+        private MethodChannel channel;
+
+        RadarFlutterVerifiedReceiver(MethodChannel channel) {
+            this.channel = channel;
+        }
+
         @Override
-        public void onTokenUpdated(Context context, String token) {
+        public void onTokenUpdated(Context context, RadarVerifiedLocationToken token) {
             try {
-                SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-                long callbackHandle = sharedPrefs.getLong("token", 0L);
-
-                if (callbackHandle == 0L) {
-                    return;
-                }
-
-                RadarFlutterPlugin.initializeBackgroundEngine(context);
                 
                 JSONObject obj = new JSONObject();
-                obj.put("token", token);
+                obj.put("token", token.toJson());
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                final ArrayList tokenArgs = new ArrayList();
+                tokenArgs.add(0);
+                tokenArgs.add(res);
                 synchronized(lock) {
-                    final ArrayList args = new ArrayList();
-                    args.add(callbackHandle);
-                    args.add(res);
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            sBackgroundChannel.invokeMethod("", args);
+                            channel.invokeMethod("token", tokenArgs);
                         }
                     });
                 }
+                
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
         }
 
-    }
-
-    public void attachListeners(MethodCall call, Result result) {
-        SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-        long callbackDispatcherHandle = ((Number)call.argument("callbackDispatcherHandle")).longValue();
-        sharedPrefs.edit().putLong(CALLBACK_DISPATCHER_HANDLE_KEY, callbackDispatcherHandle).commit();
-        result.success(true);
-    }
-
-    public void detachListeners(MethodCall call, Result result) {
-        SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-        long callbackDispatcherHandle = call.argument("callbackDispatcherHandle");
-        sharedPrefs.edit().putLong(CALLBACK_DISPATCHER_HANDLE_KEY, 0L).commit();
-        result.success(true);
-    }
-
-    public void on(MethodCall call, Result result) {
-        SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-        String listener = call.argument("listener");
-        long callbackHandle = ((Number)call.argument("callbackHandle")).longValue();
-        sharedPrefs.edit().putLong(listener, callbackHandle).commit();
-        result.success(true);
-    }
-
-    public void off(MethodCall call, Result result) {
-        SharedPreferences sharedPrefs = mContext.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-        String listener = call.argument("listener");
-        sharedPrefs.edit().putLong(listener, 0L).commit();
-        result.success(true);
     }
 
 };
