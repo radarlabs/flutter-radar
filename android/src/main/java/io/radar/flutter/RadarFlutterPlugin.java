@@ -1221,6 +1221,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     private static Location locationForMap(HashMap locationMap) {
+        if (locationMap == null) {
+            return null;
+        }
         double latitude = (Double)locationMap.get("latitude");
         double longitude = (Double)locationMap.get("longitude");
         Location location = new Location("RadarSDK");
