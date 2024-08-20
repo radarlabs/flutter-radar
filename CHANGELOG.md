@@ -1,3 +1,7 @@
+# 3.11.1-beta.1
+
+- Adds namespace to Android to support Gradle 8 +
+
 # 3.11.0
 
 - Bump iOS version from 3.15.0 to 3.17.0
