@@ -78,7 +78,7 @@ public class RadarFlutterHeadlessReceiver extends RadarReceiver {
     private static final Object lock = new Object();
     private static final String TAG = "RadarFlutterPersistentReceiver";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
-    private static final String HEADLESS_EVENT_CALLBACK_HANDLE_KEY = "headlesEventCallbackHandle";
+    private static final String HEADLESS_EVENT_CALLBACK_HANDLE_KEY = "headlessEventCallbackHandle";
 
     public RadarFlutterHeadlessReceiver(Context context) {
         notification(context, "Initializing");
@@ -112,7 +112,7 @@ public class RadarFlutterHeadlessReceiver extends RadarReceiver {
             HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
 
             SharedPreferences sharedPrefs = context.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-            Long headlessEventHandlerHandle = sharedPrefs.getLong("headlessEventCallbackHandle", 0);
+            Long headlessEventHandlerHandle = sharedPrefs.getLong(HEADLESS_EVENT_CALLBACK_HANDLE_KEY, 0);
             // notification(context, "Attempting");
             if (headlessEventHandlerHandle == 0L) {
                 // notification(context, "Failed: " + headlessEventHandlerHandle.toString());
