@@ -433,7 +433,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               },
               child: Text('trackVerified()'),
             ),
-            
+            ElevatedButton(
+              style: raisedButtonStyle,
+              onPressed: () async {
+                var resp = await Radar.getVerifiedLocationToken();
+                print("getVerifiedLocationToken: $resp");
+              },
+              child: Text('getVerifiedLocationToken()'),
+            ),
             ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {

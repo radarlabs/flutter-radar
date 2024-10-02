@@ -505,6 +505,14 @@ class Radar {
     }
   }
 
+  static Future<Map?> getVerifiedLocationToken() async {
+    try {
+      return await _channel.invokeMethod('getVerifiedLocationToken');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
