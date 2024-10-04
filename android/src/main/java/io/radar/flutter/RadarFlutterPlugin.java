@@ -294,7 +294,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.11.0");
+        editor.putString("x_platform_sdk_version", "3.12.0");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
