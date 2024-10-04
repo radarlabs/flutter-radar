@@ -1435,7 +1435,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 }
                 
             } catch (Exception e) {
-                Log.e(TAG, "NULL PTR HERE");
                 Log.e(TAG, e.toString());
             }
         }
