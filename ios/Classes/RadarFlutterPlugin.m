@@ -125,7 +125,9 @@
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
         // do nothing
     } else if ([@"trackVerified" isEqualToString:call.method]) {
-        [self trackVerified:call withResult:result];    
+        [self trackVerified:call withResult:result];
+    } else if ([@"getVerifiedLocationToken" isEqualToString:call.method]) {
+        [self getVerifiedLocationToken:result];
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
@@ -140,7 +142,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.11.0" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.12.0" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -986,6 +988,19 @@
     [Radar trackVerifiedWithBeacons:beacons completionHandler:completionHandler];
 }
 
+- (void)getVerifiedLocationToken:(FlutterResult)result {
+    RadarTrackVerifiedCompletionHandler completionHandler = ^(RadarStatus status, RadarVerifiedLocationToken* token) {
+        if (status == RadarStatusSuccess) {
+            NSMutableDictionary *dict = [NSMutableDictionary new];
+            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+            [dict setObject:[token dictionaryValue] forKey:@"token"];
+            result(dict);
+        }
+    };
+
+    [Radar getVerifiedLocationToken:completionHandler];
+}
+
 - (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
   RadarValidateAddressCompletionHandler completionHandler = ^(RadarStatus status, RadarAddress * _Nullable address, RadarAddressVerificationStatus verificationStatus) {
       NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -1044,8 +1059,8 @@
     }
 }
 
-- (void)didUpdateToken:(NSString *)token {
-    NSDictionary *dict = @{@"token": token};    
+- (void)didUpdateToken:(RadarVerifiedLocationToken *)token {
+    NSDictionary *dict = @{@"token": [token dictionaryValue]};    
     NSArray* args = @[@0, dict];
     if (self.channel != nil) {
         [self.channel invokeMethod:@"token" arguments:args];
