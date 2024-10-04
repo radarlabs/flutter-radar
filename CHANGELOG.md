@@ -1,3 +1,9 @@
+# 3.12.0
+
+- Bump iOS version from 3.17.0 to 3.18.2
+- Bump Android version from 3.17.0 to 3.18.1
+- Add `getVerifiedLocationToken`
+
 # 3.11.0
 
 - Bump iOS version from 3.15.0 to 3.17.0
