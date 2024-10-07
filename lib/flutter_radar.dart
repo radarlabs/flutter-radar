@@ -510,7 +510,6 @@ class Radar {
       return await _channel.invokeMethod('getVerifiedLocationToken');
     } on PlatformException catch (e) {
       print(e);
-      return {'error': e.code};
     }
   }
 
