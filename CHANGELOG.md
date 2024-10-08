@@ -1,3 +1,7 @@
+# 3.12.1
+
+- Bump iOS version from 3.18.2 to 3.18.3
+
 # 3.12.0
 
 - Bump iOS version from 3.17.0 to 3.18.2
