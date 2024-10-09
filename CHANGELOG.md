@@ -1,3 +1,7 @@
+
+#3.12.2
+- Patch `getLocation` method for iOS
+
 # 3.12.1
 
 - Bump iOS version from 3.18.2 to 3.18.3
