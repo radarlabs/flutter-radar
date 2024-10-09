@@ -275,7 +275,8 @@
     NSDictionary *argsDict = call.arguments;
 
     NSString *accuracy = argsDict[@"accuracy"];
-    if (!accuracy) {
+    NSLog(@"accuracy: %@", accuracy);
+    if (!accuracy || ![accuracy isKindOfClass:[NSString class]]) {
         [Radar getLocationWithCompletionHandler:completionHandler];
     } else if ([accuracy isEqualToString:@"high"]) {
         [Radar getLocationWithDesiredAccuracy:RadarTrackingOptionsDesiredAccuracyHigh completionHandler:completionHandler];
