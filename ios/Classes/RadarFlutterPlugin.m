@@ -142,7 +142,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.12.1" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.12.2" forKey:@"radar-xPlatformSDKVersion"];
     [Radar initializeWithPublishableKey:publishableKey];
     result(nil);
 }
@@ -275,7 +275,8 @@
     NSDictionary *argsDict = call.arguments;
 
     NSString *accuracy = argsDict[@"accuracy"];
-    if (!accuracy) {
+    NSLog(@"accuracy: %@", accuracy);
+    if (!accuracy || ![accuracy isKindOfClass:[NSString class]]) {
         [Radar getLocationWithCompletionHandler:completionHandler];
     } else if ([accuracy isEqualToString:@"high"]) {
         [Radar getLocationWithDesiredAccuracy:RadarTrackingOptionsDesiredAccuracyHigh completionHandler:completionHandler];
