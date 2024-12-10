@@ -1,5 +1,9 @@
 
-#3.12.2
+# 3.12.3
+- Bump iOS version from 3.18.3 to 3.19.4
+- Bump Android version from 3.18.1 to 3.18.9
+
+# 3.12.2
 - Patch `getLocation` method for iOS
 
 # 3.12.1
