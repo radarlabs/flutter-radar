@@ -2,6 +2,7 @@
 # 3.12.3
 - Improves edge-case handling of replayed locations.
 - Expands functionality of notification analytics.
+- Returns the full token payload in `RadarVerifiedLocationToken`
 - Bump iOS version from 3.18.3 to 3.19.5
 - Bump Android version from 3.18.1 to 3.18.10
 
