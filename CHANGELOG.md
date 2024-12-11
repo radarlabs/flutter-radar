@@ -1,7 +1,9 @@
 
 # 3.12.3
-- Bump iOS version from 3.18.3 to 3.19.4
-- Bump Android version from 3.18.1 to 3.18.9
+- Improves edge-case handling of replayed locations.
+- Expands functionality of notification analytics.
+- Bump iOS version from 3.18.3 to 3.19.5
+- Bump Android version from 3.18.1 to 3.18.10
 
 # 3.12.2
 - Patch `getLocation` method for iOS
