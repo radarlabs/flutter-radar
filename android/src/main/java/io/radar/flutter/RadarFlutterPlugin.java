@@ -1,5 +1,7 @@
 package io.radar.flutter;
 
+import io.radar.flutter.RadarFlutterHeadlessReceiver;
+
 import android.Manifest;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -43,6 +45,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.view.FlutterMain;
 
 import io.radar.sdk.Radar;
+import io.radar.sdk.RadarState;
 import io.radar.sdk.RadarReceiver;
 import io.radar.sdk.RadarVerifiedReceiver;
 import io.radar.sdk.RadarNotificationOptions;
@@ -73,7 +76,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static Context mContext;
 
     private static final String TAG = "RadarFlutterPlugin";
-    private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
     private static MethodChannel channel;
     private static RadarMethodCallHandler callHandler;
 
@@ -280,6 +282,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "validateAddress":
                         validateAddress(call, result);
                         break;
+                    case "registerHeadlessCallback":
+                        registerHeadlessCallback(call, result);
+                        break;
                     default:
                         result.notImplemented();
                         break;
@@ -299,6 +304,21 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Radar.initialize(mContext, publishableKey);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
+        result.success(true);
+    }
+
+    private static void registerHeadlessCallback(MethodCall call, Result result) {
+        HashMap optionsMap = (HashMap)call.arguments;
+        Long callbackHandle = (Long)optionsMap.get("headlessEventCallbackHandle");
+        Long dispatchHandle = (Long)optionsMap.get("callbackDispatcherHandle");
+        if (callbackHandle != null) {
+            Radar.setHeadlessReceiver(RadarFlutterHeadlessReceiver.class);
+            RadarFlutterHeadlessReceiver.storeHandles(mContext, callbackHandle, dispatchHandle);
+        } else {
+            Radar.clearHeadlessReceiver();
+            RadarFlutterHeadlessReceiver.storeHandles(mContext, null, null);
+        }
+
         result.success(true);
     }
 
@@ -1249,6 +1269,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     private static Location locationForMap(HashMap locationMap) {
+        if (locationMap == null) {
+            return null;
+        }
         double latitude = (Double)locationMap.get("latitude");
         double longitude = (Double)locationMap.get("longitude");
         Location location = new Location("RadarSDK");
@@ -1340,6 +1363,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("location", Radar.jsonForLocation(location));
                 obj.put("stopped", stopped);
                 obj.put("source", source.toString());
+
+                JSONObject motionActivityJson = RadarState.getLastMotionActivity(context);
+                if (motionActivityJson != null) {
+                    obj.put("activity", motionActivityJson.get("type"));
+                }
 
                 HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
 
@@ -1442,3 +1470,4 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
 };
+

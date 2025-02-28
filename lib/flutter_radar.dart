@@ -28,6 +28,7 @@ typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
 typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
 typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
 typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
+typedef HeadlessEventCallback = void Function(Map<dynamic, dynamic> headlessEvent);
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
@@ -526,6 +527,13 @@ class Radar {
       print(e);
       return {'error': e.code};
     }
+  }
+
+  static Future<void> registerHeadlessCallback(HeadlessEventCallback? callback) async {
+    return await _channel.invokeMethod('registerHeadlessCallback', {
+      'headlessEventCallbackHandle': callback != null ? PluginUtilities.getCallbackHandle(callback)?.toRawHandle() : null,
+      'callbackDispatcherHandle': PluginUtilities.getCallbackHandle(callbackDispatcher)?.toRawHandle(),
+    });
   }
 
   static onLocation(LocationCallback callback) {
