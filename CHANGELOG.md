@@ -1,4 +1,7 @@
 
+# 3.12.4
+- Fixes breaking change on Flutter 3.29.0 by removing v1 embedding
+
 # 3.12.3
 - Improves edge-case handling of replayed locations.
 - Expands functionality of notification analytics.

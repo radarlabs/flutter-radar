@@ -39,8 +39,6 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
-import io.flutter.view.FlutterMain;
 
 import io.radar.sdk.Radar;
 import io.radar.sdk.RadarReceiver;
@@ -63,7 +61,6 @@ import io.radar.sdk.model.RadarVerifiedLocationToken;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
 
-import io.flutter.view.FlutterNativeView;
 import io.flutter.view.FlutterRunArguments;
 import io.flutter.view.FlutterCallbackInformation;
 
@@ -115,15 +112,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
         mActivity = binding.getActivity();
         binding.addRequestPermissionsResultListener(this);
-    }
-
-    public static void registerWith(Registrar registrar) {
-        mContext = registrar.context();
-        mActivity = registrar.activity();
-    
-        channel = new MethodChannel(registrar.messenger(), "flutter_radar");
-        callHandler = new RadarMethodCallHandler();
-        channel.setMethodCallHandler(callHandler);
     }
 
     private static void runOnMainThread(final Runnable runnable) {
@@ -294,7 +282,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.12.3");
+        editor.putString("x_platform_sdk_version", "3.12.4");
         editor.apply();
         Radar.initialize(mContext, publishableKey);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
