@@ -1,3 +1,5 @@
+#3.12.5
+- Bumps iOS version from 3.19.5 to 3.21.7 
 
 # 3.12.4
 - Fixes breaking change on Flutter 3.29.0 by removing v1 embedding
