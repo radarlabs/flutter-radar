@@ -22,7 +22,8 @@ if (flutterVersionName == null) {
 }
 
 android {
-    compileSdkVersion 34
+    namespace "io.radar.example"
+    compileSdkVersion 35
 
     lintOptions {
         disable 'InvalidPackage'
@@ -46,7 +47,7 @@ android {
     }
 
     dependencies {
-        implementation 'io.radar:sdk:3.18.9'
+        implementation 'io.radar:sdk:3.23.5'
         implementation "com.google.android.play:integrity:1.2.0"
     }
 }

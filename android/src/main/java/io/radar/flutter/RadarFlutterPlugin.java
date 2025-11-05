@@ -57,6 +57,7 @@ import io.radar.sdk.model.RadarTrip;
 import io.radar.sdk.model.RadarRouteMatrix;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 import io.radar.sdk.model.RadarVerifiedLocationToken;
+import io.radar.sdk.model.RadarInAppMessage;
 
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
@@ -268,6 +269,30 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "validateAddress":
                         validateAddress(call, result);
                         break;
+                    case "setProduct":
+                        setProduct(call, result);
+                        break;
+                    case "getProduct":
+                        getProduct(result);
+                        break;
+                    case "getTags":
+                        getTags(result);
+                        break;
+                    case "addTags":
+                        addTags(call, result);
+                        break;
+                    case "removeTags":
+                        removeTags(call, result);
+                        break;
+                    case "isTrackingVerified":
+                        isTrackingVerified(result);
+                        break;
+                    case "clearVerifiedLocationToken":
+                        clearVerifiedLocationToken(result);
+                        break;
+                    case "showInAppMessage":
+                        showInAppMessage(call, result);
+                        break;
                     default:
                         result.notImplemented();
                         break;
@@ -282,9 +307,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String publishableKey = call.argument("publishableKey");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "3.12.4");
+        editor.putString("x_platform_sdk_version", "3.23.4");
         editor.apply();
-        Radar.initialize(mContext, publishableKey);
+        Radar.initialize(mContext, publishableKey, null, Radar.RadarLocationServicesProvider.GOOGLE, false, null, null, mActivity);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
         result.success(true);
@@ -861,12 +886,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String[] categories = categoriesList != null ? (String[])categoriesList.toArray(new String[0]) : new String[0];
         ArrayList groupsList = (ArrayList)call.argument("groups");
         String[] groups = groupsList != null ? (String[])groupsList.toArray(new String[0]) : new String[0];
+        ArrayList countryCodesList = (ArrayList)call.argument("countryCodes");
+        String[] countryCodes = countryCodesList != null ? (String[])countryCodesList.toArray(new String[0]) : null;
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
 
         if (near != null) {
-            Radar.searchPlaces(near, radius, chains, chainMetadata, categories, groups, limit, callback);
+            Radar.searchPlaces(near, radius, chains, chainMetadata, categories, groups, countryCodes, limit, callback);
         } else {
-            Radar.searchPlaces(radius, chains, chainMetadata, categories, groups, limit, callback);
+            Radar.searchPlaces(radius, chains, chainMetadata, categories, groups, countryCodes, limit, callback);
         }
     }
 
@@ -1149,6 +1176,21 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void trackVerified(MethodCall call, final Result result) {
         Boolean beacons = call.hasArgument("beacons") ? call.argument("beacons") : false;
+        String desiredAccuracyStr = call.hasArgument("desiredAccuracy") ? call.argument("desiredAccuracy") : "medium";
+        String reason = call.hasArgument("reason") ? call.argument("reason") : null;
+        String transactionId = call.hasArgument("transactionId") ? call.argument("transactionId") : null;
+
+        RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy desiredAccuracy = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+        if (desiredAccuracyStr != null) {
+            desiredAccuracyStr = desiredAccuracyStr.toLowerCase();
+            if (desiredAccuracyStr.equals("high")) {
+                desiredAccuracy = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.HIGH;
+            } else if (desiredAccuracyStr.equals("medium")) {
+                desiredAccuracy = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM;
+            } else if (desiredAccuracyStr.equals("low")) {
+                desiredAccuracy = RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW;
+            }
+        }
 
         Radar.RadarTrackVerifiedCallback callback = new Radar.RadarTrackVerifiedCallback() {
             @Override
@@ -1171,7 +1213,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         };
 
-        Radar.trackVerified(beacons, callback);
+        Radar.trackVerified(beacons, desiredAccuracy, reason, transactionId, callback);
     }
 
     public static void getVerifiedLocationToken(Result result) {
@@ -1235,6 +1277,74 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         JSONObject addressJSON = jsonForMap(addressMap);
         RadarAddress address = RadarAddress.fromJson(addressJSON);
         Radar.validateAddress(address, callback);
+    }
+
+    private static void setProduct(MethodCall call, Result result) {
+        String product = call.argument("product");
+        Radar.setProduct(product);
+        result.success(true);
+    }
+
+    private static void getProduct(Result result) {
+        String product = Radar.getProduct();
+        result.success(product);
+    }
+
+    private static void getTags(Result result) {
+        String[] tags = Radar.getTags();
+        List<String> tagsList = null;
+        if (tags != null) {
+            tagsList = new ArrayList<>(java.util.Arrays.asList(tags));
+        }
+        result.success(tagsList);
+    }
+
+    private static void addTags(MethodCall call, Result result) {
+        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
+        Radar.addTags(tags);
+        result.success(true);
+    }
+
+    private static void removeTags(MethodCall call, Result result) {
+        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
+        Radar.removeTags(tags);
+        result.success(true);
+    }
+
+    private static void isTrackingVerified(Result result) {
+        Boolean isTrackingVerified = Radar.isTrackingVerified();
+        result.success(isTrackingVerified);
+    }
+
+    private static void clearVerifiedLocationToken(Result result) {
+        Radar.clearVerifiedLocationToken();
+        result.success(true);
+    }
+
+    private static void showInAppMessage(MethodCall call, Result result) {
+        try {
+            HashMap inAppMessageMap = call.argument("inAppMessage");
+            String inAppMessageJson = null;
+            try {
+                if (inAppMessageMap != null) {
+                    JSONObject jsonObj = new JSONObject(new Gson().toJsonTree(inAppMessageMap).getAsJsonObject().toString());
+                    inAppMessageJson = jsonObj.toString();
+                }
+                RadarInAppMessage inAppMessage = RadarInAppMessage.fromJson(inAppMessageJson);
+                if (inAppMessage != null) {
+                    Radar.showInAppMessage(inAppMessage);
+                    result.success(true);
+                } else {
+                    result.error("INVALID_INAPP_MESSAGE", "Invalid in-app message data", inAppMessageJson);
+                }
+            } catch (Exception e) {
+                result.error("INVALID_INAPP_MESSAGE", "Failed to convert inAppMessage to JSON", e.getMessage());
+            }
+        } catch (Exception e) {
+            result.error(e.toString(), e.getMessage(), e.getMessage());
+        }
     }
 
     private static Location locationForMap(HashMap locationMap) {

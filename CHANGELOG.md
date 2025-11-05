@@ -1,4 +1,7 @@
 
+# 3.23.4
+- Updates iOS and Android sdk to 3.23.4 and 3.23.5, respectively
+
 # 3.12.4
 - Fixes breaking change on Flutter 3.29.0 by removing v1 embedding
 

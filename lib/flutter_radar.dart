@@ -327,7 +327,8 @@ class Radar {
       List? chains,
       Map<String, String>? chainMetadata,
       List? categories,
-      List? groups}) async {
+      List? groups,
+      List<String>? countryCodes}) async {
     try {
       return await _channel.invokeMethod('searchPlaces', {
         'near': near,
@@ -336,7 +337,8 @@ class Radar {
         'chains': chains,
         'chainMetadata': chainMetadata,
         'categories': categories,
-        'groups': groups
+        'groups': groups,
+        'countryCodes': countryCodes
       });
     } on PlatformException catch (e) {
       print(e);
@@ -495,10 +497,14 @@ class Radar {
     }
   }
 
-  static Future<Map?> trackVerified({bool? beacons}) async {
+  static Future<Map?> trackVerified({bool? beacons, String? desiredAccuracy, String? reason, String? transactionId}) async {
     try {
-      return await _channel.invokeMethod(
-          'trackVerified', {'beacons': beacons != null ? beacons : false});
+      return await _channel.invokeMethod('trackVerified', {
+        'beacons': beacons != null ? beacons : false,
+        'desiredAccuracy': desiredAccuracy,
+        'reason': reason,
+        'transactionId': transactionId
+      });
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -525,6 +531,58 @@ class Radar {
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
+    }
+  }
+
+  static Future setProduct(String? product) async {
+    try {
+      await _channel.invokeMethod('setProduct', {'product': product});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<String?> getProduct() async {
+    return await _channel.invokeMethod('getProduct');
+  }
+
+  static Future<List<String>?> getTags() async {
+    return await _channel.invokeMethod('getTags');
+  }
+
+  static Future addTags(List<String> tags) async {
+    try {
+      await _channel.invokeMethod('addTags', {'tags': tags});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future removeTags(List<String> tags) async {
+    try {
+      await _channel.invokeMethod('removeTags', {'tags': tags});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<bool?> isTrackingVerified() async {
+    return await _channel.invokeMethod('isTrackingVerified');
+  }
+
+  static Future clearVerifiedLocationToken() async {
+    try {
+      await _channel.invokeMethod('clearVerifiedLocationToken');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future showInAppMessage(Map<String, dynamic> inAppMessage) async {
+    try {
+      await _channel.invokeMethod('showInAppMessage', {'inAppMessage': inAppMessage});
+    } on PlatformException catch (e) {
+      print(e);
     }
   }
 
@@ -613,6 +671,8 @@ class Radar {
     "useVisits": false,
     "useSignificantLocationChanges": false,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "sync": 'all',
   };
 
@@ -635,6 +695,8 @@ class Radar {
     "syncGeofencesLimit": 0,
     "foregroundServiceEnabled": true,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "startTrackingAfter": null,
     "stopTrackingAfter": null,
   };
@@ -658,6 +720,8 @@ class Radar {
     "useVisits": true,
     "useSignificantLocationChanges": true,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "sync": 'all',
   };
 
@@ -680,6 +744,8 @@ class Radar {
     "syncGeofencesLimit": 10,
     "foregroundServiceEnabled": false,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "startTrackingAfter": null,
     "stopTrackingAfter": null,
   };
@@ -703,6 +769,8 @@ class Radar {
     "useVisits": true,
     "useSignificantLocationChanges": false,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "sync": 'all',
   };
 
@@ -725,6 +793,8 @@ class Radar {
     "syncGeofencesLimit": 10,
     "foregroundServiceEnabled": false,
     "beacons": false,
+    "useMotion": false,
+    "usePressure": false,
     "startTrackingAfter": null,
     "stopTrackingAfter": null,
   };
