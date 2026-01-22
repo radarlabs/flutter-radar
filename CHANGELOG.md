@@ -1,5 +1,5 @@
 # 3.24.0-beta.4
-- Fix crash when starting a trip with no tracking options
+- Fixes starting trip with no tracking options
 
 # 3.24.0-beta.3
 - Updates Android SDK to 3.24.1
