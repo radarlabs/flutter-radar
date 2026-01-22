@@ -491,10 +491,7 @@
     NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
     NSDictionary *trackingOptionsDict = argsDict[@"trackingOptions"];
-    RadarTrackingOptions *trackingOptions;
-    if (trackingOptionsDict) {
-        trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
-    }
+    RadarTrackingOptions *trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
 
     [Radar startTripWithOptions:tripOptions trackingOptions:trackingOptions completionHandler:completionHandler];
 }
@@ -624,7 +621,7 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    CLLocation *near;
+    CLLocation *near = nil;
     NSDictionary *nearDict = argsDict[@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
@@ -634,20 +631,16 @@
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
     NSNumber *radiusNumber = argsDict[@"radius"];
-    int radius;
+    int radius = 1000;
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
         radius = [radiusNumber intValue];
-    } else {
-        radius = 1000;
     }
     NSArray *tags = argsDict[@"tags"];
     NSDictionary *metadata = argsDict[@"metadata"];
     NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
+    int limit = 10;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
-    } else {
-        limit = 10;
     }
     BOOL includeGeometry = NO;
     NSNumber *includeGeometryNumber = argsDict[@"includeGeometry"];
@@ -680,7 +673,7 @@
 
     NSDictionary *argsDict = call.arguments;
 
-    CLLocation *near;
+    CLLocation *near = nil;
     NSDictionary *nearDict = argsDict[@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
@@ -690,11 +683,9 @@
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
     NSNumber *radiusNumber = argsDict[@"radius"];
-    int radius;
+    int radius = 1000;
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
         radius = [radiusNumber intValue];
-    } else {
-        radius = 1000;
     }
     NSArray *chains = argsDict[@"chains"];
     NSDictionary *chainMetadata = [argsDict[@"chainMetadata"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"chainMetadata"];
@@ -702,11 +693,9 @@
     NSArray *groups = [argsDict[@"groups"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"groups"];
     NSArray *countryCodes = [argsDict[@"countryCodes"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"countryCodes"];
     NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
+    int limit = 10;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
-    } else {
-        limit = 10;
     }
 
     if (near != nil) {
@@ -720,7 +709,7 @@
     NSDictionary *argsDict = call.arguments;
     
     NSString *query = argsDict[@"query"];
-    CLLocation *near;
+    CLLocation *near = nil;
     NSDictionary *nearDict = argsDict[@"near"];
     if (nearDict) {
         NSNumber *latitudeNumber = nearDict[@"latitude"];
@@ -730,11 +719,9 @@
         near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
     }
     NSNumber *limitNumber = argsDict[@"limit"];
-    int limit;
+    int limit = 10;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
         limit = [limitNumber intValue];
-    } else {
-        limit = 10;
     }
     NSArray *layers = [argsDict[@"layers"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"layers"];
     NSString *country = [argsDict[@"country"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"country"];
@@ -843,7 +830,7 @@
 
   NSDictionary *argsDict = call.arguments;
 
-  CLLocation *origin;
+  CLLocation *origin = nil;
   NSDictionary *originDict = argsDict[@"origin"];
   if (originDict) {
       NSNumber *originLatitudeNumber = originDict[@"latitude"];
@@ -874,11 +861,9 @@
       modes = RadarRouteModeCar;
   }
   NSString *unitsStr = argsDict[@"units"];
-  RadarRouteUnits units;
+  RadarRouteUnits units = RadarRouteUnitsImperial;
   if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
       units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
-  } else {
-      units = RadarRouteUnitsImperial;
   }
 
   if (call.arguments[@"origin"]) {
@@ -968,11 +953,9 @@
         mode = RadarRouteModeMotorbike;
     }
     NSString *unitsStr = argsDict[@"units"];
-    RadarRouteUnits units;
+    RadarRouteUnits units = RadarRouteUnitsImperial;
     if (unitsStr != nil && [unitsStr isKindOfClass:[NSString class]]) {
         units = [unitsStr isEqualToString:@"METRIC"] || [unitsStr isEqualToString:@"metric"] ? RadarRouteUnitsMetric : RadarRouteUnitsImperial;
-    } else {
-        units = RadarRouteUnitsImperial;
     }
     
     [Radar getMatrixFromOrigins:origins destinations:destinations mode:mode units:units completionHandler:^(RadarStatus status, RadarRouteMatrix * _Nullable matrix) {
