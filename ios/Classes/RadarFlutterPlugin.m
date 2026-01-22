@@ -159,7 +159,7 @@
     NSString *publishableKey = argsDict[@"publishableKey"];
     BOOL silentPush = argsDict[@"silentPush"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.24.0-beta.3" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.24.0-beta.4" forKey:@"radar-xPlatformSDKVersion"];
     RadarInitializeOptions *options = [[RadarInitializeOptions alloc] init];
     options.silentPush = silentPush;
     [Radar initializeWithPublishableKey:publishableKey options:options];
