@@ -157,9 +157,12 @@
     NSDictionary *argsDict = call.arguments;
 
     NSString *publishableKey = argsDict[@"publishableKey"];
+    BOOL silentPush = argsDict[@"silentPush"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.23.4" forKey:@"radar-xPlatformSDKVersion"];
-    [Radar initializeWithPublishableKey:publishableKey];
+    [[NSUserDefaults standardUserDefaults] setObject:@"3.24.0-beta.4" forKey:@"radar-xPlatformSDKVersion"];
+    RadarInitializeOptions *options = [[RadarInitializeOptions alloc] init];
+    options.silentPush = silentPush;
+    [Radar initializeWithPublishableKey:publishableKey options:options];
     result(nil);
 }
 

@@ -16,6 +16,10 @@ Then, see the Flutter package documentation [here](https://radar.com/documentati
 
 See an example app in `example/`.
 
+## iOS Installation
+
+For iOS projects using this plugin, if your iOS deployment target is below 15.0, you must add `use_frameworks!` to your `Podfile`:
+
 ## Support
 
 Have questions? We're here to help! Email us at [support@radar.com](mailto:support@radar.com).

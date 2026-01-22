@@ -39,10 +39,11 @@ class Radar {
   static EventsCallback? foregroundEventsCallback;
   static TokenCallback? foregroundTokenCallback;
 
-  static Future initialize(String publishableKey) async {
+  static Future initialize(String publishableKey, {bool silentPush = false}) async {
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
+        'silentPush': silentPush,
       });
       _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
