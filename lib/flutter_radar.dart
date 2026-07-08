@@ -6,11 +6,11 @@ import 'dart:io' show Platform;
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  const MethodChannel _backgroundChannel =
+  const MethodChannel backgroundChannel =
       MethodChannel('flutter_radar_background');
   WidgetsFlutterBinding.ensureInitialized();
 
-  _backgroundChannel.setMethodCallHandler((MethodCall call) async {
+  backgroundChannel.setMethodCallHandler((MethodCall call) async {
     final args = call.arguments;
     final CallbackHandle handle = CallbackHandle.fromRawHandle(args[0]);
     final Function? callback = PluginUtilities.getCallbackFromHandle(handle);
@@ -30,7 +30,7 @@ typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
 typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
 
 class Radar {
-  static const MethodChannel _channel = const MethodChannel('flutter_radar');
+  static const MethodChannel _channel = MethodChannel('flutter_radar');
 
   static LocationCallback? foregroundLocationCallback;
   static ClientLocationCallback? foregroundClientLocationCallback;
@@ -383,8 +383,8 @@ class Radar {
       {Map<String, dynamic>? location, List? layers}) async {
     try {
       final Map<String, dynamic> arguments = {
-        'location': location != null ? location : null,
-        'layers': layers != null ? layers : null
+        'location': location,
+        'layers': layers
       };
       return await _channel.invokeMethod('reverseGeocode', arguments);
     } on PlatformException catch (e) {
@@ -500,7 +500,7 @@ class Radar {
   static Future<Map?> trackVerified({bool? beacons, String? desiredAccuracy, String? reason, String? transactionId}) async {
     try {
       return await _channel.invokeMethod('trackVerified', {
-        'beacons': beacons != null ? beacons : false,
+        'beacons': beacons ?? false,
         'desiredAccuracy': desiredAccuracy,
         'reason': reason,
         'transactionId': transactionId
@@ -586,14 +586,14 @@ class Radar {
     }
   }
 
-  static onLocation(LocationCallback callback) {
+  static void onLocation(LocationCallback callback) {
     if (foregroundLocationCallback != null) {
       throw RadarExistingCallbackException();
     }
     foregroundLocationCallback = callback;
   }
 
-  static offLocation() {
+  static void offLocation() {
     foregroundLocationCallback = null;
   }
 
@@ -604,51 +604,51 @@ class Radar {
     foregroundClientLocationCallback = callback;
   }
 
-  static offClientLocation() {
+  static void offClientLocation() {
     foregroundClientLocationCallback = null;
   }
 
-  static onError(ErrorCallback callback) {
+  static void onError(ErrorCallback callback) {
     if (foregroundErrorCallback != null) {
       throw RadarExistingCallbackException();
     }
     foregroundErrorCallback = callback;
   }
 
-  static offError() {
+  static void offError() {
     foregroundErrorCallback = null;
   }
 
-  static onLog(LogCallback callback) {
+  static void onLog(LogCallback callback) {
     if (foregroundLogCallback != null) {
       throw RadarExistingCallbackException();
     }
     foregroundLogCallback = callback;
   }
 
-  static offLog() {
+  static void offLog() {
     foregroundLogCallback = null;
   }
   
-  static onEvents(EventsCallback callback) {
+  static void onEvents(EventsCallback callback) {
     if (foregroundEventsCallback != null) {
       throw RadarExistingCallbackException();
     }
     foregroundEventsCallback = callback;
   }
 
-  static offEvents() {
+  static void offEvents() {
     foregroundEventsCallback = null;
   }
 
-  static onToken(TokenCallback callback) {
+  static void onToken(TokenCallback callback) {
     if (foregroundTokenCallback != null) {
       throw RadarExistingCallbackException();
     }
     foregroundTokenCallback = callback;
   }
 
-  static offToken() {
+  static void offToken() {
     foregroundTokenCallback = null;
   }
 

@@ -8,11 +8,13 @@ void main() => runApp(MyApp());
 
 
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
-  _MyAppState createState() => _MyAppState();
+  MyAppState createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
     minimumSize: Size(88, 36),
     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -88,7 +90,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
-      var b = await Radar.startTrackingCustom({
+      await Radar.startTrackingCustom({
         ... Radar.presetResponsive,
         "showBlueBar": true,
       });
@@ -109,399 +111,399 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ),
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
-        child: Container(
-          child: Column(children: [
-            Permissions(),
-            TrackOnce(),
-            ElevatedButton(
+        child: Column(children: [
+          Permissions(),
+          TrackOnce(),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var status = await Radar.requestPermissions(false);
+              print(status);
+              if (status == 'GRANTED_FOREGROUND') {
+                status = await Radar.requestPermissions(true);
+                print(status);
+              }
+            },
+            child: Text('requestPermissions()'),
+          ),
+          ElevatedButton(
               style: raisedButtonStyle,
               onPressed: () async {
-                var status = await Radar.requestPermissions(false);
-                print(status);
-                if (status == 'GRANTED_FOREGROUND') {
-                  status = await Radar.requestPermissions(true);
-                  print(status);
+                PermissionStatus status =
+                    await Permission.activityRecognition.request();
+                if (status.isGranted) {
+                  print('Permission granted');
+                } else {
+                  print('Permission denied');
                 }
               },
-              child: Text('requestPermissions()'),
+              child: Text('request activity permissions'),
             ),
-            ElevatedButton(
-                style: raisedButtonStyle,
-                onPressed: () async {
-                  PermissionStatus status =
-                      await Permission.activityRecognition.request();
-                  if (status.isGranted) {
-                    print('Permission granted');
-                  } else {
-                    print('Permission denied');
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.showInAppMessage({
+                  "type": "banner",
+                  "title": {
+                      "text": "This is the title",
+                      "color": "#000000"
+                  },
+                  "body": {
+                      "text": "This is a demo message",
+                      "color": "#666666"
+                  },
+                  "button": {
+                      "text": "Send it",
+                      "color": "#FFFFFF",
+                      "backgroundColor": "#EB0083"
                   }
+              });
+              print("showInAppMessage: $resp");
+            },
+            child: Text('showInAppMessage'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              Radar.setForegroundServiceOptions({
+                'title': 'Tracking',
+                'text': 'Trip tracking started',
+                'iconString': "ic_notification",
+                'iconColor': "#FF6B8D",
+                'importance': 2,
+                'updatesOnly': false,
+                'activity': 'io.radar.example.MainActivity'
+              });
+              var resp = await Radar.startTrip(
+                  tripOptions: {
+                  "externalId": '299',
+                  "destinationGeofenceTag": 'store',
+                  "destinationGeofenceExternalId": '123',
+                  "mode": 'car',
+                  "scheduledArrivalAt": "2020-08-20T10:30:55.837Z",
+                  "metadata": {"test": 123}
+                  },
+                  trackingOptions: {
+                    "desiredStoppedUpdateInterval": 30,
+                    "fastestStoppedUpdateInterval": 30,
+                    "desiredMovingUpdateInterval": 30,
+                    "fastestMovingUpdateInterval": 30,
+                    "desiredSyncInterval": 20,
+                    "desiredAccuracy": "high",
+                    "stopDuration": 0,
+                    "stopDistance": 0,
+                    "replay": "none",
+                    "sync": "all",
+                    "showBlueBar": true,
+                    "useStoppedGeofence": false,
+                    "stoppedGeofenceRadius": 0,
+                    "useMovingGeofence": false,
+                    "movingGeofenceRadius": 0,
+                    "syncGeofences": false,
+                    "syncGeofencesLimit": 0,
+                    "beacons": false,
+                    "foregroundServiceEnabled": true
+                  }
+              );
+              print("startTrip: $resp");
+            },
+            child: Text('startTrip'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.completeTrip();
+              print("completeTrip: $resp");
+            },
+            child: Text('completeTrip'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.cancelTrip();
+              print("cancelTrip: $resp");
+            },
+            child: Text('cancelTrip'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.getTrackingOptions();
+              print("getTrackingOptions: $resp");
+            },
+            child: Text('getTrackingOptions'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.updateTrip(
+                status:'arrived',
+                options: {
+                  "externalId": '299',
+                  "metadata": {
+                    "parkingSpot": '5'
+                  }
+                }
+              );
+              print("updateTrip: $resp");
+            },
+            child: Text('updateTrip'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.logConversion(
+                  name: "in_app_purchase",
+                  revenue: 0.2,
+                  metadata: {"price": "150USD"});
+              print("logConversion: $resp");
+            },
+            child: Text('logConversion'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              await Radar.setNotificationOptions({
+                'iconString': 'icon'
+              });
+            },
+            child: Text('setNotificationOptions'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.searchPlaces(
+                near: {
+                  'latitude': 40.783826,
+                  'longitude': -73.975363,
                 },
-                child: Text('request activity permissions'),
-              ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.showInAppMessage({
-                    "type": "banner",
-                    "title": {
-                        "text": "This is the title",
-                        "color": "#000000"
-                    },
-                    "body": {
-                        "text": "This is a demo message",
-                        "color": "#666666"
-                    },
-                    "button": {
-                        "text": "Send it",
-                        "color": "#FFFFFF",
-                        "backgroundColor": "#EB0083"
-                    }
-                });
-                print("showInAppMessage: $resp");
-              },
-              child: Text('showInAppMessage'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Radar.setForegroundServiceOptions({
-                  'title': 'Tracking',
-                  'text': 'Trip tracking started',
-                  'iconString': "ic_notification",
-                  'iconColor': "#FF6B8D",
-                  'importance': 2,
-                  'updatesOnly': false,
-                  'activity': 'io.radar.example.MainActivity'
-                });
-                var resp = await Radar.startTrip(
-                    tripOptions: {
-                    "externalId": '299',
-                    "destinationGeofenceTag": 'store',
-                    "destinationGeofenceExternalId": '123',
-                    "mode": 'car',
-                    "scheduledArrivalAt": "2020-08-20T10:30:55.837Z",
-                    "metadata": {"test": 123}
-                    },
-                    trackingOptions: {
-                      "desiredStoppedUpdateInterval": 30,
-                      "fastestStoppedUpdateInterval": 30,
-                      "desiredMovingUpdateInterval": 30,
-                      "fastestMovingUpdateInterval": 30,
-                      "desiredSyncInterval": 20,
-                      "desiredAccuracy": "high",
-                      "stopDuration": 0,
-                      "stopDistance": 0,
-                      "replay": "none",
-                      "sync": "all",
-                      "showBlueBar": true,
-                      "useStoppedGeofence": false,
-                      "stoppedGeofenceRadius": 0,
-                      "useMovingGeofence": false,
-                      "movingGeofenceRadius": 0,
-                      "syncGeofences": false,
-                      "syncGeofencesLimit": 0,
-                      "beacons": false,
-                      "foregroundServiceEnabled": true
-                    }
-                );
-                print("startTrip: $resp");
-              },
-              child: Text('startTrip'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.completeTrip();
-                print("completeTrip: $resp");
-              },
-              child: Text('completeTrip'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.cancelTrip();
-                print("cancelTrip: $resp");
-              },
-              child: Text('cancelTrip'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.getTrackingOptions();
-                print("getTrackingOptions: $resp");
-              },
-              child: Text('getTrackingOptions'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.updateTrip(
-                  status:'arrived',
-                  options: {
-                    "externalId": '299',
-                    "metadata": {
-                      "parkingSpot": '5'
-                    }
-                  }
-                );
-                print("updateTrip: $resp");
-              },
-              child: Text('updateTrip'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.logConversion(
-                    name: "in_app_purchase",
-                    revenue: 0.2,
-                    metadata: {"price": "150USD"});
-                print("logConversion: $resp");
-              },
-              child: Text('logConversion'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                await Radar.setNotificationOptions({
-                  'iconString': 'icon'
-                });
-              },
-              child: Text('setNotificationOptions'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.searchPlaces(
-                  near: {
-                    'latitude': 40.783826,
-                    'longitude': -73.975363,
+                radius: 1000,
+                chains: ["starbucks"],
+                chainMetadata: {
+                  "customFlag": "true"
+                },
+                limit: 10,
+              );
+              print("searchPlaces: $resp");
+            },
+            child: Text('searchPlaces()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.searchGeofences(
+                near: {
+                  'latitude': 40.783826,
+                  'longitude': -73.975363,
+                },
+                radius: 1000,
+                limit: 10,
+                includeGeometry: true,
+                tags: List.empty(),
+                metadata: {},
+              );
+              print("searchGeofences: $resp");
+            },
+            child: Text('searchGeofences()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.geocode(
+                '20 jay st brooklyn',
+              );
+              print("geocode: $resp");
+            },
+            child: Text('geocode()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.reverseGeocode();
+              print("reverseGeocode: $resp");
+            },
+            child: Text('reverseGeocode()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.autocomplete(
+                query: 'brooklyn roasting',
+                near: {
+                  'latitude': 40.783826,
+                  'longitude': -73.975363,
+                },
+                limit: 10,
+                layers: ['address', 'street'],
+                country: 'US',
+                mailable: false
+              );
+              print("autocomplete: $resp");
+            },
+            child: Text('autocomplete'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.getMatrix(
+                origins: [
+                  {
+                    'latitude': 40.78382,
+                    'longitude': -73.97536,
                   },
-                  radius: 1000,
-                  chains: ["starbucks"],
-                  chainMetadata: {
-                    "customFlag": "true"
+                  {
+                    'latitude': 40.70390,
+                    'longitude': -73.98670,
                   },
-                  limit: 10,
-                );
-                print("searchPlaces: $resp");
-              },
-              child: Text('searchPlaces()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.searchGeofences(
-                  near: {
-                    'latitude': 40.783826,
-                    'longitude': -73.975363,
+                ],
+                destinations: [
+                  {
+                    'latitude': 40.64189,
+                    'longitude': -73.78779,
                   },
-                  radius: 1000,
-                  limit: 10,
-                  includeGeometry: true,
-                  tags: List.empty(),
-                  metadata: {},
-                );
-                print("searchGeofences: $resp");
-              },
-              child: Text('searchGeofences()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.geocode(
-                  '20 jay st brooklyn',
-                );
-                print("geocode: $resp");
-              },
-              child: Text('geocode()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.reverseGeocode();
-                print("reverseGeocode: $resp");
-              },
-              child: Text('reverseGeocode()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.autocomplete(
-                  query: 'brooklyn roasting',
-                  near: {
-                    'latitude': 40.783826,
-                    'longitude': -73.975363,
+                  {
+                    'latitude': 35.99801,
+                    'longitude': -78.94294,
                   },
-                  limit: 10,
-                  layers: ['address', 'street'],
-                  country: 'US',
-                  mailable: false
-                );
-                print("autocomplete: $resp");
-              },
-              child: Text('autocomplete'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.getMatrix(
-                  origins: [
-                    {
-                      'latitude': 40.78382,
-                      'longitude': -73.97536,
-                    },
-                    {
-                      'latitude': 40.70390,
-                      'longitude': -73.98670,
-                    },
-                  ],
-                  destinations: [
-                    {
-                      'latitude': 40.64189,
-                      'longitude': -73.78779,
-                    },
-                    {
-                      'latitude': 35.99801,
-                      'longitude': -78.94294,
-                    },
-                  ],
+                ],
+                mode: 'car',
+                units: 'imperial',
+              );
+              print("getMatrix: $resp");
+            },
+            child: Text('getMatrix'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              Radar.startTracking('responsive');
+            },
+            child: Text('startTracking(\'responsive\')'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              
+              Radar.setForegroundServiceOptions({
+                'title': 'Tracking',
+                'text': 'Continuous tracking started',
+                'iconString': "ic_notification",
+                'iconColor': "#FF6B8D",
+                'importance': 2,
+                'updatesOnly': false,
+                'activity': 'io.radar.example.MainActivity'
+              });
+              Radar.startTrackingCustom({
+                'desiredStoppedUpdateInterval': 120,
+                'fastestStoppedUpdateInterval': 120,
+                'desiredMovingUpdateInterval': 30,
+                'fastestMovingUpdateInterval': 30,
+                'desiredSyncInterval': 20,
+                'desiredAccuracy': 'high',
+                'stopDuration': 140,
+                'stopDistance': 70,
+                'sync': 'all',
+                'replay': 'none',
+                'showBlueBar': true,
+                'foregroundServiceEnabled': true
+              });
+            },
+            child: Text('startTrackingCustom()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              Radar.startTrackingVerified(30, false);
+            },
+            child: Text('startTrackingVerified()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              Radar.stopTrackingVerified();
+            },
+            child: Text('stopTrackingVerified()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              Radar.stopTracking();
+            },
+            child: Text('stopTracking()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () {
+              Radar.mockTracking(
+                  origin: {'latitude': 40.78382, 'longitude': -73.97536},
+                  destination: {'latitude': 40.70390, 'longitude': -73.98670},
                   mode: 'car',
-                  units: 'imperial',
-                );
-                print("getMatrix: $resp");
-              },
-              child: Text('getMatrix'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.startTracking('responsive');
-              },
-              child: Text('startTracking(\'responsive\')'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                
-                Radar.setForegroundServiceOptions({
-                  'title': 'Tracking',
-                  'text': 'Continuous tracking started',
-                  'iconString': "ic_notification",
-                  'iconColor': "#FF6B8D",
-                  'importance': 2,
-                  'updatesOnly': false,
-                  'activity': 'io.radar.example.MainActivity'
-                });
-                Radar.startTrackingCustom({
-                  'desiredStoppedUpdateInterval': 120,
-                  'fastestStoppedUpdateInterval': 120,
-                  'desiredMovingUpdateInterval': 30,
-                  'fastestMovingUpdateInterval': 30,
-                  'desiredSyncInterval': 20,
-                  'desiredAccuracy': 'high',
-                  'stopDuration': 140,
-                  'stopDistance': 70,
-                  'sync': 'all',
-                  'replay': 'none',
-                  'showBlueBar': true,
-                  'foregroundServiceEnabled': true
-                });
-              },
-              child: Text('startTrackingCustom()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.startTrackingVerified(30, false);
-              },
-              child: Text('startTrackingVerified()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.stopTrackingVerified();
-              },
-              child: Text('stopTrackingVerified()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.stopTracking();
-              },
-              child: Text('stopTracking()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () {
-                Radar.mockTracking(
-                    origin: {'latitude': 40.78382, 'longitude': -73.97536},
-                    destination: {'latitude': 40.70390, 'longitude': -73.98670},
-                    mode: 'car',
-                    steps: 3,
-                    interval: 3);
-              },
-              child: Text('mockTracking()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Map? location = await Radar.getLocation('high');
-                print(location);
-              },
-              child: Text('getLocation()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Map? resp = await Radar.trackVerified();
-                print("trackVerified: $resp");
-              },
-              child: Text('trackVerified()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                var resp = await Radar.getVerifiedLocationToken();
-                print("getVerifiedLocationToken: $resp");
-              },
-              child: Text('getVerifiedLocationToken()'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                bool? resp = await Radar.isUsingRemoteTrackingOptions();
-                print("isUsingRemoteTrackingOptions: $resp");
-              },
-              child: Text('isUsingRemoteTrackingOptions'),
-            ),
-            ElevatedButton(
-              style: raisedButtonStyle,
-              onPressed: () async {
-                Map? resp = await Radar.validateAddress({
-                  "city": "NEW YORK",
-                  "stateCode": "NY",
-                  "postalCode": "10003",
-                  "countryCode": "US",
-                  "street": "BROADWAY",
-                  "number": "841",
-                });
-                print("validateAddress: $resp");
-              },
-              child: Text('validateAddress'),
-            ),
-          ]),
-        )
+                  steps: 3,
+                  interval: 3);
+            },
+            child: Text('mockTracking()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              Map? location = await Radar.getLocation('high');
+              print(location);
+            },
+            child: Text('getLocation()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              Map? resp = await Radar.trackVerified();
+              print("trackVerified: $resp");
+            },
+            child: Text('trackVerified()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              var resp = await Radar.getVerifiedLocationToken();
+              print("getVerifiedLocationToken: $resp");
+            },
+            child: Text('getVerifiedLocationToken()'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              bool? resp = await Radar.isUsingRemoteTrackingOptions();
+              print("isUsingRemoteTrackingOptions: $resp");
+            },
+            child: Text('isUsingRemoteTrackingOptions'),
+          ),
+          ElevatedButton(
+            style: raisedButtonStyle,
+            onPressed: () async {
+              Map? resp = await Radar.validateAddress({
+                "city": "NEW YORK",
+                "stateCode": "NY",
+                "postalCode": "10003",
+                "countryCode": "US",
+                "street": "BROADWAY",
+                "number": "841",
+              });
+              print("validateAddress: $resp");
+            },
+            child: Text('validateAddress'),
+          ),
+        ])
       ),
     ));
   }
 }
 
 class Permissions extends StatefulWidget {
+  const Permissions({Key? key}) : super(key: key);
+
   @override
-  _PermissionsState createState() => _PermissionsState();
+  PermissionsState createState() => PermissionsState();
 }
 
-class _PermissionsState extends State<Permissions> {
+class PermissionsState extends State<Permissions> {
   String? _status = 'NOT_DETERMINED';
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
     minimumSize: Size(88, 36),
@@ -546,11 +548,13 @@ class _PermissionsState extends State<Permissions> {
 }
 
 class TrackOnce extends StatefulWidget {
+  const TrackOnce({Key? key}) : super(key: key);
+
   @override
-  _TrackOnceState createState() => _TrackOnceState();
+  TrackOnceState createState() => TrackOnceState();
 }
 
-class _TrackOnceState extends State<TrackOnce> {
+class TrackOnceState extends State<TrackOnce> {
   final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
     minimumSize: Size(88, 36),
     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -562,11 +566,11 @@ class _TrackOnceState extends State<TrackOnce> {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      child: Text('trackOnce()'),
       style: raisedButtonStyle,
       onPressed: () {
         _showTrackOnceDialog();
       },
+      child: Text('trackOnce()'),
     );
   }
 
@@ -590,6 +594,7 @@ class _TrackOnceState extends State<TrackOnce> {
     );
 
     showDialog(
+      // ignore: use_build_context_synchronously
       context: context,
       builder: (BuildContext context) {
         return alert;
@@ -598,7 +603,7 @@ class _TrackOnceState extends State<TrackOnce> {
   }
 }
 
-showAlertDialog(BuildContext context, String text) {
+void showAlertDialog(BuildContext context, String text) {
   Widget okButton = TextButton(
     child: Text('OK'),
     onPressed: () {
