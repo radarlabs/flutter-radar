@@ -312,7 +312,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         editor.putString("x_platform_sdk_type", "Flutter");
         editor.putString("x_platform_sdk_version", "3.23.4");
         editor.apply();
-        Radar.initialize(mContext, publishableKey, null, Radar.RadarLocationServicesProvider.GOOGLE, false, null, null, mActivity);
+        Radar.initialize(mContext, publishableKey, null, Radar.RadarLocationServicesProvider.GOOGLE, false, null, null, mActivity, null);
         Radar.setReceiver(new RadarFlutterReceiver(channel));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
         result.success(true);
@@ -1000,6 +1000,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
+                onComplete(status, address, proxy, null);
+            }
+
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy, final Throwable throwable) {
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {
