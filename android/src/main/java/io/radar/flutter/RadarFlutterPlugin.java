@@ -61,6 +61,7 @@ import io.radar.sdk.model.RadarRouteMatrix;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 import io.radar.sdk.model.RadarVerifiedLocationToken;
 import io.radar.sdk.model.RadarInAppMessage;
+import io.radar.sdk.model.RadarRevealRiskToken;
 
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
@@ -301,6 +302,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                         break;
                     case "setExpectedJurisdiction":
                         setExpectedJurisdiction(call, result);
+                        break;
+                    case "revealRisk":
+                        revealRisk(call, result);
                         break;
                     case "showInAppMessage":
                         showInAppMessage(call, result);
@@ -1036,6 +1040,32 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         });
     }
+
+    public static void revealRisk(MethodCall call, final Result result) {
+        Radar.revealRisk(new Radar.RadarRevealRiskCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarRevealRiskToken revealRisk) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (revealRisk != null) {
+                                obj.put("revealRisk", revealRisk.toJson());
+                            }
+
+                            HashMap<String, Object> map = mapForJson(obj);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
 
     public static void getDistance(MethodCall call, final Result result) throws JSONException {
         Radar.RadarRouteCallback callback = new Radar.RadarRouteCallback() {

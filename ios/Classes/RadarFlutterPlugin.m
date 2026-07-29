@@ -152,6 +152,8 @@
         [self setExpectedJurisdiction:call withResult:result];
     } else if ([@"clearVerifiedLocationToken" isEqualToString:call.method]) {
         [self clearVerifiedLocationToken:call withResult:result];
+    } else if ([@"revealRisk" isEqualToString:call.method]) {
+        [self revealRisk:call withResult:result];
     } else if ([@"showInAppMessage" isEqualToString:call.method]) {
         [self showInAppMessage:call withResult:result];
     } else {
@@ -845,6 +847,17 @@
         if (address) {
             [dict setObject:[address dictionaryValue] forKey:@"address"];
             [dict setValue:@(proxy) forKey:@"proxy"];
+        }
+        result(dict);
+    }];
+}
+
+- (void)revealRisk:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar revealRiskWithCompletionHandler:^(RadarStatus status, RadarRevealRiskToken * _Nullable revealRisk) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (revealRisk) {
+            [dict setObject:[revealRisk dictionaryValue] forKey:@"revealRisk"];
         }
         result(dict);
     }];

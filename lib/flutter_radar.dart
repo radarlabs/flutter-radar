@@ -406,6 +406,15 @@ class Radar {
     }
   }
 
+  static Future<Map?> revealRisk() async {
+    try {
+      return await _channel.invokeMethod('revealRisk');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<Map?> getDistance(
       {Map<String, double>? origin,
       Map<String, double>? destination,
@@ -571,7 +580,7 @@ class Radar {
       return {'error': e.code};
     }
   }
-  
+
   static Future<String?> getProduct() async {
     return await _channel.invokeMethod('getProduct');
   }
