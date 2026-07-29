@@ -159,7 +159,33 @@
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
     [[NSUserDefaults standardUserDefaults] setObject:@"3.23.4" forKey:@"radar-xPlatformSDKVersion"];
-    [Radar initializeWithPublishableKey:publishableKey];
+
+    NSDictionary *optionsDict = argsDict[@"options"];
+    if (optionsDict) {
+        NSMutableDictionary *nativeDict = [NSMutableDictionary dictionary];
+        for (NSString *key in @[@"silentPush",
+                                @"trackVerifiedAutoFailover",
+                                @"autoLogNotificationConversions",
+                                @"autoHandleNotificationDeepLinks",
+                                @"ipChangeDebounceInterval"]) {
+            id value = optionsDict[key];
+            if (value) {
+                nativeDict[key] = value;
+            }
+        }
+        // Dart sends the platform-neutral `networkTimeout`; iOS names it
+        // `networkTimeoutInterval`.
+        id networkTimeout = optionsDict[@"networkTimeout"];
+        if (networkTimeout) {
+            nativeDict[@"networkTimeoutInterval"] = networkTimeout;
+        }
+
+        RadarInitializeOptions *options = [[RadarInitializeOptions alloc] initWithDict:nativeDict];
+        [Radar initializeWithPublishableKey:publishableKey options:options];
+    } else {
+        [Radar initializeWithPublishableKey:publishableKey];
+    }
+
     result(nil);
 }
 

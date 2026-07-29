@@ -69,7 +69,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> initRadar() async {
-    Radar.initialize('prj_test_pk_7b46891aa0a8278b5acc6bbc9f227aa5c3319483');
+    Radar.initialize(
+      'prj_test_pk_7b46891aa0a8278b5acc6bbc9f227aa5c3319483',
+      options: RadarInitializeOptions(
+      fraud: true,
+      trackVerifiedAutoFailover: true,
+      networkTimeout: Duration(seconds: 20),
+      ipChangeDebounceInterval: Duration(seconds: 5),
+    ),
+  );
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});

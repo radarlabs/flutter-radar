@@ -39,10 +39,14 @@ class Radar {
   static EventsCallback? foregroundEventsCallback;
   static TokenCallback? foregroundTokenCallback;
 
-  static Future initialize(String publishableKey) async {
+  static Future initialize(
+    String publishableKey, {
+    RadarInitializeOptions? options,
+  }) async {
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
+        if (options != null) 'options': options.toMap(),
       });
       _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
@@ -805,6 +809,57 @@ class Radar {
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
   static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
+}
+
+class RadarInitializeOptions {
+  /// Android only. Enables fraud detection signals on tracking calls, and
+  /// requires the `io.radar:sdk-fraud` dependency. On iOS, fraud activates
+  /// automatically when `RadarSDKFraud.xcframework` is linked, so this is
+  /// ignored there.
+  final bool? fraud;
+
+  final bool? silentPush;
+  final bool? trackVerifiedAutoFailover;
+
+  /// Request timeout for standard API calls. Clamped natively to 1...300
+  /// seconds; omit to use the SDK default of 10 seconds.
+  final Duration? networkTimeout;
+
+  /// Minimum interval between IP-change callbacks. [Duration.zero] delivers
+  /// every detected change; omit to use the SDK default of 10 seconds.
+  final Duration? ipChangeDebounceInterval;
+
+  /// iOS only.
+  final bool? autoLogNotificationConversions;
+
+  /// iOS only.
+  final bool? autoHandleNotificationDeepLinks;
+
+  const RadarInitializeOptions({
+    this.fraud,
+    this.silentPush,
+    this.trackVerifiedAutoFailover,
+    this.networkTimeout,
+    this.ipChangeDebounceInterval,
+    this.autoLogNotificationConversions,
+    this.autoHandleNotificationDeepLinks,
+  });
+
+  Map<String, dynamic> toMap() => {
+    if (fraud != null) 'fraud': fraud,
+    if (silentPush != null) 'silentPush': silentPush,
+    if (trackVerifiedAutoFailover != null)
+      'trackVerifiedAutoFailover': trackVerifiedAutoFailover,
+    if (networkTimeout != null)
+      'networkTimeout': networkTimeout!.inMilliseconds / 1000.0,
+    if (ipChangeDebounceInterval != null)
+      'ipChangeDebounceInterval':
+          ipChangeDebounceInterval!.inMilliseconds / 1000.0,
+    if (autoLogNotificationConversions != null)
+      'autoLogNotificationConversions': autoLogNotificationConversions,
+    if (autoHandleNotificationDeepLinks != null)
+      'autoHandleNotificationDeepLinks': autoHandleNotificationDeepLinks,
+  };
 }
 
 class RadarExistingCallbackException implements Exception {
