@@ -28,6 +28,8 @@ typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
 typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
 typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
 typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
+typedef IpChangedCallback = void Function();
+typedef SharingChangedCallback = void Function(bool sharing);
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
@@ -38,6 +40,8 @@ class Radar {
   static LogCallback? foregroundLogCallback;
   static EventsCallback? foregroundEventsCallback;
   static TokenCallback? foregroundTokenCallback;
+  static IpChangedCallback? foregroundIpChangedCallback;
+  static SharingChangedCallback? foregroundSharingChangedCallback;
 
   static Future initialize(
     String publishableKey, {
@@ -76,6 +80,14 @@ class Radar {
         break;
       case 'token':
         foregroundTokenCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'ipChanged':
+        foregroundIpChangedCallback?.call();
+        break;
+      case 'sharingChanged':
+        foregroundSharingChangedCallback?.call(
+          (args[1] as Map)['sharing'] as bool,
+        );
         break;
     }
   }
@@ -678,6 +690,28 @@ class Radar {
 
   static offEvents() {
     foregroundEventsCallback = null;
+  }
+
+  static onIpChanged(IpChangedCallback callback) {
+    if (foregroundIpChangedCallback != null) {
+      throw RadarExistingCallbackException();
+    }
+    foregroundIpChangedCallback = callback;
+  }
+
+  static offIpChanged() {
+    foregroundIpChangedCallback = null;
+  }
+
+  static onSharingChanged(SharingChangedCallback callback) {
+    if (foregroundSharingChangedCallback != null) {
+      throw RadarExistingCallbackException();
+    }
+    foregroundSharingChangedCallback = callback;
+  }
+
+  static offSharingChanged() {
+    foregroundSharingChangedCallback = null;
   }
 
   static onToken(TokenCallback callback) {

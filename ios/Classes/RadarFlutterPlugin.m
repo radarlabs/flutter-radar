@@ -1129,6 +1129,21 @@
     }
 }
 
+- (void)didChangeIP {
+    NSArray *args = @[@0, @{}];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"ipChanged" arguments:args];
+    }
+}
+
+- (void)didChangeSharing:(BOOL)sharing {
+    NSDictionary *dict = @{@"sharing": @(sharing)};
+    NSArray *args = @[@0, dict];
+    if (self.channel != nil) {
+        [self.channel invokeMethod:@"sharingChanged" arguments:args];
+    }
+}
+
 - (void)setProduct:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
     NSString *product = [argsDict[@"product"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"product"];

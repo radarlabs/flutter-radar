@@ -1633,6 +1633,47 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         }
 
+        @Override
+        public void onIpChanged(Context context) {
+            try {
+                final ArrayList ipChangedArgs = new ArrayList();
+                ipChangedArgs.add(0);
+                ipChangedArgs.add(new HashMap<String, Object>());
+                synchronized(lock) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            channel.invokeMethod("ipChanged", ipChangedArgs);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
+
+        @Override
+        public void onSharingChanged(Context context, boolean sharing) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("sharing", sharing);
+
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList sharingArgs = new ArrayList();
+                sharingArgs.add(0);
+                sharingArgs.add(res);
+                synchronized(lock) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            channel.invokeMethod("sharingChanged", sharingArgs);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
     }
 
 };
