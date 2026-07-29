@@ -144,6 +144,12 @@
         [self removeTags:call withResult:result];
     } else if ([@"isTrackingVerified" isEqualToString:call.method]) {
         [self isTrackingVerified:call withResult:result];
+    } else if ([@"isSharing" isEqualToString:call.method]) {
+        [self isSharing:call withResult:result];
+    } else if ([@"clearSharing" isEqualToString:call.method]) {
+        [self clearSharing:call withResult:result];
+    } else if ([@"setExpectedJurisdiction" isEqualToString:call.method]) {
+        [self setExpectedJurisdiction:call withResult:result];
     } else if ([@"clearVerifiedLocationToken" isEqualToString:call.method]) {
         [self clearVerifiedLocationToken:call withResult:result];
     } else if ([@"showInAppMessage" isEqualToString:call.method]) {
@@ -1112,7 +1118,7 @@
 
 - (void)setProduct:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
-    NSString *product = argsDict[@"product"];
+    NSString *product = [argsDict[@"product"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"product"];
     [Radar setProduct:product];
     result(nil);
 }
@@ -1144,6 +1150,25 @@
 - (void)isTrackingVerified:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isTrackingVerified = [Radar isTrackingVerified];
     result(@(isTrackingVerified));
+}
+
+- (void)isSharing:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL isSharing = [Radar isSharing];
+    result(@(isSharing));
+}
+
+- (void)clearSharing:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar clearSharing];
+    result(nil);
+}
+
+- (void)setExpectedJurisdiction:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *countryCode = [argsDict[@"countryCode"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"countryCode"];
+    NSString *stateCode = [argsDict[@"stateCode"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"stateCode"];
+    [Radar setExpectedJurisdictionWithCountryCode:countryCode stateCode:stateCode];
+    result(nil);
 }
 
 - (void)clearVerifiedLocationToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {

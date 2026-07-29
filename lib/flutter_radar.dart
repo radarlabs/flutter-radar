@@ -524,6 +524,40 @@ class Radar {
     }
   }
 
+  static Future<bool?> isSharing() async {
+    return await _channel.invokeMethod('isSharing');
+  }
+
+  static Future clearSharing() async {
+    try {
+      await _channel.invokeMethod('clearSharing');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setProduct(String? product) async {
+    try {
+      await _channel.invokeMethod('setProduct', {'product': product});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setExpectedJurisdiction({
+    String? countryCode,
+    String? stateCode,
+  }) async {
+    try {
+      await _channel.invokeMethod('setExpectedJurisdiction', {
+        'countryCode': countryCode,
+        'stateCode': stateCode,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
@@ -537,15 +571,7 @@ class Radar {
       return {'error': e.code};
     }
   }
-
-  static Future setProduct(String? product) async {
-    try {
-      await _channel.invokeMethod('setProduct', {'product': product});
-    } on PlatformException catch (e) {
-      print(e);
-    }
-  }
-
+  
   static Future<String?> getProduct() async {
     return await _channel.invokeMethod('getProduct');
   }

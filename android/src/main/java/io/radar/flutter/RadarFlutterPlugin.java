@@ -293,6 +293,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "clearVerifiedLocationToken":
                         clearVerifiedLocationToken(result);
                         break;
+                    case "isSharing":
+                        isSharing(result);
+                        break;
+                    case "clearSharing":
+                        clearSharing(result);
+                        break;
+                    case "setExpectedJurisdiction":
+                        setExpectedJurisdiction(call, result);
+                        break;
                     case "showInAppMessage":
                         showInAppMessage(call, result);
                         break;
@@ -1247,6 +1256,23 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         };
 
         Radar.getVerifiedLocationToken(callback);
+    }
+
+    private static void isSharing(Result result) {
+        Boolean isSharing = Radar.isSharing();
+        result.success(isSharing);
+    }
+
+    private static void clearSharing(Result result) {
+        Radar.clearSharing();
+        result.success(true);
+    }
+
+    private static void setExpectedJurisdiction(MethodCall call, Result result) {
+        String countryCode = call.argument("countryCode");
+        String stateCode = call.argument("stateCode");
+        Radar.setExpectedJurisdiction(countryCode, stateCode);
+        result.success(true);
     }
 
     private static void isUsingRemoteTrackingOptions(Result result) {
