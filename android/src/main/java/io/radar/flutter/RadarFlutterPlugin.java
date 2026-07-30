@@ -296,6 +296,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "setTags":
                         setTags(call, result);
                         break;
+                    case "acceptEvent":
+                        acceptEvent(call, result);
+                        break;
+                    case "rejectEvent":
+                        rejectEvent(call, result);
+                        break;
+                    case "setPushNotificationToken":
+                        setPushNotificationToken(call, result);
+                        break;
                     case "isTrackingVerified":
                         isTrackingVerified(result);
                         break;
@@ -1412,6 +1421,25 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.setTags(tags);
+        result.success(true);
+    }
+
+    private static void acceptEvent(MethodCall call, Result result) {
+        String eventId = call.argument("eventId");
+        String verifiedPlaceId = call.argument("verifiedPlaceId");
+        Radar.acceptEvent(eventId, verifiedPlaceId);
+        result.success(true);
+    }
+
+    private static void rejectEvent(MethodCall call, Result result) {
+        String eventId = call.argument("eventId");
+        Radar.rejectEvent(eventId);
+        result.success(true);
+    }
+
+    private static void setPushNotificationToken(MethodCall call, Result result) {
+        String token = call.argument("token");
+        Radar.setPushNotificationToken(token);
         result.success(true);
     }
 

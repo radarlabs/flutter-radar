@@ -152,6 +152,12 @@
         [self addTags:call withResult:result];
     } else if ([@"removeTags" isEqualToString:call.method]) {
         [self removeTags:call withResult:result];
+    } else if ([@"acceptEvent" isEqualToString:call.method]) {
+        [self acceptEvent:call withResult:result];
+    } else if ([@"rejectEvent" isEqualToString:call.method]) {
+        [self rejectEvent:call withResult:result];
+    } else if ([@"setPushNotificationToken" isEqualToString:call.method]) {
+        [self setPushNotificationToken:call withResult:result];
     } else if ([@"isTrackingVerified" isEqualToString:call.method]) {
         [self isTrackingVerified:call withResult:result];
     } else if ([@"isSharing" isEqualToString:call.method]) {
@@ -1212,6 +1218,31 @@
     NSDictionary *argsDict = call.arguments;
     NSArray *tags = argsDict[@"tags"];
     [Radar setTags:tags];
+    result(nil);
+}
+
+- (void)acceptEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *eventId = argsDict[@"eventId"];
+    NSString *verifiedPlaceId = [argsDict[@"verifiedPlaceId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"verifiedPlaceId"];
+    [Radar acceptEventId:eventId verifiedPlaceId:verifiedPlaceId];
+    result(nil);
+}
+
+- (void)rejectEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *eventId = argsDict[@"eventId"];
+    [Radar rejectEventId:eventId];
+    result(nil);
+}
+
+- (void)setPushNotificationToken:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *token = [argsDict[@"token"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"token"];
+    [Radar setPushNotificationToken:token];
     result(nil);
 }
 

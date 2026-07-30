@@ -646,6 +646,33 @@ class Radar {
     }
   }
 
+  static Future acceptEvent(String eventId, {String? verifiedPlaceId}) async {
+    try {
+      await _channel.invokeMethod('acceptEvent', {
+        'eventId': eventId,
+        'verifiedPlaceId': verifiedPlaceId,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future rejectEvent(String eventId) async {
+    try {
+      await _channel.invokeMethod('rejectEvent', {'eventId': eventId});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setPushNotificationToken(String? token) async {
+    try {
+      await _channel.invokeMethod('setPushNotificationToken', {'token': token});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isTrackingVerified() async {
     return await _channel.invokeMethod('isTrackingVerified');
   }
