@@ -899,7 +899,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String[] legIds = (legIdsList != null) ? legIdsList.toArray(new String[0]) : new String[0];
 
         if (tripId != null) {
-            Radar.reorderTripLegs(tripId, legIds, tripLegCallback(result));
+            Radar.reorderTripLegs(tripId, legIds, tripCallback(result));
         } else {
             Radar.reorderTripLegs(legIds, tripCallback(result));
         }
