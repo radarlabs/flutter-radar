@@ -22,8 +22,10 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
+      # Must run before the Android build, which rewrites gradle.properties via
+      # Flutter's Gradle migration and would fail pub's clean-git-state check.
+      - run: dart pub publish --dry-run
       # - run: flutter test
       - name: Build example app
         working-directory: example
         run: flutter build apk --debug
-      - run: dart pub publish --dry-run
