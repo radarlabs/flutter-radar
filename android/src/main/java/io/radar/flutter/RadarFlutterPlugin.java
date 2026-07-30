@@ -5,7 +5,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -30,12 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
 
-import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
-import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -64,10 +60,7 @@ import io.radar.sdk.model.RadarInAppMessage;
 import io.radar.sdk.model.RadarRevealRiskToken;
 
 import io.flutter.embedding.engine.dart.DartExecutor;
-import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
 
-import io.flutter.view.FlutterRunArguments;
-import io.flutter.view.FlutterCallbackInformation;
 
 public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, RequestPermissionsResultListener {
 
@@ -849,8 +842,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             near = locationForMap(nearMap);
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
-        ArrayList tagsList = (ArrayList)call.argument("tags");
-        String[] tags = (String[])tagsList.toArray(new String[0]);
+        ArrayList<String> tagsList = call.argument("tags");
+        String[] tags = tagsList.toArray(new String[0]);
         HashMap metadataMap = (HashMap)call.argument("metadata");
         JSONObject metadata = jsonForMap(metadataMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
@@ -896,15 +889,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             near = locationForMap(nearMap);
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
-        ArrayList chainsList = (ArrayList)call.argument("chains");
-        String[] chains = (String[])chainsList.toArray(new String[0]);        
-        Map<String, String> chainMetadata = (Map<String, String>)call.argument("chainMetadata");
-        ArrayList categoriesList = (ArrayList)call.argument("categories");
-        String[] categories = categoriesList != null ? (String[])categoriesList.toArray(new String[0]) : new String[0];
-        ArrayList groupsList = (ArrayList)call.argument("groups");
-        String[] groups = groupsList != null ? (String[])groupsList.toArray(new String[0]) : new String[0];
-        ArrayList countryCodesList = (ArrayList)call.argument("countryCodes");
-        String[] countryCodes = countryCodesList != null ? (String[])countryCodesList.toArray(new String[0]) : null;
+        ArrayList<String> chainsList = call.argument("chains");
+        String[] chains = chainsList.toArray(new String[0]);
+        Map<String, String> chainMetadata = call.argument("chainMetadata");
+        ArrayList<String> categoriesList = call.argument("categories");
+        String[] categories = categoriesList != null ? categoriesList.toArray(new String[0]) : new String[0];
+        ArrayList<String> groupsList = call.argument("groups");
+        String[] groups = groupsList != null ? groupsList.toArray(new String[0]) : new String[0];
+        ArrayList<String> countryCodesList = call.argument("countryCodes");
+        String[] countryCodes = countryCodesList != null ? countryCodesList.toArray(new String[0]) : null;
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
 
         if (near != null) {
@@ -920,8 +913,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Location near = locationForMap(nearMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
         String country = call.argument("country");
-        ArrayList layersList = (ArrayList)call.argument("layers");
-        String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
+        ArrayList<String> layersList = call.argument("layers");
+        String[] layers = layersList != null ? layersList.toArray(new String[0]) : new String[0];
         Boolean mailable = call.argument("mailable");
 
         Radar.autocomplete(query, near, layers, limit, country, true, mailable, new Radar.RadarGeocodeCallback() {
@@ -1012,6 +1005,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void ipGeocode(MethodCall call, final Result result) {
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
+            @SuppressWarnings("deprecation")
+            // Deprecated upstream but still abstract, so Java must implement it.
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
                 onComplete(status, address, proxy, null);
@@ -1364,14 +1359,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     private static void addTags(MethodCall call, Result result) {
-        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.addTags(tags);
         result.success(true);
     }
 
     private static void removeTags(MethodCall call, Result result) {
-        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.removeTags(tags);
         result.success(true);
@@ -1486,7 +1481,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList eventsArgs = new ArrayList();
+                final ArrayList<Object> eventsArgs = new ArrayList<>();
                 eventsArgs.add(0);
                 eventsArgs.add(res);
                 synchronized(lock) {
@@ -1511,7 +1506,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
                 HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList locationArgs = new ArrayList();
+                final ArrayList<Object> locationArgs = new ArrayList<>();
                 locationArgs.add(0);
                 locationArgs.add(res);
                 synchronized(lock) {
@@ -1537,7 +1532,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
                 HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList clientLocationArgs = new ArrayList();
+                final ArrayList<Object> clientLocationArgs = new ArrayList<>();
                 clientLocationArgs.add(0);
                 clientLocationArgs.add(res);
                 synchronized(lock){
@@ -1560,7 +1555,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("status", status.toString());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList errorArgs = new ArrayList();
+                final ArrayList<Object> errorArgs = new ArrayList<>();
                 errorArgs.add(0);
                 errorArgs.add(res);
                 synchronized(lock){
@@ -1583,7 +1578,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("message", message);
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList logArgs = new ArrayList();
+                final ArrayList<Object> logArgs = new ArrayList<>();
                 logArgs.add(0);
                 logArgs.add(res);
                 synchronized(lock) {
@@ -1616,7 +1611,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("token", token.toJson());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList tokenArgs = new ArrayList();
+                final ArrayList<Object> tokenArgs = new ArrayList<>();
                 tokenArgs.add(0);
                 tokenArgs.add(res);
                 synchronized(lock) {
@@ -1636,7 +1631,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         @Override
         public void onIpChanged(Context context) {
             try {
-                final ArrayList ipChangedArgs = new ArrayList();
+                final ArrayList<Object> ipChangedArgs = new ArrayList<>();
                 ipChangedArgs.add(0);
                 ipChangedArgs.add(new HashMap<String, Object>());
                 synchronized(lock) {
@@ -1659,7 +1654,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("sharing", sharing);
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList sharingArgs = new ArrayList();
+                final ArrayList<Object> sharingArgs = new ArrayList<>();
                 sharingArgs.add(0);
                 sharingArgs.add(res);
                 synchronized(lock) {
