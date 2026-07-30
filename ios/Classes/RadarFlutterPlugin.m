@@ -542,10 +542,19 @@
         result(dict);
     };
     NSDictionary *argsDict = call.arguments;
-    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    // Dart sends every key, so an omitted argument arrives as NSNull rather
+    // than nil. The SDK's parsers only guard against nil, so NSNull reaches
+    // objectForKeyedSubscript: and raises.
+    NSDictionary *tripOptionsDict = [argsDict[@"tripOptions"] isKindOfClass:[NSDictionary class]] ? argsDict[@"tripOptions"] : nil;
+    if (!tripOptionsDict) {
+        result([FlutterError errorWithCode:@"ERROR_INVALID_ARGUMENT"
+                                   message:@"startTrip requires tripOptions"
+                                   details:nil]);
+        return;
+    }
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
-    NSDictionary *trackingOptionsDict = argsDict[@"trackingOptions"];
-    RadarTrackingOptions *trackingOptions = [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict];
+    NSDictionary *trackingOptionsDict = [argsDict[@"trackingOptions"] isKindOfClass:[NSDictionary class]] ? argsDict[@"trackingOptions"] : nil;
+    RadarTrackingOptions *trackingOptions = trackingOptionsDict ? [RadarTrackingOptions trackingOptionsFromDictionary:trackingOptionsDict] : nil;
 
     [Radar startTripWithOptions:tripOptions trackingOptions:trackingOptions completionHandler:completionHandler];
 }
@@ -563,7 +572,13 @@
         result(dict);
     };
     NSDictionary *argsDict = call.arguments;
-    NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
+    NSDictionary *tripOptionsDict = [argsDict[@"tripOptions"] isKindOfClass:[NSDictionary class]] ? argsDict[@"tripOptions"] : nil;
+    if (!tripOptionsDict) {
+        result([FlutterError errorWithCode:@"ERROR_INVALID_ARGUMENT"
+                                   message:@"updateTrip requires tripOptions"
+                                   details:nil]);
+        return;
+    }
     RadarTripOptions *tripOptions = [RadarTripOptions tripOptionsFromDictionary:tripOptionsDict];
     NSString* statusStr = argsDict[@"status"];
     RadarTripStatus status = RadarTripStatusUnknown;
