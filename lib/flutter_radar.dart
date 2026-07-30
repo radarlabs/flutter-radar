@@ -34,6 +34,19 @@ typedef SharingChangedCallback = void Function(bool sharing);
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
+
+  static const Set<String> _tripLegStatuses = {
+    'unknown', 'pending', 'started', 'approaching',
+    'arrived', 'completed', 'canceled', 'expired',
+  };
+
+  static void _assertTripLegStatus(String status) {
+    if (!_tripLegStatuses.contains(status)) {
+      throw ArgumentError.value(status, 'status',
+          'Invalid trip leg status. Expected one of: ${_tripLegStatuses.join(', ')}');
+    }
+  }
+
   static LocationCallback? foregroundLocationCallback;
   static ClientLocationCallback? foregroundClientLocationCallback;
   static ErrorCallback? foregroundErrorCallback;
@@ -299,6 +312,54 @@ class Radar {
   static Future<Map?> cancelTrip() async {
     try {
       return await _channel.invokeMethod('cancelTrip');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> getTrip() async {
+    try {
+      return await _channel.invokeMethod('getTrip');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Updates a leg on a multi-destination trip. Omit [tripId] to target the
+  /// current trip. [status] must be one of: unknown, pending, started,
+  /// approaching, arrived, completed, canceled, expired.
+  static Future<Map?> updateTripLeg(
+      {String? tripId, required String legId, required String status}) async {
+    _assertTripLegStatus(status);
+    try {
+      return await _channel.invokeMethod('updateTripLeg',
+        {'tripId': tripId, 'legId': legId, 'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> updateCurrentTripLeg({required String status}) async {
+    _assertTripLegStatus(status);
+    try {
+      return await _channel
+        .invokeMethod('updateCurrentTripLeg', {'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Reorders legs on a multi-destination trip. Omit [tripId] to target the
+  /// current trip.
+  static Future<Map?> reorderTripLegs(
+      {String? tripId, required List<String> legIds}) async {
+    try {
+      return await _channel
+        .invokeMethod('reorderTripLegs', {'tripId': tripId, 'legIds': legIds});
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};

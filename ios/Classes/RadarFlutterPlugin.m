@@ -94,6 +94,14 @@
         [self completeTrip:call withResult:result];
     } else if ([@"cancelTrip" isEqualToString:call.method]) {
         [self cancelTrip:call withResult:result];
+    } else if ([@"getTrip" isEqualToString:call.method]) {
+        [self getTrip:call withResult:result];
+    } else if ([@"updateTripLeg" isEqualToString:call.method]) {
+        [self updateTripLeg:call withResult:result];
+    } else if ([@"updateCurrentTripLeg" isEqualToString:call.method]) {
+        [self updateCurrentTripLeg:call withResult:result];
+    } else if ([@"reorderTripLegs" isEqualToString:call.method]) {
+        [self reorderTripLegs:call withResult:result];
     } else if ([@"getContext" isEqualToString:call.method]) {
         [self getContext:call withResult:result];
     } else if ([@"searchGeofences" isEqualToString:call.method]) {
@@ -622,6 +630,85 @@
         }
     };
     [Radar cancelTripWithCompletionHandler:completionHandler];
+}
+
+- (void)getTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarTrip *trip = [Radar getTrip];
+    result(trip ? [trip dictionaryValue] : nil);
+}
+
+- (void)updateTripLeg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSString *tripId = [argsDict[@"tripId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"tripId"];
+    NSString *legId = [argsDict[@"legId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"legId"];
+    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"status"];
+    RadarTripLegStatus legStatus = [RadarTripLeg statusForString:statusStr];
+
+    RadarTripLegCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, RadarTripLeg *leg, NSArray<RadarEvent *> *events) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+        }
+        if (leg) {
+            [dict setObject:[leg dictionaryValue] forKey:@"leg"];
+        }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
+    };
+
+    if (tripId) {
+        [Radar updateTripLegWithTripId:tripId legId:legId status:legStatus completionHandler:completionHandler];
+    } else {
+        [Radar updateTripLegWithLegId:legId status:legStatus completionHandler:completionHandler];
+    }
+}
+
+- (void)updateCurrentTripLeg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"status"];
+    RadarTripLegStatus legStatus = [RadarTripLeg statusForString:statusStr];
+
+    [Radar updateCurrentTripLegWithStatus:legStatus completionHandler:^(RadarStatus status, RadarTrip *trip, RadarTripLeg *leg, NSArray<RadarEvent *> *events) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+        }
+        if (leg) {
+            [dict setObject:[leg dictionaryValue] forKey:@"leg"];
+        }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
+    }];
+}
+
+- (void)reorderTripLegs:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSString *tripId = [argsDict[@"tripId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"tripId"];
+    NSArray<NSString *> *legIds = [argsDict[@"legIds"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"legIds"];
+
+    RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
+        }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
+    };
+
+    if (tripId) {
+        [Radar reorderTripLegsWithTripId:tripId legIds:legIds completionHandler:completionHandler];
+    } else {
+        [Radar reorderTripLegsWithLegIds:legIds completionHandler:completionHandler];
+    }
 }
 
 - (void)getContext:(FlutterMethodCall *)call withResult:(FlutterResult)result {

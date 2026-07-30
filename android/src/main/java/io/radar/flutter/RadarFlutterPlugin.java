@@ -212,6 +212,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "cancelTrip":
                         cancelTrip(result);
                         break;
+                    case "getTrip":
+                        getTrip(result);
+                        break;
+                    case "updateTripLeg":
+                        updateTripLeg(call, result);
+                        break;
+                    case "updateCurrentTripLeg":
+                        updateCurrentTripLeg(call, result);
+                        break;
+                    case "reorderTripLegs":
+                        reorderTripLegs(call, result);
+                        break;
                     case "getContext":
                         getContext(call, result);
                         break;
@@ -795,6 +807,102 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 });
             }
         });
+    }
+
+    public static void getTrip(Result result) {
+        RadarTrip trip = Radar.getTrip();
+        result.success(trip != null ? mapForJson(trip.toJson()) : null);
+    }
+
+    private static Radar.RadarTripLegCallback tripLegCallback(final Result result) {
+        return new Radar.RadarTripLegCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarTripLeg leg,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (leg != null) {
+                                obj.put("leg", leg.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            result.success(mapForJson(obj));
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    private static Radar.RadarTripCallback tripCallback(final Result result) {
+        return new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            result.success(mapForJson(obj));
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    public static void updateTripLeg(MethodCall call, Result result) {
+        String tripId = call.argument("tripId");
+        String legId = call.argument("legId");
+        String statusStr = call.argument("status");
+        RadarTripLeg.RadarTripLegStatus legStatus = RadarTripLeg.statusForString(statusStr);
+
+        if (tripId != null) {
+            Radar.updateTripLeg(tripId, legId, legStatus, tripLegCallback(result));
+        } else {
+            Radar.updateTripLeg(legId, legStatus, tripLegCallback(result));
+        }
+    }
+
+    public static void updateCurrentTripLeg(MethodCall call, Result result) {
+        String statusStr = call.argument("status");
+        RadarTripLeg.RadarTripLegStatus legStatus = RadarTripLeg.statusForString(statusStr);
+        Radar.updateCurrentTripLeg(legStatus, tripLegCallback(result));
+    }
+
+    public static void reorderTripLegs(MethodCall call, Result result) {
+        String tripId = call.argument("tripId");
+        ArrayList<String> legIdsList = call.argument("legIds");
+        String[] legIds = (legIdsList != null) ? legIdsList.toArray(new String[0]) : new String[0];
+
+        if (tripId != null) {
+            Radar.reorderTripLegs(tripId, legIds, tripLegCallback(result));
+        } else {
+            Radar.reorderTripLegs(legIds, tripCallback(result));
+        }
     }
 
     public static void getContext(MethodCall call, final Result result) {
