@@ -281,6 +281,21 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "removeTags":
                         removeTags(call, result);
                         break;
+                    case "isInitialized":
+                        isInitialized(result);
+                        break;
+                    case "sdkVersion":
+                        sdkVersion(result);
+                        break;
+                    case "setUserLanguage":
+                        setUserLanguage(call, result);
+                        break;
+                    case "getUserLanguage":
+                        getUserLanguage(result);
+                        break;
+                    case "setTags":
+                        setTags(call, result);
+                        break;
                     case "isTrackingVerified":
                         isTrackingVerified(result);
                         break;
@@ -1369,6 +1384,34 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.removeTags(tags);
+        result.success(true);
+    }
+
+    private static void isInitialized(Result result) {
+        Boolean isInitialized = Radar.isInitialized();
+        result.success(isInitialized);
+    }
+
+    private static void sdkVersion(Result result) {
+        String sdkVersion = Radar.sdkVersion();
+        result.success(sdkVersion);
+    }
+
+    private static void setUserLanguage(MethodCall call, Result result) {
+        String userLanguage = call.argument("userLanguage");
+        Radar.setUserLanguage(userLanguage);
+        result.success(true);
+    }
+
+    private static void getUserLanguage(Result result) {
+        String userLanguage = Radar.getUserLanguage();
+        result.success(userLanguage);
+    }
+
+    private static void setTags(MethodCall call, Result result) {
+        ArrayList<String> tagsList = call.argument("tags");
+        String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
+        Radar.setTags(tags);
         result.success(true);
     }
 

@@ -138,6 +138,16 @@
         [self getProduct:call withResult:result];
     } else if ([@"getTags" isEqualToString:call.method]) {
         [self getTags:call withResult:result];
+    } else if ([@"isInitialized" isEqualToString:call.method]) {
+        [self isInitialized:call withResult:result];
+    } else if ([@"sdkVersion" isEqualToString:call.method]) {
+        [self sdkVersion:call withResult:result];
+    } else if ([@"setUserLanguage" isEqualToString:call.method]) {
+        [self setUserLanguage:call withResult:result];
+    } else if ([@"getUserLanguage" isEqualToString:call.method]) {
+        [self getUserLanguage:call withResult:result];
+    } else if ([@"setTags" isEqualToString:call.method]) {
+        [self setTags:call withResult:result];
     } else if ([@"addTags" isEqualToString:call.method]) {
         [self addTags:call withResult:result];
     } else if ([@"removeTags" isEqualToString:call.method]) {
@@ -1172,6 +1182,36 @@
     NSDictionary *argsDict = call.arguments;
     NSArray *tags = argsDict[@"tags"];
     [Radar removeTags:tags];
+    result(nil);
+}
+
+- (void)isInitialized:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL isInitialized = [Radar isInitialized];
+    result(@(isInitialized));
+}
+
+- (void)sdkVersion:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *sdkVersion = [Radar sdkVersion];
+    result(sdkVersion);
+}
+
+- (void)setUserLanguage:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *userLanguage = [argsDict[@"userLanguage"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"userLanguage"];
+    [Radar setUserLanguage:userLanguage];
+    result(nil);
+}
+
+- (void)getUserLanguage:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *userLanguage = [Radar getUserLanguage];
+    result(userLanguage);
+}
+
+- (void)setTags:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+    NSArray *tags = argsDict[@"tags"];
+    [Radar setTags:tags];
     result(nil);
 }
 

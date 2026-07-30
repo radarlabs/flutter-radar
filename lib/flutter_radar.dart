@@ -617,6 +617,35 @@ class Radar {
     }
   }
 
+  static Future<bool?> isInitialized() async {
+    return await _channel.invokeMethod('isInitialized');
+  }
+
+  static Future<String?> sdkVersion() async {
+    return await _channel.invokeMethod('sdkVersion');
+  }
+
+  static Future setUserLanguage(String? userLanguage) async {
+    try {
+      await _channel
+        .invokeMethod('setUserLanguage', {'userLanguage': userLanguage});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<String?> getUserLanguage() async {
+    return await _channel.invokeMethod('getUserLanguage');
+  }
+
+  static Future setTags(List<String> tags) async {
+    try {
+      await _channel.invokeMethod('setTags', {'tags': tags});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isTrackingVerified() async {
     return await _channel.invokeMethod('isTrackingVerified');
   }
