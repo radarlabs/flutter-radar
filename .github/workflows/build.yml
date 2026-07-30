@@ -11,11 +11,19 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
       - run: flutter pub get
+      - run: flutter analyze
       # - run: flutter test
-      - run: flutter build
+      - name: Build example app
+        working-directory: example
+        run: flutter build apk --debug
       - run: dart pub publish --dry-run

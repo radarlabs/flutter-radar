@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
-      var b = await Radar.startTrackingCustom({
+      await Radar.startTrackingCustom({
         ... Radar.presetResponsive,
         "showBlueBar": true,
       });

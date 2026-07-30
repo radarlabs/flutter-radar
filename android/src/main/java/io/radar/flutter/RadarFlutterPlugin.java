@@ -53,6 +53,7 @@ import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
+import io.radar.sdk.model.RadarTripLeg;
 import io.radar.sdk.model.RadarRouteMatrix;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 import io.radar.sdk.model.RadarVerifiedLocationToken;
