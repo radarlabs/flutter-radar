@@ -365,20 +365,18 @@
 
 - (void)trackOnce:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTrackCompletionHandler completionHandler = ^(RadarStatus status, CLLocation *location, NSArray<RadarEvent *> *events, RadarUser *user) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (location) {
-                [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            if (user) {
-                [dict setObject:[user dictionaryValue] forKey:@"user"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (location) {
+            [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
         }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        if (user) {
+            [dict setObject:[user dictionaryValue] forKey:@"user"];
+        }
+        result(dict);
     };
 
     NSDictionary *argsDict = call.arguments;
@@ -533,17 +531,15 @@
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (trip) {
-                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
         }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
     };
     NSDictionary *argsDict = call.arguments;
     NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
@@ -556,17 +552,15 @@
 
 - (void)updateTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (trip) {
-                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
         }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
     };
     NSDictionary *argsDict = call.arguments;
     NSDictionary *tripOptionsDict = argsDict[@"tripOptions"];
@@ -600,34 +594,30 @@
 
 - (void)completeTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (trip) {
-                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
         }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
     };
     [Radar completeTripWithCompletionHandler:completionHandler];
 }
 
 - (void)cancelTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarTripCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, NSArray<RadarEvent *> *events) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (trip) {
-                [dict setObject:[trip dictionaryValue] forKey:@"trip"];
-            }
-            if (events) {
-                [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (trip) {
+            [dict setObject:[trip dictionaryValue] forKey:@"trip"];
         }
+        if (events) {
+            [dict setObject:[RadarEvent arrayForEvents:events] forKey:@"events"];
+        }
+        result(dict);
     };
     [Radar cancelTripWithCompletionHandler:completionHandler];
 }
@@ -743,17 +733,15 @@
 
 - (void)searchGeofences:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarSearchGeofencesCompletionHandler completionHandler = ^(RadarStatus status, CLLocation * _Nullable location, NSArray<RadarGeofence *> * _Nullable geofences) {
-        if (status == RadarStatusSuccess) {
-          NSMutableDictionary *dict = [NSMutableDictionary new];
-          [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-          if (location) {
-              [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-          }
-          if (geofences) {
-              [dict setObject:[RadarGeofence arrayForGeofences:geofences] forKey:@"geofences"];
-          }
-          result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (location) {
+            [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
         }
+        if (geofences) {
+            [dict setObject:[RadarGeofence arrayForGeofences:geofences] forKey:@"geofences"];
+        }
+        result(dict);
     };
 
     NSDictionary *argsDict = call.arguments;
@@ -795,17 +783,16 @@
 
 - (void)searchPlaces:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarSearchPlacesCompletionHandler completionHandler = ^(RadarStatus status, CLLocation * _Nullable location, NSArray<RadarPlace *> * _Nullable places) {
-        if (status == RadarStatusSuccess) {
-          NSMutableDictionary *dict = [NSMutableDictionary new];
-          [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-          if (location) {
-              [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
-          }
-          if (places) {
-              [dict setObject:[RadarPlace arrayForPlaces:places] forKey:@"places"];
-          }
-          result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (location) {
+            [dict setObject:[Radar dictionaryForLocation:location] forKey:@"location"];
         }
+        if (places) {
+            [dict setObject:[RadarPlace arrayForPlaces:places] forKey:@"places"];
+        }
+        result(dict);
+
     };
 
     NSDictionary *argsDict = call.arguments;
@@ -1023,14 +1010,12 @@
 
 - (void)logConversion:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     RadarLogConversionCompletionHandler completionHandler = ^(RadarStatus status, RadarEvent *event) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
-            if (event) {
-                [dict setObject:[event dictionaryValue] forKey:@"event"];
-            }
-            result(dict);
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (event) {
+            [dict setObject:[event dictionaryValue] forKey:@"event"];
         }
+        result(dict);
     };
 
     NSDictionary *argsDict = call.arguments;
@@ -1142,12 +1127,12 @@
     NSString *transactionId = argsDict[@"transactionId"];
 
     RadarTrackVerifiedCompletionHandler completionHandler = ^(RadarStatus status, RadarVerifiedLocationToken* token) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (token) {
             [dict setObject:[token dictionaryValue] forKey:@"token"];
-            result(dict);
         }
+        result(dict);
     };
 
     [Radar trackVerifiedWithBeacons:beacons desiredAccuracy:desiredAccuracy reason:reason transactionId:transactionId completionHandler:completionHandler];
@@ -1155,12 +1140,12 @@
 
 - (void)getVerifiedLocationToken:(FlutterResult)result {
     RadarTrackVerifiedCompletionHandler completionHandler = ^(RadarStatus status, RadarVerifiedLocationToken* token) {
-        if (status == RadarStatusSuccess) {
-            NSMutableDictionary *dict = [NSMutableDictionary new];
-            [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (token) {
             [dict setObject:[token dictionaryValue] forKey:@"token"];
-            result(dict);
         }
+        result(dict);
     };
 
     [Radar getVerifiedLocationToken:completionHandler];
