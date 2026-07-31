@@ -23,17 +23,22 @@ if (flutterVersionName == null) {
 
 android {
     namespace "io.radar.example"
-    compileSdkVersion 35
+    compileSdk 35
 
-    lintOptions {
+    lint {
         disable 'InvalidPackage'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "io.radar.example"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 29
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -45,11 +50,11 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+}
 
-    dependencies {
-        implementation 'io.radar:sdk:3.23.5'
-        implementation "com.google.android.play:integrity:1.2.0"
-    }
+dependencies {
+    implementation 'io.radar:sdk:3.35.0'
+    implementation "com.google.android.play:integrity:1.2.0"
 }
 
 flutter {

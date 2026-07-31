@@ -1,0 +1,23 @@
+---
+triple:          'x86_64-apple-darwin'
+binary-path:     '/Users/runner/Library/Developer/Xcode/DerivedData/RadarSDKMotion-hihxrprrpoatbhenjgukpxumvkhu/Build/Intermediates.noindex/ArchiveIntermediates/RadarSDKMotion/InstallationBuildProductsLocation/Library/Frameworks/RadarSDKMotion.framework/RadarSDKMotion'
+relocations:
+  - { offset: 0x408FB, size: 0x8, addend: 0x0, symName: _RadarSDKMotionVersionString, symObjAddr: 0x0, symBinAddr: 0x1650, symSize: 0x0 }
+  - { offset: 0x40930, size: 0x8, addend: 0x0, symName: _RadarSDKMotionVersionNumber, symObjAddr: 0x38, symBinAddr: 0x1688, symSize: 0x0 }
+  - { offset: 0x4096D, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion init]', symObjAddr: 0x0, symBinAddr: 0xBD0, symSize: 0x8C }
+  - { offset: 0x409E9, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion init]', symObjAddr: 0x0, symBinAddr: 0xBD0, symSize: 0x8C }
+  - { offset: 0x40A44, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion startActivityUpdatesToQueue:withHandler:]', symObjAddr: 0x8C, symBinAddr: 0xC5C, symSize: 0x9A }
+  - { offset: 0x40B27, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion stopActivityUpdates]', symObjAddr: 0x126, symBinAddr: 0xCF6, symSize: 0x3D }
+  - { offset: 0x40B7E, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion startRelativeAltitudeUpdatesToQueue:withHandler:]', symObjAddr: 0x163, symBinAddr: 0xD33, symSize: 0x9A }
+  - { offset: 0x40C61, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion stopRelativeAltitudeUpdates]', symObjAddr: 0x1FD, symBinAddr: 0xDCD, symSize: 0x3D }
+  - { offset: 0x40CB8, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion startAbsoluteAltitudeUpdatesToQueue:withHandler:]', symObjAddr: 0x23A, symBinAddr: 0xE0A, symSize: 0x9A }
+  - { offset: 0x40D9B, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion stopAbsoluteAltitudeUpdates]', symObjAddr: 0x2D4, symBinAddr: 0xEA4, symSize: 0x5F }
+  - { offset: 0x40DF2, size: 0x8, addend: 0x0, symName: '+[RadarSDKMotion stringForMotionAuthorization]', symObjAddr: 0x333, symBinAddr: 0xF03, symSize: 0x34 }
+  - { offset: 0x40E51, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion activityManager]', symObjAddr: 0x367, symBinAddr: 0xF37, symSize: 0xA }
+  - { offset: 0x40E86, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion setActivityManager:]', symObjAddr: 0x371, symBinAddr: 0xF41, symSize: 0x11 }
+  - { offset: 0x40EC7, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion altimeterManager]', symObjAddr: 0x382, symBinAddr: 0xF52, symSize: 0xA }
+  - { offset: 0x40EFC, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion setAltimeterManager:]', symObjAddr: 0x38C, symBinAddr: 0xF5C, symSize: 0x11 }
+  - { offset: 0x40F3D, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion motionManager]', symObjAddr: 0x39D, symBinAddr: 0xF6D, symSize: 0xA }
+  - { offset: 0x40F72, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion setMotionManager:]', symObjAddr: 0x3A7, symBinAddr: 0xF77, symSize: 0x11 }
+  - { offset: 0x40FB3, size: 0x8, addend: 0x0, symName: '-[RadarSDKMotion .cxx_destruct]', symObjAddr: 0x3B8, symBinAddr: 0xF88, symSize: 0x33 }
+...

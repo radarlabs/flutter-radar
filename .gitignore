@@ -46,3 +46,6 @@ GeneratedPluginRegistrant.swift
 .project
 .classpath
 .settings
+
+# AI semantic search index
+.ai-index/

@@ -69,7 +69,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> initRadar() async {
-    Radar.initialize('prj_test_pk_0000000000000000000000000000000000000000');
+    Radar.initialize(
+      'prj_test_pk_0000000000000000000000000000000000000000',
+      options: RadarInitializeOptions(
+      fraud: true,
+      trackVerifiedAutoFailover: true,
+      networkTimeout: Duration(seconds: 20),
+      ipChangeDebounceInterval: Duration(seconds: 5),
+    ),
+  );
     Radar.setUserId('flutter');
     Radar.setDescription('Flutter');
     Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
@@ -88,7 +96,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     await Radar.requestPermissions(true);
     var permissionStatus = await Radar.getPermissionsStatus();
     if (permissionStatus != "DENIED") {
-      var b = await Radar.startTrackingCustom({
+      await Radar.startTrackingCustom({
         ... Radar.presetResponsive,
         "showBlueBar": true,
       });

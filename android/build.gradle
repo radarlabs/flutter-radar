@@ -8,8 +8,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10"
+        classpath 'com.android.tools.build:gradle:8.6.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
     }
 }
 
@@ -25,30 +25,29 @@ apply plugin: 'kotlin-android'
 
 android {
     namespace 'io.radar.flutter'
-    compileSdkVersion 31
+    compileSdk 35
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 31
-        versionCode 1
-        versionName '3.23.4'
+        minSdk 21
     }
-    lintOptions {
+
+    lint {
         disable 'InvalidPackage'
     }
-    
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
-    
+
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
     }
 }
 
 dependencies {
-    implementation 'io.radar:sdk:3.23.5'
+    implementation 'io.radar:sdk:3.35.0'
+    implementation 'io.radar:sdk-fraud:1.2.0'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
     implementation 'com.google.code.gson:gson:2.8.6'
 }

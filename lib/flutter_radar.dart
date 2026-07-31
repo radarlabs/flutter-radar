@@ -28,9 +28,24 @@ typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
 typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
 typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
 typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
+typedef IpChangedCallback = void Function();
+typedef SharingChangedCallback = void Function(bool sharing);
 
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
+
+
+  static const Set<String> _tripLegStatuses = {
+    'unknown', 'pending', 'started', 'approaching',
+    'arrived', 'completed', 'canceled', 'expired',
+  };
+
+  static void _assertTripLegStatus(String status) {
+    if (!_tripLegStatuses.contains(status)) {
+      throw ArgumentError.value(status, 'status',
+          'Invalid trip leg status. Expected one of: ${_tripLegStatuses.join(', ')}');
+    }
+  }
 
   static LocationCallback? foregroundLocationCallback;
   static ClientLocationCallback? foregroundClientLocationCallback;
@@ -38,11 +53,17 @@ class Radar {
   static LogCallback? foregroundLogCallback;
   static EventsCallback? foregroundEventsCallback;
   static TokenCallback? foregroundTokenCallback;
+  static IpChangedCallback? foregroundIpChangedCallback;
+  static SharingChangedCallback? foregroundSharingChangedCallback;
 
-  static Future initialize(String publishableKey) async {
+  static Future initialize(
+    String publishableKey, {
+    RadarInitializeOptions? options,
+  }) async {
     try {
       await _channel.invokeMethod('initialize', {
         'publishableKey': publishableKey,
+        if (options != null) 'options': options.toMap(),
       });
       _channel.setMethodCallHandler(_handleMethodCall);
     } on PlatformException catch (e) {
@@ -72,6 +93,14 @@ class Radar {
         break;
       case 'token':
         foregroundTokenCallback?.call(args[1] as Map<dynamic, dynamic>);
+        break;
+      case 'ipChanged':
+        foregroundIpChangedCallback?.call();
+        break;
+      case 'sharingChanged':
+        foregroundSharingChangedCallback?.call(
+          (args[1] as Map)['sharing'] as bool,
+        );
         break;
     }
   }
@@ -289,6 +318,54 @@ class Radar {
     }
   }
 
+  static Future<Map?> getTrip() async {
+    try {
+      return await _channel.invokeMethod('getTrip');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Updates a leg on a multi-destination trip. Omit [tripId] to target the
+  /// current trip. [status] must be one of: unknown, pending, started,
+  /// approaching, arrived, completed, canceled, expired.
+  static Future<Map?> updateTripLeg(
+      {String? tripId, required String legId, required String status}) async {
+    _assertTripLegStatus(status);
+    try {
+      return await _channel.invokeMethod('updateTripLeg',
+        {'tripId': tripId, 'legId': legId, 'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> updateCurrentTripLeg({required String status}) async {
+    _assertTripLegStatus(status);
+    try {
+      return await _channel
+        .invokeMethod('updateCurrentTripLeg', {'status': status});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Reorders legs on a multi-destination trip. Omit [tripId] to target the
+  /// current trip.
+  static Future<Map?> reorderTripLegs(
+      {String? tripId, required List<String> legIds}) async {
+    try {
+      return await _channel
+        .invokeMethod('reorderTripLegs', {'tripId': tripId, 'legIds': legIds});
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
   static Future<Map?> getContext(Map<String, dynamic> location) async {
     try {
       return await _channel.invokeMethod('getContext', {'location': location});
@@ -396,6 +473,15 @@ class Radar {
   static Future<Map?> ipGeocode() async {
     try {
       return await _channel.invokeMethod('ipGeocode');
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  static Future<Map?> revealRisk() async {
+    try {
+      return await _channel.invokeMethod('revealRisk');
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
@@ -520,6 +606,40 @@ class Radar {
     }
   }
 
+  static Future<bool?> isSharing() async {
+    return await _channel.invokeMethod('isSharing');
+  }
+
+  static Future clearSharing() async {
+    try {
+      await _channel.invokeMethod('clearSharing');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setProduct(String? product) async {
+    try {
+      await _channel.invokeMethod('setProduct', {'product': product});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setExpectedJurisdiction({
+    String? countryCode,
+    String? stateCode,
+  }) async {
+    try {
+      await _channel.invokeMethod('setExpectedJurisdiction', {
+        'countryCode': countryCode,
+        'stateCode': stateCode,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
@@ -531,14 +651,6 @@ class Radar {
     } on PlatformException catch (e) {
       print(e);
       return {'error': e.code};
-    }
-  }
-
-  static Future setProduct(String? product) async {
-    try {
-      await _channel.invokeMethod('setProduct', {'product': product});
-    } on PlatformException catch (e) {
-      print(e);
     }
   }
 
@@ -561,6 +673,62 @@ class Radar {
   static Future removeTags(List<String> tags) async {
     try {
       await _channel.invokeMethod('removeTags', {'tags': tags});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<bool?> isInitialized() async {
+    return await _channel.invokeMethod('isInitialized');
+  }
+
+  static Future<String?> sdkVersion() async {
+    return await _channel.invokeMethod('sdkVersion');
+  }
+
+  static Future setUserLanguage(String? userLanguage) async {
+    try {
+      await _channel
+        .invokeMethod('setUserLanguage', {'userLanguage': userLanguage});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<String?> getUserLanguage() async {
+    return await _channel.invokeMethod('getUserLanguage');
+  }
+
+  static Future setTags(List<String> tags) async {
+    try {
+      await _channel.invokeMethod('setTags', {'tags': tags});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future acceptEvent(String eventId, {String? verifiedPlaceId}) async {
+    try {
+      await _channel.invokeMethod('acceptEvent', {
+        'eventId': eventId,
+        'verifiedPlaceId': verifiedPlaceId,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future rejectEvent(String eventId) async {
+    try {
+      await _channel.invokeMethod('rejectEvent', {'eventId': eventId});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  static Future setPushNotificationToken(String? token) async {
+    try {
+      await _channel.invokeMethod('setPushNotificationToken', {'token': token});
     } on PlatformException catch (e) {
       print(e);
     }
@@ -639,6 +807,28 @@ class Radar {
 
   static offEvents() {
     foregroundEventsCallback = null;
+  }
+
+  static onIpChanged(IpChangedCallback callback) {
+    if (foregroundIpChangedCallback != null) {
+      throw RadarExistingCallbackException();
+    }
+    foregroundIpChangedCallback = callback;
+  }
+
+  static offIpChanged() {
+    foregroundIpChangedCallback = null;
+  }
+
+  static onSharingChanged(SharingChangedCallback callback) {
+    if (foregroundSharingChangedCallback != null) {
+      throw RadarExistingCallbackException();
+    }
+    foregroundSharingChangedCallback = callback;
+  }
+
+  static offSharingChanged() {
+    foregroundSharingChangedCallback = null;
   }
 
   static onToken(TokenCallback callback) {
@@ -805,6 +995,57 @@ class Radar {
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
   static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
+}
+
+class RadarInitializeOptions {
+  /// Android only. Enables fraud detection signals on tracking calls, and
+  /// requires the `io.radar:sdk-fraud` dependency. On iOS, fraud activates
+  /// automatically when `RadarSDKFraud.xcframework` is linked, so this is
+  /// ignored there.
+  final bool? fraud;
+
+  final bool? silentPush;
+  final bool? trackVerifiedAutoFailover;
+
+  /// Request timeout for standard API calls. Clamped natively to 1...300
+  /// seconds; omit to use the SDK default of 10 seconds.
+  final Duration? networkTimeout;
+
+  /// Minimum interval between IP-change callbacks. [Duration.zero] delivers
+  /// every detected change; omit to use the SDK default of 10 seconds.
+  final Duration? ipChangeDebounceInterval;
+
+  /// iOS only.
+  final bool? autoLogNotificationConversions;
+
+  /// iOS only.
+  final bool? autoHandleNotificationDeepLinks;
+
+  const RadarInitializeOptions({
+    this.fraud,
+    this.silentPush,
+    this.trackVerifiedAutoFailover,
+    this.networkTimeout,
+    this.ipChangeDebounceInterval,
+    this.autoLogNotificationConversions,
+    this.autoHandleNotificationDeepLinks,
+  });
+
+  Map<String, dynamic> toMap() => {
+    if (fraud != null) 'fraud': fraud,
+    if (silentPush != null) 'silentPush': silentPush,
+    if (trackVerifiedAutoFailover != null)
+      'trackVerifiedAutoFailover': trackVerifiedAutoFailover,
+    if (networkTimeout != null)
+      'networkTimeout': networkTimeout!.inMilliseconds / 1000.0,
+    if (ipChangeDebounceInterval != null)
+      'ipChangeDebounceInterval':
+          ipChangeDebounceInterval!.inMilliseconds / 1000.0,
+    if (autoLogNotificationConversions != null)
+      'autoLogNotificationConversions': autoLogNotificationConversions,
+    if (autoHandleNotificationDeepLinks != null)
+      'autoHandleNotificationDeepLinks': autoHandleNotificationDeepLinks,
+  };
 }
 
 class RadarExistingCallbackException implements Exception {

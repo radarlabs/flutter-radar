@@ -5,7 +5,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -20,19 +19,19 @@ import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
+
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 
-import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
-import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -54,16 +53,15 @@ import io.radar.sdk.model.RadarPlace;
 import io.radar.sdk.model.RadarRoutes;
 import io.radar.sdk.model.RadarUser;
 import io.radar.sdk.model.RadarTrip;
+import io.radar.sdk.model.RadarTripLeg;
 import io.radar.sdk.model.RadarRouteMatrix;
 import io.radar.sdk.RadarTrackingOptions.RadarTrackingOptionsForegroundService;
 import io.radar.sdk.model.RadarVerifiedLocationToken;
 import io.radar.sdk.model.RadarInAppMessage;
+import io.radar.sdk.model.RadarRevealRiskToken;
 
 import io.flutter.embedding.engine.dart.DartExecutor;
-import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
 
-import io.flutter.view.FlutterRunArguments;
-import io.flutter.view.FlutterCallbackInformation;
 
 public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, RequestPermissionsResultListener {
 
@@ -215,6 +213,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "cancelTrip":
                         cancelTrip(result);
                         break;
+                    case "getTrip":
+                        getTrip(result);
+                        break;
+                    case "updateTripLeg":
+                        updateTripLeg(call, result);
+                        break;
+                    case "updateCurrentTripLeg":
+                        updateCurrentTripLeg(call, result);
+                        break;
+                    case "reorderTripLegs":
+                        reorderTripLegs(call, result);
+                        break;
                     case "getContext":
                         getContext(call, result);
                         break;
@@ -284,11 +294,47 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "removeTags":
                         removeTags(call, result);
                         break;
+                    case "isInitialized":
+                        isInitialized(result);
+                        break;
+                    case "sdkVersion":
+                        sdkVersion(result);
+                        break;
+                    case "setUserLanguage":
+                        setUserLanguage(call, result);
+                        break;
+                    case "getUserLanguage":
+                        getUserLanguage(result);
+                        break;
+                    case "setTags":
+                        setTags(call, result);
+                        break;
+                    case "acceptEvent":
+                        acceptEvent(call, result);
+                        break;
+                    case "rejectEvent":
+                        rejectEvent(call, result);
+                        break;
+                    case "setPushNotificationToken":
+                        setPushNotificationToken(call, result);
+                        break;
                     case "isTrackingVerified":
                         isTrackingVerified(result);
                         break;
                     case "clearVerifiedLocationToken":
                         clearVerifiedLocationToken(result);
+                        break;
+                    case "isSharing":
+                        isSharing(result);
+                        break;
+                    case "clearSharing":
+                        clearSharing(result);
+                        break;
+                    case "setExpectedJurisdiction":
+                        setExpectedJurisdiction(call, result);
+                        break;
+                    case "revealRisk":
+                        revealRisk(call, result);
                         break;
                     case "showInAppMessage":
                         showInAppMessage(call, result);
@@ -305,11 +351,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     private static void initialize(MethodCall call, Result result) {
         String publishableKey = call.argument("publishableKey");
+        Map<String, Object> options = call.argument("options");
         SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
         editor.putString("x_platform_sdk_type", "Flutter");
         editor.putString("x_platform_sdk_version", "3.23.4");
         editor.apply();
-        Radar.initialize(mContext, publishableKey, null, Radar.RadarLocationServicesProvider.GOOGLE, false, null, null, mActivity);
+        Radar.initialize(mContext, RadarInitializeOptionsFactory.build(publishableKey, mActivity, options));
         Radar.setReceiver(new RadarFlutterReceiver(channel));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
         result.success(true);
@@ -421,7 +468,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         JSONObject metadata = Radar.getMetadata();
         HashMap metadataMap = null;
         if (metadata != null) {
-           metadataMap = new Gson().fromJson(metadata.toString(), HashMap.class);
+           metadataMap = mapForJson(metadata);
         }
         result.success(metadataMap);
     }
@@ -447,7 +494,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                             }
                             obj.put("stopped", stopped);
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -491,7 +538,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("user", user.toJson());
                             }
       
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -605,7 +652,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         JSONObject optionsJson = options.toJson();
         HashMap optionsMap = null;
         if (optionsJson != null) {
-           optionsMap = new Gson().fromJson(optionsJson.toString(), HashMap.class);
+           optionsMap = mapForJson(optionsJson);
         }
         result.success(optionsMap);
     }
@@ -638,7 +685,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("events", RadarEvent.toJson(events));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -686,7 +733,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("events", RadarEvent.toJson(events));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -699,7 +746,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void getTripOptions(Result result) {
         RadarTripOptions tripOptions = Radar.getTripOptions();
-        HashMap<String,Object> map = new Gson().fromJson(tripOptions.toJson().toString(), HashMap.class);
+        HashMap<String,Object> map = mapForJson(tripOptions.toJson());
         result.success(map);
     }
 
@@ -722,7 +769,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("events", RadarEvent.toJson(events));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -752,7 +799,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("events", RadarEvent.toJson(events));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -761,6 +808,102 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 });
             }
         });
+    }
+
+    public static void getTrip(Result result) {
+        RadarTrip trip = Radar.getTrip();
+        result.success(trip != null ? mapForJson(trip.toJson()) : null);
+    }
+
+    private static Radar.RadarTripLegCallback tripLegCallback(final Result result) {
+        return new Radar.RadarTripLegCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarTripLeg leg,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (leg != null) {
+                                obj.put("leg", leg.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            result.success(mapForJson(obj));
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    private static Radar.RadarTripCallback tripCallback(final Result result) {
+        return new Radar.RadarTripCallback() {
+            @Override
+            public void onComplete(@NonNull Radar.RadarStatus status,
+                                   @Nullable RadarTrip trip,
+                                   @Nullable RadarEvent[] events) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (trip != null) {
+                                obj.put("trip", trip.toJson());
+                            }
+                            if (events != null) {
+                                obj.put("events", RadarEvent.toJson(events));
+                            }
+                            result.success(mapForJson(obj));
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    public static void updateTripLeg(MethodCall call, Result result) {
+        String tripId = call.argument("tripId");
+        String legId = call.argument("legId");
+        String statusStr = call.argument("status");
+        RadarTripLeg.RadarTripLegStatus legStatus = RadarTripLeg.statusForString(statusStr);
+
+        if (tripId != null) {
+            Radar.updateTripLeg(tripId, legId, legStatus, tripLegCallback(result));
+        } else {
+            Radar.updateTripLeg(legId, legStatus, tripLegCallback(result));
+        }
+    }
+
+    public static void updateCurrentTripLeg(MethodCall call, Result result) {
+        String statusStr = call.argument("status");
+        RadarTripLeg.RadarTripLegStatus legStatus = RadarTripLeg.statusForString(statusStr);
+        Radar.updateCurrentTripLeg(legStatus, tripLegCallback(result));
+    }
+
+    public static void reorderTripLegs(MethodCall call, Result result) {
+        String tripId = call.argument("tripId");
+        ArrayList<String> legIdsList = call.argument("legIds");
+        String[] legIds = (legIdsList != null) ? legIdsList.toArray(new String[0]) : new String[0];
+
+        if (tripId != null) {
+            Radar.reorderTripLegs(tripId, legIds, tripCallback(result));
+        } else {
+            Radar.reorderTripLegs(legIds, tripCallback(result));
+        }
     }
 
     public static void getContext(MethodCall call, final Result result) {
@@ -780,7 +923,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("context", context.toJson());
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -816,7 +959,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("geofences", RadarGeofence.toJson(geofences));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -832,8 +975,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             near = locationForMap(nearMap);
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
-        ArrayList tagsList = (ArrayList)call.argument("tags");
-        String[] tags = (String[])tagsList.toArray(new String[0]);
+        ArrayList<String> tagsList = call.argument("tags");
+        String[] tags = tagsList.toArray(new String[0]);
         HashMap metadataMap = (HashMap)call.argument("metadata");
         JSONObject metadata = jsonForMap(metadataMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
@@ -863,7 +1006,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("places", RadarPlace.toJson(places));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -879,15 +1022,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             near = locationForMap(nearMap);
         }
         int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
-        ArrayList chainsList = (ArrayList)call.argument("chains");
-        String[] chains = (String[])chainsList.toArray(new String[0]);        
-        Map<String, String> chainMetadata = (Map<String, String>)call.argument("chainMetadata");
-        ArrayList categoriesList = (ArrayList)call.argument("categories");
-        String[] categories = categoriesList != null ? (String[])categoriesList.toArray(new String[0]) : new String[0];
-        ArrayList groupsList = (ArrayList)call.argument("groups");
-        String[] groups = groupsList != null ? (String[])groupsList.toArray(new String[0]) : new String[0];
-        ArrayList countryCodesList = (ArrayList)call.argument("countryCodes");
-        String[] countryCodes = countryCodesList != null ? (String[])countryCodesList.toArray(new String[0]) : null;
+        ArrayList<String> chainsList = call.argument("chains");
+        String[] chains = chainsList.toArray(new String[0]);
+        Map<String, String> chainMetadata = call.argument("chainMetadata");
+        ArrayList<String> categoriesList = call.argument("categories");
+        String[] categories = categoriesList != null ? categoriesList.toArray(new String[0]) : new String[0];
+        ArrayList<String> groupsList = call.argument("groups");
+        String[] groups = groupsList != null ? groupsList.toArray(new String[0]) : new String[0];
+        ArrayList<String> countryCodesList = call.argument("countryCodes");
+        String[] countryCodes = countryCodesList != null ? countryCodesList.toArray(new String[0]) : null;
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
 
         if (near != null) {
@@ -903,8 +1046,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Location near = locationForMap(nearMap);
         int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
         String country = call.argument("country");
-        ArrayList layersList = (ArrayList)call.argument("layers");
-        String[] layers = layersList != null ? (String[])layersList.toArray(new String[0]) : new String[0];
+        ArrayList<String> layersList = call.argument("layers");
+        String[] layers = layersList != null ? layersList.toArray(new String[0]) : new String[0];
         Boolean mailable = call.argument("mailable");
 
         Radar.autocomplete(query, near, layers, limit, country, true, mailable, new Radar.RadarGeocodeCallback() {
@@ -920,7 +1063,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("addresses", RadarAddress.toJson(addresses));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -947,7 +1090,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("addresses", RadarAddress.toJson(addresses));
                             }
                             
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -972,7 +1115,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("addresses", RadarAddress.toJson(addresses));
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -995,8 +1138,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void ipGeocode(MethodCall call, final Result result) {
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
+            @SuppressWarnings("deprecation")
+            // Deprecated upstream but still abstract, so Java must implement it.
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
+                onComplete(status, address, proxy, null);
+            }
+
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy, final Throwable throwable) {
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {
@@ -1008,7 +1158,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("proxy", proxy);
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1018,6 +1168,32 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         });
     }
+
+    public static void revealRisk(MethodCall call, final Result result) {
+        Radar.revealRisk(new Radar.RadarRevealRiskCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarRevealRiskToken revealRisk) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (revealRisk != null) {
+                                obj.put("revealRisk", revealRisk.toJson());
+                            }
+
+                            HashMap<String, Object> map = mapForJson(obj);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
 
     public static void getDistance(MethodCall call, final Result result) throws JSONException {
         Radar.RadarRouteCallback callback = new Radar.RadarRouteCallback() {
@@ -1033,7 +1209,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("routes", routes.toJson());
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1088,7 +1264,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("event", event.toJson());
                             }
       
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1162,7 +1338,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("matrix", matrix.toJson());
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1202,7 +1378,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                             obj.put("status", status.toString());
                             obj.put("token", token.toJson());
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1227,7 +1403,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                             obj.put("status", status.toString());
                             obj.put("token", token.toJson());
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1238,6 +1414,23 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         };
 
         Radar.getVerifiedLocationToken(callback);
+    }
+
+    private static void isSharing(Result result) {
+        Boolean isSharing = Radar.isSharing();
+        result.success(isSharing);
+    }
+
+    private static void clearSharing(Result result) {
+        Radar.clearSharing();
+        result.success(true);
+    }
+
+    private static void setExpectedJurisdiction(MethodCall call, Result result) {
+        String countryCode = call.argument("countryCode");
+        String stateCode = call.argument("stateCode");
+        Radar.setExpectedJurisdiction(countryCode, stateCode);
+        result.success(true);
     }
 
     private static void isUsingRemoteTrackingOptions(Result result) {
@@ -1262,7 +1455,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                                 obj.put("verificationStatus", verificationStatus.toString());
                             }
 
-                            HashMap<String, Object> map = new Gson().fromJson(obj.toString(), HashMap.class);
+                            HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
                         } catch (Exception e) {
                             result.error(e.toString(), e.getMessage(), e.getMessage());
@@ -1299,16 +1492,63 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     private static void addTags(MethodCall call, Result result) {
-        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.addTags(tags);
         result.success(true);
     }
 
     private static void removeTags(MethodCall call, Result result) {
-        ArrayList<String> tagsList = (ArrayList<String>)call.argument("tags");
+        ArrayList<String> tagsList = call.argument("tags");
         String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
         Radar.removeTags(tags);
+        result.success(true);
+    }
+
+    private static void isInitialized(Result result) {
+        Boolean isInitialized = Radar.isInitialized();
+        result.success(isInitialized);
+    }
+
+    private static void sdkVersion(Result result) {
+        String sdkVersion = Radar.sdkVersion();
+        result.success(sdkVersion);
+    }
+
+    private static void setUserLanguage(MethodCall call, Result result) {
+        String userLanguage = call.argument("userLanguage");
+        Radar.setUserLanguage(userLanguage);
+        result.success(true);
+    }
+
+    private static void getUserLanguage(Result result) {
+        String userLanguage = Radar.getUserLanguage();
+        result.success(userLanguage);
+    }
+
+    private static void setTags(MethodCall call, Result result) {
+        ArrayList<String> tagsList = call.argument("tags");
+        String[] tags = (tagsList != null) ? tagsList.toArray(new String[0]) : new String[0];
+        Radar.setTags(tags);
+        result.success(true);
+    }
+
+    private static void acceptEvent(MethodCall call, Result result) {
+        String eventId = call.argument("eventId");
+        String verifiedPlaceId = call.argument("verifiedPlaceId");
+        Radar.acceptEvent(eventId, verifiedPlaceId);
+        result.success(true);
+    }
+
+    private static void rejectEvent(MethodCall call, Result result) {
+        String eventId = call.argument("eventId");
+        Radar.rejectEvent(eventId);
+        result.success(true);
+    }
+
+    private static void setPushNotificationToken(MethodCall call, Result result) {
+        String token = call.argument("token");
+        Radar.setPushNotificationToken(token);
         result.success(true);
     }
 
@@ -1374,6 +1614,37 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         return obj;
     }
 
+    private static HashMap<String, Object> mapForJson(JSONObject obj) {
+        if (obj == null) {
+            return null;
+        }
+        HashMap<String, Object> map = new HashMap<>();
+        Iterator<String> keys = obj.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            map.put(key, unwrapJson(obj.opt(key)));
+        }
+        return map;
+    }
+
+    private static Object unwrapJson(Object value) {
+        if (value == null || value == JSONObject.NULL) {
+            return null;
+        }
+        if (value instanceof JSONObject) {
+            return mapForJson((JSONObject)value);
+        }
+        if (value instanceof JSONArray) {
+            JSONArray array = (JSONArray)value;
+            List<Object> list = new ArrayList<>(array.length());
+            for (int i = 0; i < array.length(); i++) {
+                list.add(unwrapJson(array.opt(i)));
+            }
+            return list;
+        }
+        return value;
+    }
+
     public static class RadarFlutterReceiver extends RadarReceiver {
 
         private MethodChannel channel;
@@ -1389,8 +1660,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("events", RadarEvent.toJson(events));
                 obj.put("user", user.toJson());
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                final ArrayList eventsArgs = new ArrayList();
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList<Object> eventsArgs = new ArrayList<>();
                 eventsArgs.add(0);
                 eventsArgs.add(res);
                 synchronized(lock) {
@@ -1413,9 +1684,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("location", Radar.jsonForLocation(location));
                 obj.put("user", user.toJson());
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList locationArgs = new ArrayList();
+                final ArrayList<Object> locationArgs = new ArrayList<>();
                 locationArgs.add(0);
                 locationArgs.add(res);
                 synchronized(lock) {
@@ -1439,9 +1710,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("stopped", stopped);
                 obj.put("source", source.toString());
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
+                HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList clientLocationArgs = new ArrayList();
+                final ArrayList<Object> clientLocationArgs = new ArrayList<>();
                 clientLocationArgs.add(0);
                 clientLocationArgs.add(res);
                 synchronized(lock){
@@ -1463,8 +1734,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 JSONObject obj = new JSONObject();
                 obj.put("status", status.toString());
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                final ArrayList errorArgs = new ArrayList();
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList<Object> errorArgs = new ArrayList<>();
                 errorArgs.add(0);
                 errorArgs.add(res);
                 synchronized(lock){
@@ -1486,8 +1757,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 JSONObject obj = new JSONObject();
                 obj.put("message", message);
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                final ArrayList logArgs = new ArrayList();
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList<Object> logArgs = new ArrayList<>();
                 logArgs.add(0);
                 logArgs.add(res);
                 synchronized(lock) {
@@ -1519,8 +1790,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 JSONObject obj = new JSONObject();
                 obj.put("token", token.toJson());
 
-                HashMap<String, Object> res = new Gson().fromJson(obj.toString(), HashMap.class);
-                final ArrayList tokenArgs = new ArrayList();
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList<Object> tokenArgs = new ArrayList<>();
                 tokenArgs.add(0);
                 tokenArgs.add(res);
                 synchronized(lock) {
@@ -1537,6 +1808,47 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         }
 
+        @Override
+        public void onIpChanged(Context context) {
+            try {
+                final ArrayList<Object> ipChangedArgs = new ArrayList<>();
+                ipChangedArgs.add(0);
+                ipChangedArgs.add(new HashMap<String, Object>());
+                synchronized(lock) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            channel.invokeMethod("ipChanged", ipChangedArgs);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
+
+        @Override
+        public void onSharingChanged(Context context, boolean sharing) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("sharing", sharing);
+
+                HashMap<String, Object> res = mapForJson(obj);
+                final ArrayList<Object> sharingArgs = new ArrayList<>();
+                sharingArgs.add(0);
+                sharingArgs.add(res);
+                synchronized(lock) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            channel.invokeMethod("sharingChanged", sharingArgs);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.toString());
+            }
+        }
     }
 
 };
