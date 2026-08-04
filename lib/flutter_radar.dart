@@ -4,6 +4,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 
+export 'src/radar_background.dart'
+    show RadarBackgroundEvent, RadarBackgroundEventType, RadarBackgroundHandler;
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   const MethodChannel _backgroundChannel =
