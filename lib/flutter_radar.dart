@@ -1,27 +1,9 @@
-import 'dart:async';
-import 'package:flutter/services.dart';
-import 'dart:ui';
-import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
+
+import 'package:flutter/services.dart';
 
 export 'src/radar_background.dart'
     show RadarBackgroundEvent, RadarBackgroundEventType, RadarBackgroundHandler;
-
-@pragma('vm:entry-point')
-void callbackDispatcher() {
-  const MethodChannel _backgroundChannel =
-      MethodChannel('flutter_radar_background');
-  WidgetsFlutterBinding.ensureInitialized();
-
-  _backgroundChannel.setMethodCallHandler((MethodCall call) async {
-    final args = call.arguments;
-    final CallbackHandle handle = CallbackHandle.fromRawHandle(args[0]);
-    final Function? callback = PluginUtilities.getCallbackFromHandle(handle);
-    final Map res = args[1];
-
-    callback?.call(res);
-  });
-}
 
 typedef LocationCallback = void Function(Map<dynamic, dynamic> locationEvent);
 typedef ClientLocationCallback = void Function(
