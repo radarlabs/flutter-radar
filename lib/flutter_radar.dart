@@ -1,6 +1,9 @@
 import 'dart:io' show Platform;
+import 'dart:ui';
 
 import 'package:flutter/services.dart';
+
+import 'src/radar_background.dart';
 
 export 'src/radar_background.dart'
     show RadarBackgroundEvent, RadarBackgroundEventType, RadarBackgroundHandler;
@@ -825,6 +828,47 @@ class Radar {
 
   static offToken() {
     foregroundTokenCallback = null;
+  }
+
+  /// Registers [handler] for background delivery when the primary Flutter
+  /// engine is unavailable.
+  ///
+  /// Replaces any previously registered background handler. [handler] must
+  /// be a top-level or static function annotated with
+  /// `@pragma('vm:entry-point')`.
+  static Future<void> registerBackgroundHandler(
+    RadarBackgroundHandler handler,
+  ) async {
+    final dispatcherHandle = PluginUtilities.getCallbackHandle(
+      radarBackgroundCallbackDispatcher,
+    );
+
+    if (dispatcherHandle == null) {
+      throw StateError(
+        'Could not resolve the Radar background callback dispatcher.',
+      );
+    }
+
+    final callbackHandle = PluginUtilities.getCallbackHandle(handler);
+
+    if (callbackHandle == null) {
+      throw ArgumentError.value(
+        handler,
+        'handler',
+        'Background handler must be a top-level or static function annotated '
+            'with @pragma(\'vm:entry-point\').',
+      );
+    }
+
+    await _channel.invokeMethod<void>('registerBackgroundHandler', {
+      'dispatcherHandle': dispatcherHandle.toRawHandle(),
+      'callbackHandle': callbackHandle.toRawHandle(),
+    });
+  }
+
+  /// Removes the persisted background handler and stops headless delivery.
+  static Future<void> unregisterBackgroundHandler() async {
+    await _channel.invokeMethod<void>('unregisterBackgroundHandler');
   }
 
   static Map<String, dynamic> presetContinuousIOS = {
