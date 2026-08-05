@@ -66,12 +66,13 @@ import io.flutter.embedding.engine.dart.DartExecutor;
 public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, RequestPermissionsResultListener {
 
     private static Activity mActivity;
-    private static Context mContext;
+    private static Context mApplicationContext;
 
     private static final String TAG = "RadarFlutterPlugin";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
-    private static MethodChannel channel;
-    private static RadarMethodCallHandler callHandler;
+
+    private MethodChannel channel;
+    private RadarMethodCallHandler callHandler;
 
     private static final Object lock = new Object();
 
@@ -80,15 +81,24 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        mContext = binding.getApplicationContext();
-        channel = new MethodChannel(binding.getBinaryMessenger(), "flutter_radar");
-        callHandler = new RadarMethodCallHandler();
+        mApplicationContext = binding.getApplicationContext();
+
+        channel = new MethodChannel(
+            binding.getBinaryMessenger(),
+            "flutter_radar"
+        );
+        callHandler = new RadarMethodCallHandler(channel);
         channel.setMethodCallHandler(callHandler);
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        mContext = null;
+        if (channel != null) {
+            channel.setMethodCallHandler(null);
+        }
+
+        channel = null;
+        callHandler = null;
     }
 
     @Override
@@ -128,12 +138,18 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     public static class RadarMethodCallHandler implements MethodCallHandler {
+        private final MethodChannel channel;
+
+        RadarMethodCallHandler(MethodChannel channel) {
+            this.channel = channel;
+        }
+
         @Override
         public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
             try {
                 switch (call.method) {
                     case "initialize":
-                        initialize(call, result);
+                        initialize(call, result, channel);
                         break;
                     case "setLogLevel":
                         setLogLevel(call, result);
@@ -349,14 +365,31 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         }
     }
 
-    private static void initialize(MethodCall call, Result result) {
+    private static void initialize(
+        MethodCall call,
+        Result result,
+        MethodChannel channel
+    ) {
         String publishableKey = call.argument("publishableKey");
         Map<String, Object> options = call.argument("options");
-        SharedPreferences.Editor editor = mContext.getSharedPreferences("RadarSDK", Context.MODE_PRIVATE).edit();
+
+        SharedPreferences.Editor editor = mApplicationContext
+            .getSharedPreferences("RadarSDK", Context.MODE_PRIVATE)
+            .edit();
+
         editor.putString("x_platform_sdk_type", "Flutter");
         editor.putString("x_platform_sdk_version", "3.23.4");
         editor.apply();
-        Radar.initialize(mContext, RadarInitializeOptionsFactory.build(publishableKey, mActivity, options));
+
+        Radar.initialize(
+            mApplicationContext,
+            RadarInitializeOptionsFactory.build(
+                publishableKey,
+                mActivity,
+                options
+            )
+        );
+
         Radar.setReceiver(new RadarFlutterReceiver(channel));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
         result.success(true);
