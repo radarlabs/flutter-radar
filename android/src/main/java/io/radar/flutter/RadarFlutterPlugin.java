@@ -71,10 +71,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static final String TAG = "RadarFlutterPlugin";
     private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
 
+    private static final RadarFlutterEventRouter EVENT_ROUTER =
+    new RadarFlutterEventRouter();
+
     private MethodChannel channel;
     private RadarMethodCallHandler callHandler;
-
-    private static final Object lock = new Object();
+    private RadarFlutterPrimaryEventSink primaryEventSink;
 
     private static final int PERMISSIONS_REQUEST_CODE = 20160525;
     private static Result mPermissionsRequestResult;
@@ -87,16 +89,25 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             binding.getBinaryMessenger(),
             "flutter_radar"
         );
-        callHandler = new RadarMethodCallHandler(channel);
+        primaryEventSink = new RadarFlutterPrimaryEventSink(
+            channel::invokeMethod,
+            RadarFlutterPlugin::runOnMainThread
+        );
+        callHandler = new RadarMethodCallHandler(primaryEventSink);
         channel.setMethodCallHandler(callHandler);
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        if (primaryEventSink != null) {
+            EVENT_ROUTER.clearPrimarySink(primaryEventSink);
+        }
+
         if (channel != null) {
             channel.setMethodCallHandler(null);
         }
 
+        primaryEventSink = null;
         channel = null;
         callHandler = null;
     }
@@ -138,10 +149,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     public static class RadarMethodCallHandler implements MethodCallHandler {
-        private final MethodChannel channel;
+        private final RadarFlutterEventRouter.EventSink primaryEventSink;
 
-        RadarMethodCallHandler(MethodChannel channel) {
-            this.channel = channel;
+        RadarMethodCallHandler(
+            RadarFlutterEventRouter.EventSink primaryEventSink
+        ) {
+            this.primaryEventSink = primaryEventSink;
         }
 
         @Override
@@ -149,7 +162,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             try {
                 switch (call.method) {
                     case "initialize":
-                        initialize(call, result, channel);
+                        initialize(call, result, primaryEventSink);
                         break;
                     case "setLogLevel":
                         setLogLevel(call, result);
@@ -368,7 +381,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static void initialize(
         MethodCall call,
         Result result,
-        MethodChannel channel
+        RadarFlutterEventRouter.EventSink primaryEventSink
     ) {
         String publishableKey = call.argument("publishableKey");
         Map<String, Object> options = call.argument("options");
@@ -390,8 +403,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             )
         );
 
-        Radar.setReceiver(new RadarFlutterReceiver(channel));
-        Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(channel));
+        EVENT_ROUTER.setPrimarySink(primaryEventSink);
+        Radar.setReceiver(new RadarFlutterReceiver(EVENT_ROUTER));
+        Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(EVENT_ROUTER));
         result.success(true);
     }
 
@@ -1680,10 +1694,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static class RadarFlutterReceiver extends RadarReceiver {
 
-        private MethodChannel channel;
+        private final RadarFlutterEventRouter eventRouter;
 
-        RadarFlutterReceiver(MethodChannel channel) {
-            this.channel = channel;
+        RadarFlutterReceiver(RadarFlutterEventRouter eventRouter) {
+            this.eventRouter = eventRouter;
         }
 
         @Override
@@ -1694,17 +1708,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("user", user.toJson());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList<Object> eventsArgs = new ArrayList<>();
-                eventsArgs.add(0);
-                eventsArgs.add(res);
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("events", eventsArgs);
-                        }
-                    });
-                }
+                eventRouter.route("events", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1719,17 +1723,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
                 HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList<Object> locationArgs = new ArrayList<>();
-                locationArgs.add(0);
-                locationArgs.add(res);
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("location", locationArgs);
-                        }
-                    });
-                }
+                eventRouter.route("location", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1745,17 +1739,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
                 HashMap<String, Object> res = mapForJson(obj);
 
-                final ArrayList<Object> clientLocationArgs = new ArrayList<>();
-                clientLocationArgs.add(0);
-                clientLocationArgs.add(res);
-                synchronized(lock){
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("clientLocation", clientLocationArgs);
-                        }
-                    });
-                }
+                eventRouter.route("clientLocation", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1768,17 +1752,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("status", status.toString());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList<Object> errorArgs = new ArrayList<>();
-                errorArgs.add(0);
-                errorArgs.add(res);
-                synchronized(lock){
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("error", errorArgs);
-                        }
-                    });
-                }
+                eventRouter.route("error", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1791,17 +1765,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("message", message);
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList<Object> logArgs = new ArrayList<>();
-                logArgs.add(0);
-                logArgs.add(res);
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("log", logArgs);
-                        }
-                    });
-                }
+                eventRouter.route("log", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1810,10 +1774,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     
     public static class RadarFlutterVerifiedReceiver extends RadarVerifiedReceiver {
 
-        private MethodChannel channel;
+        private final RadarFlutterEventRouter eventRouter;
 
-        RadarFlutterVerifiedReceiver(MethodChannel channel) {
-            this.channel = channel;
+        RadarFlutterVerifiedReceiver(
+            RadarFlutterEventRouter eventRouter
+        ) {
+            this.eventRouter = eventRouter;
         }
 
         @Override
@@ -1824,17 +1790,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("token", token.toJson());
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList<Object> tokenArgs = new ArrayList<>();
-                tokenArgs.add(0);
-                tokenArgs.add(res);
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("token", tokenArgs);
-                        }
-                    });
-                }
+                eventRouter.route("token", res);
                 
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
@@ -1844,17 +1800,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         @Override
         public void onIpChanged(Context context) {
             try {
-                final ArrayList<Object> ipChangedArgs = new ArrayList<>();
-                ipChangedArgs.add(0);
-                ipChangedArgs.add(new HashMap<String, Object>());
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("ipChanged", ipChangedArgs);
-                        }
-                    });
-                }
+                eventRouter.route("ipChanged", new HashMap<>());
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
@@ -1867,17 +1813,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 obj.put("sharing", sharing);
 
                 HashMap<String, Object> res = mapForJson(obj);
-                final ArrayList<Object> sharingArgs = new ArrayList<>();
-                sharingArgs.add(0);
-                sharingArgs.add(res);
-                synchronized(lock) {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            channel.invokeMethod("sharingChanged", sharingArgs);
-                        }
-                    });
-                }
+                eventRouter.route("sharingChanged", res);
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
             }
