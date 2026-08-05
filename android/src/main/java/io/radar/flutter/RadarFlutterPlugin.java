@@ -69,10 +69,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static Context mApplicationContext;
 
     private static final String TAG = "RadarFlutterPlugin";
-    private static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callbackDispatcherHandle";
 
     private static final RadarFlutterEventRouter EVENT_ROUTER =
-    new RadarFlutterEventRouter();
+        new RadarFlutterEventRouter();
 
     private MethodChannel channel;
     private RadarMethodCallHandler callHandler;
@@ -93,7 +92,15 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             channel::invokeMethod,
             RadarFlutterPlugin::runOnMainThread
         );
-        callHandler = new RadarMethodCallHandler(primaryEventSink);
+        RadarFlutterBackgroundHandlerStore backgroundHandlerStore =
+            RadarFlutterBackgroundHandlerStore.fromContext(
+                binding.getApplicationContext()
+            );
+        callHandler = new RadarMethodCallHandler(
+            primaryEventSink,
+            backgroundHandlerStore
+        );
+
         channel.setMethodCallHandler(callHandler);
     }
 
@@ -150,11 +157,14 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static class RadarMethodCallHandler implements MethodCallHandler {
         private final RadarFlutterEventRouter.EventSink primaryEventSink;
+        private final RadarFlutterBackgroundHandlerStore backgroundHandlerStore;
 
         RadarMethodCallHandler(
-            RadarFlutterEventRouter.EventSink primaryEventSink
+            RadarFlutterEventRouter.EventSink primaryEventSink,
+            RadarFlutterBackgroundHandlerStore backgroundHandlerStore
         ) {
             this.primaryEventSink = primaryEventSink;
+            this.backgroundHandlerStore = backgroundHandlerStore;
         }
 
         @Override
@@ -163,6 +173,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 switch (call.method) {
                     case "initialize":
                         initialize(call, result, primaryEventSink);
+                        break;
+                    case "registerBackgroundHandler":
+                        registerBackgroundHandler(
+                            call,
+                            result,
+                            backgroundHandlerStore
+                        );
+                        break;
+                    case "unregisterBackgroundHandler":
+                        unregisterBackgroundHandler(
+                            result,
+                            backgroundHandlerStore
+                        );
                         break;
                     case "setLogLevel":
                         setLogLevel(call, result);
@@ -407,6 +430,44 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Radar.setReceiver(new RadarFlutterReceiver(EVENT_ROUTER));
         Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(EVENT_ROUTER));
         result.success(true);
+    }
+
+    private static void registerBackgroundHandler(
+        MethodCall call,
+        Result result,
+        RadarFlutterBackgroundHandlerStore store
+    ) {
+        Object rawDispatcherHandle = call.argument("dispatcherHandle");
+        Object rawCallbackHandle = call.argument("callbackHandle");
+
+        if (
+            !(rawDispatcherHandle instanceof Number) ||
+            !(rawCallbackHandle instanceof Number)
+        ) {
+            result.error(
+                "invalid_background_handler",
+                "dispatcherHandle and callbackHandle must be integers.",
+                null
+            );
+            return;
+        }
+
+        Number dispatcherHandle = (Number)rawDispatcherHandle;
+        Number callbackHandle = (Number)rawCallbackHandle;
+
+        store.save(
+            dispatcherHandle.longValue(),
+            callbackHandle.longValue()
+        );
+        result.success(null);
+    }
+
+    private static void unregisterBackgroundHandler(
+        Result result,
+        RadarFlutterBackgroundHandlerStore store
+    ) {
+        store.clear();
+        result.success(null);
     }
 
     private static void setNotificationOptions(MethodCall call, Result result) {
