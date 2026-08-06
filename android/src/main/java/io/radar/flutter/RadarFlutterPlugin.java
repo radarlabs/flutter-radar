@@ -146,6 +146,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         handler.post(runnable);
     }
 
+    static void setBackgroundEventSink(
+        RadarFlutterEventRouter.EventSink sink
+    ) {
+        EVENT_ROUTER.setBackgroundSink(sink);
+    }
+
+    static void installReceivers() {
+        Radar.setReceiver(new RadarFlutterReceiver(EVENT_ROUTER));
+        Radar.setVerifiedReceiver(
+            new RadarFlutterVerifiedReceiver(EVENT_ROUTER)
+        );
+    }
+
     @Override
     public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST_CODE && mPermissionsRequestResult != null) {
@@ -427,8 +440,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         );
 
         EVENT_ROUTER.setPrimarySink(primaryEventSink);
-        Radar.setReceiver(new RadarFlutterReceiver(EVENT_ROUTER));
-        Radar.setVerifiedReceiver(new RadarFlutterVerifiedReceiver(EVENT_ROUTER));
+        installReceivers();
         result.success(true);
     }
 

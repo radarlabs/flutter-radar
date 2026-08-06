@@ -184,7 +184,7 @@ final class RadarFlutterBackgroundEngine
         if (engineToDestroy != null) {
             try {
                 engineToDestroy.destroy();
-            } catch (Throwable error) {
+            } catch (Exception error) {
                 errorHandler.report(
                     "Could not destroy the Radar background Flutter engine.",
                     error
