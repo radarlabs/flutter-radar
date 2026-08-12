@@ -6,7 +6,7 @@ import 'api_section.dart';
 import 'console.dart';
 
 const String publishableKey =
-    'prj_test_pk_0000000000000000000000000000000000000000g';
+    'prj_test_pk_0000000000000000000000000000000000000000';
 
 const Map<String, double> _manhattan = {
   'latitude': 40.783826,
@@ -20,30 +20,25 @@ const Map<String, double> _brooklyn = {
 
 void main() => runApp(const MyApp());
 
-// Radar can invoke these from a background isolate, so they must be top-level
-// entry points rather than methods on widget state.
-@pragma('vm:entry-point')
 void _onLocation(Map res) => console.logEvent('onLocation', res);
 
-@pragma('vm:entry-point')
 void _onClientLocation(Map res) => console.logEvent('onClientLocation', res);
 
-@pragma('vm:entry-point')
 void _onError(Map res) => console.logEvent('onError', res);
 
-@pragma('vm:entry-point')
 void _onLog(Map res) => console.logEvent('onLog', res);
 
-@pragma('vm:entry-point')
 void _onEvents(Map res) => console.logEvent('onEvents', res);
 
-@pragma('vm:entry-point')
 void _onToken(Map res) => console.logEvent('onToken', res);
 
-@pragma('vm:entry-point')
 void _onIpChanged() => console.logEvent('onIpChanged', 'IP address changed');
 
 @pragma('vm:entry-point')
+Future<void> _onBackgroundEvent(RadarBackgroundEvent event) async {
+  debugPrint('radar background: ${event.type.name} ${event.payload}');
+}
+
 void _onSharingChanged(bool sharing) =>
     console.logEvent('onSharingChanged', {'sharing': sharing});
 
@@ -133,6 +128,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ipChangeDebounceInterval: const Duration(seconds: 5),
       ),
     );
+    await Radar.registerBackgroundHandler(_onBackgroundEvent);
     await Radar.setUserId('flutter');
     await Radar.setDescription('Flutter');
     await Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});

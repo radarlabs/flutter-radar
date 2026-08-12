@@ -5,17 +5,45 @@ import 'package:flutter_radar/flutter_radar.dart';
 import 'package:flutter_radar/src/radar_background.dart' as background;
 import 'package:flutter_test/flutter_test.dart';
 
+RadarBackgroundEvent? receivedBackgroundEvent;
+
 @pragma('vm:entry-point')
-Future<void> testBackgroundHandler(RadarBackgroundEvent event) async {}
+Future<void> testBackgroundHandler(RadarBackgroundEvent event) async {
+  receivedBackgroundEvent = event;
+}
+
+Future<void> sendClientLocationEvent() async {
+  final callbackHandle =
+      PluginUtilities.getCallbackHandle(testBackgroundHandler)!;
+
+  await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .handlePlatformMessage(
+        'flutter_radar_background',
+        const StandardMethodCodec().encodeMethodCall(
+          MethodCall('clientLocation', {
+            'callbackHandle': callbackHandle.toRawHandle(),
+            'payload': {
+              'location': {'latitude': 47.0, 'longitude': -122.0},
+              'stopped': false,
+              'source': 'background',
+            },
+          }),
+        ),
+        null,
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const channel = MethodChannel('flutter_radar');
   MethodCall? receivedCall;
+  const backgroundChannel = MethodChannel('flutter_radar_background');
 
   setUp(() {
     receivedCall = null;
+    receivedBackgroundEvent = null;
+
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           receivedCall = call;
@@ -26,6 +54,7 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
+    backgroundChannel.setMethodCallHandler(null);
   });
 
   group('Radar.registerBackgroundHandler', () {
@@ -86,6 +115,22 @@ void main() {
         ),
       );
     });
+
+    test('receives durable events on the primary isolate', () async {
+      await Radar.registerBackgroundHandler(testBackgroundHandler);
+
+      await sendClientLocationEvent();
+
+      expect(
+        receivedBackgroundEvent?.type,
+        RadarBackgroundEventType.clientLocation,
+      );
+      expect(receivedBackgroundEvent?.payload, {
+        'location': {'latitude': 47.0, 'longitude': -122.0},
+        'stopped': false,
+        'source': 'background',
+      });
+    });
   });
 
   group('Radar.unregisterBackgroundHandler', () {
@@ -95,5 +140,47 @@ void main() {
       expect(receivedCall?.method, 'unregisterBackgroundHandler');
       expect(receivedCall?.arguments, isNull);
     });
+
+    test('stops primary-isolate delivery after unregistration', () async {
+      await Radar.registerBackgroundHandler(testBackgroundHandler);
+      await Radar.unregisterBackgroundHandler();
+
+      await sendClientLocationEvent();
+
+      expect(receivedBackgroundEvent, isNull);
+    });
+
+    test(
+      'keeps primary-isolate delivery when native unregistration fails',
+      () async {
+        await Radar.registerBackgroundHandler(testBackgroundHandler);
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              throw PlatformException(
+                code: 'unregistration_failed',
+                message: 'Could not remove callback handles.',
+              );
+            });
+
+        await expectLater(
+          Radar.unregisterBackgroundHandler(),
+          throwsA(
+            isA<PlatformException>().having(
+              (error) => error.code,
+              'code',
+              'unregistration_failed',
+            ),
+          ),
+        );
+
+        await sendClientLocationEvent();
+
+        expect(
+          receivedBackgroundEvent?.type,
+          RadarBackgroundEventType.clientLocation,
+        );
+      },
+    );
   });
 }

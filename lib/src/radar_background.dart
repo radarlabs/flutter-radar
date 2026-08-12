@@ -36,8 +36,16 @@ const MethodChannel _backgroundChannel = MethodChannel(
 void radarBackgroundCallbackDispatcher() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  _backgroundChannel.setMethodCallHandler(handleRadarBackgroundMethodCall);
+  installRadarBackgroundMethodCallHandler();
   unawaited(_backgroundChannel.invokeMethod<void>('initialized'));
+}
+
+void installRadarBackgroundMethodCallHandler() {
+  _backgroundChannel.setMethodCallHandler(handleRadarBackgroundMethodCall);
+}
+
+void removeRadarBackgroundMethodCallHandler() {
+  _backgroundChannel.setMethodCallHandler(null);
 }
 
 Future<void> handleRadarBackgroundMethodCall(
