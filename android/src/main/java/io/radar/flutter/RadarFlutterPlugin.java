@@ -75,7 +75,10 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     private MethodChannel channel;
     private RadarMethodCallHandler callHandler;
-    private RadarFlutterPrimaryEventSink primaryEventSink;
+    private RadarFlutterObserverEventSink observerEventSink;
+    private RadarFlutterBackgroundEventSink primaryDurableEventSink;
+    private RadarFlutterPrimaryDurableEventDispatcher
+    primaryDurableEventDispatcher;
 
     private static final int PERMISSIONS_REQUEST_CODE = 20160525;
     private static Result mPermissionsRequestResult;
@@ -88,7 +91,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             binding.getBinaryMessenger(),
             "flutter_radar"
         );
-        primaryEventSink = new RadarFlutterPrimaryEventSink(
+        observerEventSink = new RadarFlutterObserverEventSink(
             channel::invokeMethod,
             RadarFlutterPlugin::runOnMainThread
         );
@@ -96,9 +99,61 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             RadarFlutterBackgroundHandlerStore.fromContext(
                 binding.getApplicationContext()
             );
+        
+        MethodChannel backgroundChannel = new MethodChannel(
+            binding.getBinaryMessenger(),
+            "flutter_radar_background"
+        );
+
+        primaryDurableEventDispatcher =
+            new RadarFlutterPrimaryDurableEventDispatcher(
+                RadarFlutterPlugin::runOnMainThread,
+                (method, arguments, completion) ->
+                    backgroundChannel.invokeMethod(
+                    method,
+                    arguments,
+                    new Result() {
+                        @Override
+                        public void success(Object result) {
+                            completion.run();
+                        }
+                        
+                        @Override
+                        public void error(
+                            String errorCode,
+                            String errorMessage,
+                            Object errorDetails
+                        ) {
+                            Log.e(
+                                TAG,
+                                "Could not deliver a Radar durable event: " +
+                                    errorCode + ": " + errorMessage
+                            );
+                            completion.run();
+                        }
+
+                        @Override
+                        public void notImplemented() {
+                            Log.e(
+                                TAG,
+                                "Radar durable event handler was not implemented."
+                            );
+                            completion.run();
+                        }
+                    }
+                )
+            );
+
+        primaryDurableEventSink = new RadarFlutterBackgroundEventSink(
+            backgroundHandlerStore,
+            primaryDurableEventDispatcher
+        );
+
         callHandler = new RadarMethodCallHandler(
-            primaryEventSink,
-            backgroundHandlerStore
+            observerEventSink,
+            primaryDurableEventSink,
+            backgroundHandlerStore,
+            EVENT_ROUTER
         );
 
         channel.setMethodCallHandler(callHandler);
@@ -106,17 +161,24 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        if (primaryEventSink != null) {
-            EVENT_ROUTER.clearPrimarySink(primaryEventSink);
+        if (observerEventSink != null) {
+            EVENT_ROUTER.clearObserverSink(observerEventSink);
+        }
+
+        if (primaryDurableEventSink != null) {
+            EVENT_ROUTER.clearPrimarySink(primaryDurableEventSink);
+            primaryDurableEventSink.clearPendingEvents();
         }
 
         if (channel != null) {
             channel.setMethodCallHandler(null);
         }
 
-        primaryEventSink = null;
+        observerEventSink = null;
         channel = null;
         callHandler = null;
+        primaryDurableEventSink = null;
+        primaryDurableEventDispatcher = null;
     }
 
     @Override
@@ -169,15 +231,21 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     public static class RadarMethodCallHandler implements MethodCallHandler {
-        private final RadarFlutterEventRouter.EventSink primaryEventSink;
+        private final RadarFlutterEventRouter.EventSink observerEventSink;
+        private final RadarFlutterEventRouter.EventSink primaryDurableEventSink;
         private final RadarFlutterBackgroundHandlerStore backgroundHandlerStore;
+        private final RadarFlutterEventRouter eventRouter;
 
         RadarMethodCallHandler(
-            RadarFlutterEventRouter.EventSink primaryEventSink,
-            RadarFlutterBackgroundHandlerStore backgroundHandlerStore
+            RadarFlutterEventRouter.EventSink observerEventSink,
+            RadarFlutterEventRouter.EventSink primaryDurableEventSink,
+            RadarFlutterBackgroundHandlerStore backgroundHandlerStore,
+            RadarFlutterEventRouter eventRouter
         ) {
-            this.primaryEventSink = primaryEventSink;
+            this.observerEventSink = observerEventSink;
+            this.primaryDurableEventSink = primaryDurableEventSink;
             this.backgroundHandlerStore = backgroundHandlerStore;
+            this.eventRouter = eventRouter;
         }
 
         @Override
@@ -185,19 +253,23 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             try {
                 switch (call.method) {
                     case "initialize":
-                        initialize(call, result, primaryEventSink);
+                        initialize(call, result, observerEventSink, eventRouter);
                         break;
                     case "registerBackgroundHandler":
                         registerBackgroundHandler(
                             call,
                             result,
-                            backgroundHandlerStore
+                            backgroundHandlerStore,
+                            primaryDurableEventSink,
+                            eventRouter
                         );
                         break;
                     case "unregisterBackgroundHandler":
                         unregisterBackgroundHandler(
                             result,
-                            backgroundHandlerStore
+                            backgroundHandlerStore,
+                            primaryDurableEventSink,
+                            eventRouter
                         );
                         break;
                     case "setLogLevel":
@@ -417,7 +489,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static void initialize(
         MethodCall call,
         Result result,
-        RadarFlutterEventRouter.EventSink primaryEventSink
+        RadarFlutterEventRouter.EventSink observerEventSink,
+        RadarFlutterEventRouter eventRouter
     ) {
         String publishableKey = call.argument("publishableKey");
         Map<String, Object> options = call.argument("options");
@@ -439,7 +512,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             )
         );
 
-        EVENT_ROUTER.setPrimarySink(primaryEventSink);
+        eventRouter.setObserverSink(observerEventSink);
         installReceivers();
         result.success(true);
     }
@@ -447,7 +520,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static void registerBackgroundHandler(
         MethodCall call,
         Result result,
-        RadarFlutterBackgroundHandlerStore store
+        RadarFlutterBackgroundHandlerStore store,
+        RadarFlutterEventRouter.EventSink primaryDurableEventSink,
+        RadarFlutterEventRouter eventRouter
     ) {
         Object rawDispatcherHandle = call.argument("dispatcherHandle");
         Object rawCallbackHandle = call.argument("callbackHandle");
@@ -471,14 +546,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             dispatcherHandle.longValue(),
             callbackHandle.longValue()
         );
+        eventRouter.setPrimarySink(primaryDurableEventSink);
         result.success(null);
     }
 
     private static void unregisterBackgroundHandler(
         Result result,
-        RadarFlutterBackgroundHandlerStore store
+        RadarFlutterBackgroundHandlerStore store,
+        RadarFlutterEventRouter.EventSink primaryDurableEventSink,
+        RadarFlutterEventRouter eventRouter
     ) {
         store.clear();
+        eventRouter.clearPendingEvents();
+        eventRouter.clearPrimarySink(primaryDurableEventSink);
         result.success(null);
     }
 

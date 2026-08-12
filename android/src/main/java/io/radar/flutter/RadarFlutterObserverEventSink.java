@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-final class RadarFlutterPrimaryEventSink
+final class RadarFlutterObserverEventSink
     implements RadarFlutterEventRouter.EventSink {
 
     interface MethodInvoker {
@@ -14,7 +14,7 @@ final class RadarFlutterPrimaryEventSink
     private final MethodInvoker methodInvoker;
     private final Executor mainThreadExecutor;
 
-    RadarFlutterPrimaryEventSink(
+    RadarFlutterObserverEventSink(
         MethodInvoker methodInvoker,
         Executor mainThreadExecutor
     ) {

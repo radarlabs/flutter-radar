@@ -13,17 +13,17 @@ import java.util.Queue;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RadarFlutterPrimaryEventSinkTest {
+public class RadarFlutterObserverEventSinkTest {
     private RecordingMethodInvoker methodInvoker;
     private QueuedExecutor mainThreadExecutor;
-    private RadarFlutterPrimaryEventSink sink;
+    private RadarFlutterObserverEventSink sink;
     private Map<String, Object> payload;
 
     @Before
     public void setUp() {
         methodInvoker = new RecordingMethodInvoker();
         mainThreadExecutor = new QueuedExecutor();
-        sink = new RadarFlutterPrimaryEventSink(
+        sink = new RadarFlutterObserverEventSink(
             methodInvoker,
             mainThreadExecutor
         );
@@ -61,7 +61,7 @@ public class RadarFlutterPrimaryEventSinkTest {
     }
 
     private static final class RecordingMethodInvoker
-        implements RadarFlutterPrimaryEventSink.MethodInvoker {
+        implements RadarFlutterObserverEventSink.MethodInvoker {
 
         private int invocationCount;
         private String method;

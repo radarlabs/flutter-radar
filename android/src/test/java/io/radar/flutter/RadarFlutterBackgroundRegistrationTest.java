@@ -1,5 +1,6 @@
 package io.radar.flutter;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -23,12 +24,20 @@ public class RadarFlutterBackgroundRegistrationTest {
     private SharedPreferences.Editor editor;
     private MethodChannel.Result result;
     private RadarFlutterPlugin.RadarMethodCallHandler handler;
+    private RadarFlutterEventRouter router;
+    private RadarFlutterEventRouter.EventSink primaryDurableSink;
+    private RadarFlutterEventRouter.EventSink backgroundSink;
 
     @Before
     public void setUp() {
         preferences = mock(SharedPreferences.class);
         editor = mock(SharedPreferences.Editor.class);
         result = mock(MethodChannel.Result.class);
+
+        router = new RadarFlutterEventRouter();
+        primaryDurableSink = mock(RadarFlutterEventRouter.EventSink.class);
+        backgroundSink = mock(RadarFlutterEventRouter.EventSink.class);
+        router.setBackgroundSink(backgroundSink);
 
         when(preferences.edit()).thenReturn(editor);
         when(editor.putLong(anyString(), anyLong())).thenReturn(editor);
@@ -39,7 +48,9 @@ public class RadarFlutterBackgroundRegistrationTest {
 
         handler = new RadarFlutterPlugin.RadarMethodCallHandler(
             (method, payload) -> {},
-            store
+            primaryDurableSink,
+            store,
+            router
         );
     }
 
@@ -58,6 +69,25 @@ public class RadarFlutterBackgroundRegistrationTest {
         verify(editor).putLong("callback_handle", 456L);
         verify(editor).apply();
         verify(result).success(null);
+    }
+
+    @Test
+    public void registrationMarksPrimaryDurableSinkReady() {
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("dispatcherHandle", 123L);
+        arguments.put("callbackHandle", 456L);
+
+        handler.onMethodCall(
+            new MethodCall("registerBackgroundHandler", arguments),
+            result
+        );
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", "test-location");
+        router.route("location", payload);
+
+        verify(primaryDurableSink).send("location", payload);
+        verify(backgroundSink, never()).send(anyString(), any());
     }
 
     @Test
@@ -120,5 +150,49 @@ public class RadarFlutterBackgroundRegistrationTest {
             null
         );
         verify(preferences, never()).edit();
+    }
+
+    @Test
+    public void unregistrationDetachesPrimaryDurableSink() {
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("dispatcherHandle", 123L);
+        arguments.put("callbackHandle", 456L);
+
+        handler.onMethodCall(
+            new MethodCall("registerBackgroundHandler", arguments),
+            result
+        );
+
+        handler.onMethodCall(
+            new MethodCall("unregisterBackgroundHandler", null),
+            result
+        );
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", "test-location");
+        router.route("location", payload);
+
+        verify(primaryDurableSink, never()).send(anyString(), any());
+        verify(backgroundSink).send("location", payload);
+    }
+
+    @Test
+    public void unregistrationClearsPendingDurableEvents() {
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("dispatcherHandle", 123L);
+        arguments.put("callbackHandle", 456L);
+
+        handler.onMethodCall(
+            new MethodCall("registerBackgroundHandler", arguments),
+            result
+        );
+
+        handler.onMethodCall(
+            new MethodCall("unregisterBackgroundHandler", null),
+            result
+        );
+
+        verify(primaryDurableSink).clearPendingEvents();
+        verify(backgroundSink).clearPendingEvents();
     }
 }

@@ -11,6 +11,7 @@ import org.junit.Test;
 
 public class RadarFlutterEventRouterTest {
     private RadarFlutterEventRouter router;
+    private RecordingSink observerSink;
     private RecordingSink primarySink;
     private RecordingSink backgroundSink;
     private Map<String, Object> payload;
@@ -18,11 +19,36 @@ public class RadarFlutterEventRouterTest {
     @Before
     public void setUp() {
         router = new RadarFlutterEventRouter();
+        observerSink = new RecordingSink();
         primarySink = new RecordingSink();
         backgroundSink = new RecordingSink();
 
         payload = new HashMap<>();
         payload.put("sharing", true);
+    }
+
+    @Test
+    public void routesToObserverAndPrimaryDurableSink() {
+        router.setObserverSink(observerSink);
+        router.setPrimarySink(primarySink);
+        router.setBackgroundSink(backgroundSink);
+
+        router.route("sharingChanged", payload);
+
+        assertDelivery(observerSink);
+        assertDelivery(primarySink);
+        assertEquals(0, backgroundSink.deliveryCount);
+    }
+
+    @Test
+    public void routesToObserverAndBackgroundSinkWhenPrimaryIsMissing() {
+        router.setObserverSink(observerSink);
+        router.setBackgroundSink(backgroundSink);
+
+        router.route("sharingChanged", payload);
+
+        assertDelivery(observerSink);
+        assertDelivery(backgroundSink);
     }
 
     @Test

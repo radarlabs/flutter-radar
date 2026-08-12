@@ -12,6 +12,8 @@ final class RadarFlutterBackgroundEventSink
             String method,
             Map<String, Object> arguments
         );
+
+        default void clearPendingEvents() {}
     }
 
     private final RadarFlutterBackgroundHandlerStore store;
@@ -42,5 +44,10 @@ final class RadarFlutterBackgroundEventSink
             method,
             arguments
         );
+    }
+
+    @Override
+    public void clearPendingEvents() {
+        dispatcher.clearPendingEvents();
     }
 }

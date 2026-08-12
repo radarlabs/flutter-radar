@@ -192,4 +192,9 @@ final class RadarFlutterBackgroundEngine
             }
         }
     }
+
+    @Override
+    public void clearPendingEvents() {
+        stop();
+    }
 }
