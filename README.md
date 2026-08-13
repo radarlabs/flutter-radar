@@ -42,7 +42,7 @@ Future<void> initializeRadar() async {
 
 Call `Radar.registerBackgroundHandler()` during normal Dart application initialization. No custom Android `Application` or iOS `AppDelegate` setup is required.
 
-The durable background handler and existing `Radar.onX` listeners are independent subscriptions:
+The durable background handler and `Radar.onX` listeners are independent subscriptions:
 
 - The registered background handler is the durable event sink and can run in the primary Flutter engine or a headless engine.
 - `Radar.onX` listeners are engine-scoped observers intended for active application or UI behavior.
