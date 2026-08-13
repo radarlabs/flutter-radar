@@ -4,24 +4,53 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+/// The Radar callback represented by a [RadarBackgroundEvent].
 enum RadarBackgroundEventType {
+  /// A location update corresponding to `Radar.onLocation`.
   location,
+
+  /// A client location update corresponding to `Radar.onClientLocation`.
   clientLocation,
+
+  /// An events update corresponding to `Radar.onEvents`.
   events,
+
+  /// An SDK error corresponding to `Radar.onError`.
   error,
+
+  /// An SDK log message corresponding to `Radar.onLog`.
   log,
+
+  /// A verified-location token corresponding to `Radar.onToken`.
   token,
+
+  /// An IP address change corresponding to `Radar.onIpChanged`.
   ipChanged,
+
+  /// A location-sharing change corresponding to `Radar.onSharingChanged`.
   sharingChanged,
 }
 
+/// An event delivered to the durable Radar background handler.
+///
+/// The [payload] uses the same map shape as the corresponding `Radar.onX`
+/// listener. For [RadarBackgroundEventType.ipChanged], the payload is empty.
+/// For [RadarBackgroundEventType.sharingChanged], it contains a `sharing`
+/// boolean.
 final class RadarBackgroundEvent {
   const RadarBackgroundEvent({required this.type, required this.payload});
 
+  /// Identifies the Radar callback that produced this event.
   final RadarBackgroundEventType type;
+
+  /// The event data supplied by the native Radar SDK.
   final Map<String, dynamic> payload;
 }
 
+/// A durable Radar event handler that can run in a primary or headless isolate.
+///
+/// Implementations must be top-level or static functions annotated with
+/// `@pragma('vm:entry-point')`.
 typedef RadarBackgroundHandler =
     Future<void> Function(RadarBackgroundEvent event);
 
