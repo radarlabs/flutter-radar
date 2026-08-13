@@ -14,6 +14,17 @@ typedef void (^RadarFlutterEventCompletion)(void);
 
 @end
 
+/**
+ * Serializes durable Radar events across iOS process and Flutter engine
+ * lifecycle transitions.
+ *
+ * Events are retained while Flutter's implicit engine is unavailable or its
+ * durable handler has not registered. Once a primary sink is ready, events are
+ * delivered one at a time and the next event waits for completion.
+ *
+ * This routing and queueing policy is Radar-specific; the callback-handle and
+ * dispatcher mechanism follows Flutter's background-plugin pattern.
+ */
 @interface RadarFlutterEventCoordinator : NSObject
 
 - (instancetype)init NS_UNAVAILABLE;

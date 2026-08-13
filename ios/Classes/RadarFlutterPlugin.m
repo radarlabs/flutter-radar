@@ -25,11 +25,24 @@
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 @property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
 @property (strong, nonatomic) CLLocationManager *locationManager;
-@property (strong, nonatomic) FlutterEngine *sBackgroundFlutterEngine;
 @property (strong, nonatomic) FlutterResult permissionsRequestResult;
 
 @end
 
+/**
+ * Returns the process-wide bridge between Radar delegate callbacks and Flutter.
+ *
+ * iOS can relaunch the application to deliver Core Location events. Those
+ * events may arrive before Flutter's implicit engine has registered this
+ * plugin, so the coordinator must outlive individual plugin instances and
+ * queue durable events until a registered Dart sink is available.
+ *
+ * This follows Flutter's documented background-plugin model of persisting a
+ * top-level callback handle and using a callback dispatcher after an
+ * OS-initiated location relaunch:
+ * https://docs.flutter.dev/packages-and-plugins/background-processes
+ * https://blog.flutter.dev/executing-dart-in-the-background-with-flutter-plugins-and-geofencing-2b3e40a1a124
+ */
 static RadarFlutterEventCoordinator *
 RadarFlutterSharedEventCoordinator(void) {
     static RadarFlutterEventCoordinator *coordinator;

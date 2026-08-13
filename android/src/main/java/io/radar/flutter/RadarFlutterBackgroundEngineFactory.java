@@ -11,6 +11,20 @@ import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.view.FlutterCallbackInformation;
 
+/**
+ * Creates the secondary Flutter engine used when Radar receives an event
+ * without an available primary Flutter isolate.
+ *
+ * This follows Flutter's documented callback-dispatcher pattern for background
+ * plugins: persist a top-level Dart callback handle, resolve it natively, start
+ * it in a new FlutterEngine, and wait for Dart to signal readiness before
+ * delivering queued events.
+ *
+ * @see <a href="https://docs.flutter.dev/packages-and-plugins/background-processes">
+ *     Flutter background processes</a>
+ * @see <a href="https://blog.flutter.dev/executing-dart-in-the-background-with-flutter-plugins-and-geofencing-2b3e40a1a124">
+ *     Executing Dart in the Background with Flutter Plugins and Geofencing</a>
+ */
 final class RadarFlutterBackgroundEngineFactory
     implements RadarFlutterBackgroundEngine.EngineFactory {
 

@@ -9,6 +9,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+/**
+ * Installs Radar's process-wide receivers before Application.onCreate() so
+ * background events do not require a customer-defined Application subclass.
+ *
+ * Only lightweight wiring occurs here. The Flutter engine remains lazy and is
+ * created only when an event requires headless Dart delivery.
+ *
+ * @see <a href="https://developer.android.com/topic/libraries/app-startup">
+ *     Android App Startup</a>
+ */
 public final class RadarFlutterInitializationProvider
     extends ContentProvider {
 

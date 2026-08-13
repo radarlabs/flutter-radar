@@ -5,6 +5,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 
+/**
+ * Owns the lifecycle and delivery queue for Radar's headless Flutter engine.
+ *
+ * Engine creation is lazy. Events wait until the background Dart dispatcher
+ * reports that its MethodChannel is ready, then execute serially. This class
+ * is the Radar-specific lifecycle layer around Flutter's background-engine
+ * pattern.
+ */
 final class RadarFlutterBackgroundEngine
     implements RadarFlutterBackgroundEventSink.Dispatcher {
 
