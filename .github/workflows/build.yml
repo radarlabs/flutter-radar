@@ -35,6 +35,9 @@ jobs:
       # Flutter's Gradle migration and would fail pub's clean-git-state check.
       - run: dart pub publish --dry-run
       - run: flutter test
+      - name: Install example dependencies
+        working-directory: example
+        run: flutter pub get
       - name: Run Android unit tests
         working-directory: example/android
         run: ./gradlew :flutter_radar:testDebugUnitTest
