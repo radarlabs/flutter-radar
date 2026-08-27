@@ -1,3 +1,7 @@
+# 4.0.0-beta.2
+
+- Updates Android compilation to allow applications to call Radar SDK APIs from native code.
+
 # 4.0.0-beta.1
 
 - Raises the minimum supported versions to Flutter 3.29.0 and Dart 3.7.0.
