@@ -1,3 +1,16 @@
+# 4.0.0-beta.2
+
+- Updates Android compilation to allow applications to call Radar SDK APIs from native code.
+
+# 4.0.0-beta.1
+
+- Raises the minimum supported versions to Flutter 3.29.0 and Dart 3.7.0.
+- Adds durable Radar event delivery across foreground, background, and headless execution on Android and iOS.
+- Adds `Radar.registerBackgroundHandler()` and `Radar.unregisterBackgroundHandler()`.
+- Keeps existing `Radar.onX` listeners as independent engine-scoped observers.
+- Removes the need for custom Radar initialization in the Android `Application` or iOS `AppDelegate`; applications continue to call `Radar.initialize()` from Dart.
+- Exposes additional Radar SDK methods and initialization options.
+- Updates the Android build toolchain to Gradle 8.14, Android Gradle Plugin 8.11.1, and Kotlin 2.2.20.
 
 # 3.23.4
 - Updates iOS and Android sdk to 3.23.4 and 3.23.5, respectively

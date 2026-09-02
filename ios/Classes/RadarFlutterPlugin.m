@@ -1,16 +1,61 @@
 #import "RadarFlutterPlugin.h"
+#import "RadarFlutterBackgroundHandlerStore.h"
+#import "RadarFlutterEventCoordinator.h"
 
 @import RadarSDK;
 
-@interface RadarFlutterPlugin() <RadarDelegate, RadarVerifiedDelegate>
+@interface RadarFlutterPlugin() <RadarDelegate, RadarVerifiedDelegate, RadarFlutterEventSink>
+
+@property(strong, nonatomic)
+    RadarFlutterBackgroundHandlerStore *backgroundHandlerStore;
+@property(strong, nonatomic)
+    RadarFlutterEventCoordinator *eventCoordinator;
+
+- (instancetype)initWithBackgroundHandlerStore:
+    (RadarFlutterBackgroundHandlerStore *)backgroundHandlerStore;
+
+- (instancetype)initWithBackgroundHandlerStore:
+                    (RadarFlutterBackgroundHandlerStore *)backgroundHandlerStore
+                              eventCoordinator:
+                    (RadarFlutterEventCoordinator *)eventCoordinator;
+
+- (void)deliverEventMethod:(NSString *)method
+                   payload:(NSDictionary *)payload;
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 @property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
 @property (strong, nonatomic) CLLocationManager *locationManager;
-@property (strong, nonatomic) FlutterEngine *sBackgroundFlutterEngine;
 @property (strong, nonatomic) FlutterResult permissionsRequestResult;
 
 @end
+
+/**
+ * Returns the process-wide bridge between Radar delegate callbacks and Flutter.
+ *
+ * iOS can relaunch the application to deliver Core Location events. Those
+ * events may arrive before Flutter's implicit engine has registered this
+ * plugin, so the coordinator must outlive individual plugin instances and
+ * queue durable events until a registered Dart sink is available.
+ *
+ * This follows Flutter's documented background-plugin model of persisting a
+ * top-level callback handle and using a callback dispatcher after an
+ * OS-initiated location relaunch:
+ * https://docs.flutter.dev/packages-and-plugins/background-processes
+ * https://blog.flutter.dev/executing-dart-in-the-background-with-flutter-plugins-and-geofencing-2b3e40a1a124
+ */
+static RadarFlutterEventCoordinator *
+RadarFlutterSharedEventCoordinator(void) {
+    static RadarFlutterEventCoordinator *coordinator;
+    static dispatch_once_t onceToken;
+
+    dispatch_once(&onceToken, ^{
+        coordinator = [[RadarFlutterEventCoordinator alloc]
+            initWithBackgroundHandlerStore:
+                [RadarFlutterBackgroundHandlerStore defaultStore]];
+    });
+
+    return coordinator;
+}
 
 @implementation RadarFlutterPlugin
 
@@ -19,18 +64,57 @@
 
     FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"flutter_radar" binaryMessenger:[registrar messenger]];
     instance.channel = channel;
+    FlutterMethodChannel *backgroundChannel =
+        [FlutterMethodChannel
+            methodChannelWithName:@"flutter_radar_background"
+              binaryMessenger:[registrar messenger]];
+    instance.backgroundChannel = backgroundChannel;
     [registrar addMethodCallDelegate:instance channel:channel];
+    [registrar publish:instance];
+}
+
+- (void)detachFromEngineForRegistrar:
+    (__unused NSObject<FlutterPluginRegistrar> *)registrar {
+    [self.eventCoordinator clearPrimarySink:self];
+    self.channel = nil;
+    self.backgroundChannel = nil;
 }
 
 - (instancetype)init {
+    return [self
+        initWithBackgroundHandlerStore:
+            [RadarFlutterBackgroundHandlerStore defaultStore]
+        eventCoordinator:RadarFlutterSharedEventCoordinator()];
+}
+
+- (instancetype)initWithBackgroundHandlerStore:
+    (RadarFlutterBackgroundHandlerStore *)backgroundHandlerStore {
+    RadarFlutterEventCoordinator *eventCoordinator =
+        [[RadarFlutterEventCoordinator alloc]
+            initWithBackgroundHandlerStore:backgroundHandlerStore];
+
+    return [self
+        initWithBackgroundHandlerStore:backgroundHandlerStore
+        eventCoordinator:eventCoordinator];
+}
+
+- (instancetype)initWithBackgroundHandlerStore:
+                    (RadarFlutterBackgroundHandlerStore *)backgroundHandlerStore
+                              eventCoordinator:
+                    (RadarFlutterEventCoordinator *)eventCoordinator {
     self = [super init];
     if (!self) {
         return nil;
     }
+
+    self.backgroundHandlerStore = backgroundHandlerStore;
+    self.eventCoordinator = eventCoordinator;
     self.locationManager = [CLLocationManager new];
     self.locationManager.delegate = self;
+
     [Radar setDelegate:self];
     [Radar setVerifiedDelegate:self];
+
     return self;
 }
 
@@ -44,6 +128,10 @@
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     if ([@"initialize" isEqualToString:call.method]) {
         [self initialize:call withResult:result];
+    } else if ([@"registerBackgroundHandler" isEqualToString:call.method]) {
+        [self registerBackgroundHandler:call withResult:result];
+    } else if ([@"unregisterBackgroundHandler" isEqualToString:call.method]) {
+        [self unregisterBackgroundHandler:result];
     } else if ([@"setLogLevel" isEqualToString:call.method]) {
         [self setLogLevel:call withResult:result];
     } else if ([@"getPermissionsStatus" isEqualToString:call.method]) {
@@ -190,7 +278,7 @@
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"3.23.4" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"4.0.0-beta.2" forKey:@"radar-xPlatformSDKVersion"];
 
     NSDictionary *optionsDict = argsDict[@"options"];
     if (optionsDict) {
@@ -219,6 +307,74 @@
     }
 
     result(nil);
+}
+
+- (void)registerBackgroundHandler:(FlutterMethodCall *)call
+                       withResult:(FlutterResult)result {
+    if (![call.arguments isKindOfClass:NSDictionary.class]) {
+        result([FlutterError
+            errorWithCode:@"invalid_background_handler"
+                  message:
+                      @"dispatcherHandle and callbackHandle must be integers."
+                  details:nil]);
+        return;
+    }
+
+    NSDictionary *arguments = call.arguments;
+    id dispatcherHandle = arguments[@"dispatcherHandle"];
+    id callbackHandle = arguments[@"callbackHandle"];
+
+    if (![dispatcherHandle isKindOfClass:NSNumber.class] ||
+        ![callbackHandle isKindOfClass:NSNumber.class]) {
+        result([FlutterError
+            errorWithCode:@"invalid_background_handler"
+                  message:
+                      @"dispatcherHandle and callbackHandle must be integers."
+                  details:nil]);
+        return;
+    }
+
+    [self.backgroundHandlerStore
+        saveDispatcherHandle:[dispatcherHandle longLongValue]
+               callbackHandle:[callbackHandle longLongValue]];
+
+    [self.eventCoordinator setPrimarySink:self];
+
+    result(nil);
+}
+
+- (void)unregisterBackgroundHandler:(FlutterResult)result {
+    [self.backgroundHandlerStore clear];
+    [self.eventCoordinator clearPrimarySink:self];
+    [self.eventCoordinator clearPendingEvents];
+    result(nil);
+}
+
+- (void)sendMethod:(NSString *)method
+         arguments:(NSDictionary *)arguments
+        completion:(RadarFlutterEventCompletion)completion {
+    FlutterMethodChannel *backgroundChannel = self.backgroundChannel;
+
+    if (backgroundChannel == nil) {
+        completion();
+        return;
+    }
+
+    [backgroundChannel
+        invokeMethod:method
+           arguments:arguments
+              result:^(__unused id result) {
+                  completion();
+              }];
+}
+
+- (void)deliverEventMethod:(NSString *)method
+                   payload:(NSDictionary *)payload {
+    [self.eventCoordinator routeMethod:method payload:payload];
+
+    if (self.channel != nil) {
+        [self.channel invokeMethod:method arguments:@[@0, payload]];
+    }
 }
 
 - (void)setLogLevel:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1186,65 +1342,46 @@
 
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"events" arguments:args];
-    }
+
+    [self deliverEventMethod:@"events" payload:dict];    
 }
 
 - (void)didUpdateLocation:(CLLocation *)location user:(RadarUser *)user {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"user": [user dictionaryValue]};
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"location" arguments:args];
-    }
+    
+    [self deliverEventMethod:@"location" payload:dict];
 }
 
 - (void)didUpdateClientLocation:(CLLocation *)location stopped:(BOOL)stopped source:(RadarLocationSource)source {
     NSDictionary *dict = @{@"location": [Radar dictionaryForLocation:location], @"stopped": @(stopped), @"source": [Radar stringForLocationSource:source]};
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"clientLocation" arguments:args];
-    }
+
+    [self deliverEventMethod:@"clientLocation" payload:dict];
 }
 
 - (void)didFailWithStatus:(RadarStatus)status {
     NSDictionary *dict = @{@"status": [Radar stringForStatus:status]};
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"error" arguments:args];
-    }
+    [self deliverEventMethod:@"error" payload:dict];
 }
 
 - (void)didLogMessage:(NSString *)message {
-    NSDictionary *dict = @{@"message": message};    
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"log" arguments:args];
-    }
+    NSDictionary *dict = @{@"message": message};
+ 
+    [self deliverEventMethod:@"log" payload:dict];
 }
 
 - (void)didUpdateToken:(RadarVerifiedLocationToken *)token {
     NSDictionary *dict = @{@"token": [token dictionaryValue]};    
-    NSArray* args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"token" arguments:args];
-    }
+
+    [self deliverEventMethod:@"token" payload:dict];   
 }
 
 - (void)didChangeIP {
-    NSArray *args = @[@0, @{}];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"ipChanged" arguments:args];
-    }
+    [self deliverEventMethod:@"ipChanged" payload:@{}];
 }
 
 - (void)didChangeSharing:(BOOL)sharing {
     NSDictionary *dict = @{@"sharing": @(sharing)};
-    NSArray *args = @[@0, dict];
-    if (self.channel != nil) {
-        [self.channel invokeMethod:@"sharingChanged" arguments:args];
-    }
+    [self deliverEventMethod:@"sharingChanged" payload:dict];
 }
 
 - (void)setProduct:(FlutterMethodCall *)call withResult:(FlutterResult)result {

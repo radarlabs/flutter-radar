@@ -8,8 +8,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.0'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
+        classpath 'com.android.tools.build:gradle:8.11.1'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20'
     }
 }
 
@@ -46,8 +46,10 @@ android {
 }
 
 dependencies {
-    implementation 'io.radar:sdk:3.35.0'
+    api 'io.radar:sdk:3.36.1'
     implementation 'io.radar:sdk-fraud:1.2.0'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
     implementation 'com.google.code.gson:gson:2.8.6'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
 }

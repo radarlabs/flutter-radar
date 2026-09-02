@@ -1,14 +1,15 @@
 #import "AppDelegate.h"
 #import "GeneratedPluginRegistrant.h"
-#import <RadarSDK/RadarSDK.h>
 
 @implementation AppDelegate
 
-- (BOOL)application:(UIApplication *)application
-    didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-  [GeneratedPluginRegistrant registerWithRegistry:self];
-  [Radar initializeWithPublishableKey:@"prj_test_pk_0000000000000000000000000000000000000000"];
-  return [super application:application didFinishLaunchingWithOptions:launchOptions];
+// Flutter's UIScene lifecycle initializes the implicit engine before plugin
+// registration. This is required for safe OS-initiated background launches.
+// https://docs.flutter.dev/release/breaking-changes/uiscenedelegate
+- (void)didInitializeImplicitFlutterEngine:
+    (NSObject<FlutterImplicitEngineBridge> *)engineBridge {
+  [GeneratedPluginRegistrant
+      registerWithRegistry:engineBridge.pluginRegistry];
 }
 
 @end

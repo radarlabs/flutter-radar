@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_radar'
-  s.version          = '3.23.4'
+  s.version          = '4.0.0-beta.2'
   s.summary          = 'Flutter package for Radar, the leading geofencing and location tracking platform'
   s.description      = 'Flutter package for Radar, the leading geofencing and location tracking platform'
   s.homepage         = 'https://github.com/radarlabs/flutter-radar'
