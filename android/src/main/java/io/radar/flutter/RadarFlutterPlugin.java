@@ -1790,16 +1790,22 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         if (locationMap == null) {
             return null;
         }
-        double latitude = (Double)locationMap.get("latitude");
-        double longitude = (Double)locationMap.get("longitude");
-        Location location = new Location("RadarSDK");
-        location.setLatitude(latitude);
-        location.setLongitude(longitude);
-        if (locationMap.containsKey("accuracy")) {
-            double accuracyDouble = (Double)locationMap.get("accuracy");
-            float accuracy = (float)accuracyDouble;
-            location.setAccuracy(accuracy);
+
+        Object latitudeValue = locationMap.get("latitude");
+        Object longitudeValue = locationMap.get("longitude");
+        if (!(latitudeValue instanceof Number) || !(longitudeValue instanceof Number)) {
+            return null;
         }
+
+        Location location = new Location("RadarSDK");
+        location.setLatitude(((Number) latitudeValue).doubleValue());
+        location.setLongitude(((Number) longitudeValue).doubleValue());
+
+        Object accuracyValue = locationMap.get("accuracy");
+        if (accuracyValue instanceof Number) {
+            location.setAccuracy(((Number) accuracyValue).floatValue());
+        }
+
         return location;
     }
 
