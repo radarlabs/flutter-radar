@@ -500,7 +500,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             .edit();
 
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "4.0.0-beta.2");
+        editor.putString("x_platform_sdk_version", "4.0.0-beta.3");
         editor.apply();
 
         Radar.initialize(

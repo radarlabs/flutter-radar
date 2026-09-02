@@ -1,3 +1,8 @@
+# 4.0.0-beta.3
+
+- Updates optional `near` location handling for `Radar.autocomplete()`, `Radar.searchPlaces()`, and `Radar.searchGeofences()` on Android and iOS.
+- Updates `Radar.trackOnce()` on iOS to keep beacon ranging disabled when `beacons` is `false` or omitted.
+
 # 4.0.0-beta.2
 
 - Updates Android compilation to allow applications to call Radar SDK APIs from native code.
