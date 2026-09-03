@@ -500,7 +500,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             .edit();
 
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "4.0.0-beta.2");
+        editor.putString("x_platform_sdk_version", "4.0.0-beta.3");
         editor.apply();
 
         Radar.initialize(
@@ -1787,16 +1787,25 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     private static Location locationForMap(HashMap locationMap) {
-        double latitude = (Double)locationMap.get("latitude");
-        double longitude = (Double)locationMap.get("longitude");
-        Location location = new Location("RadarSDK");
-        location.setLatitude(latitude);
-        location.setLongitude(longitude);
-        if (locationMap.containsKey("accuracy")) {
-            double accuracyDouble = (Double)locationMap.get("accuracy");
-            float accuracy = (float)accuracyDouble;
-            location.setAccuracy(accuracy);
+        if (locationMap == null) {
+            return null;
         }
+
+        Object latitudeValue = locationMap.get("latitude");
+        Object longitudeValue = locationMap.get("longitude");
+        if (!(latitudeValue instanceof Number) || !(longitudeValue instanceof Number)) {
+            return null;
+        }
+
+        Location location = new Location("RadarSDK");
+        location.setLatitude(((Number) latitudeValue).doubleValue());
+        location.setLongitude(((Number) longitudeValue).doubleValue());
+
+        Object accuracyValue = locationMap.get("accuracy");
+        if (accuracyValue instanceof Number) {
+            location.setAccuracy(((Number) accuracyValue).floatValue());
+        }
+
         return location;
     }
 

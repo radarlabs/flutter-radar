@@ -18,6 +18,7 @@
 		BA9712AC30252AB100CFD405 /* RadarFlutterBackgroundHandlerStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BA9712AA30252AB100CFD405 /* RadarFlutterBackgroundHandlerStoreTests.m */; };
 		BA9712AE30252F6D00CFD405 /* RadarFlutterBackgroundRegistrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BA9712AD30252F5F00CFD405 /* RadarFlutterBackgroundRegistrationTests.m */; };
 		BAD57D48302B951800B335F3 /* RadarFlutterEventCoordinatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BAD57D47302B950F00B335F3 /* RadarFlutterEventCoordinatorTests.m */; };
+		BAE805BB3048AF81000DA607 /* RadarFlutterPluginArgumentTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BAE805BA3048AF6A000DA607 /* RadarFlutterPluginArgumentTests.m */; };
 		E0F475EE7DA180B233B26F03 /* libPods-Runner.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 80832F7060CA121BF7C5159A /* libPods-Runner.a */; };
 /* End PBXBuildFile section */
 
@@ -69,6 +70,7 @@
 		BA9712AA30252AB100CFD405 /* RadarFlutterBackgroundHandlerStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RadarFlutterBackgroundHandlerStoreTests.m; sourceTree = "<group>"; };
 		BA9712AD30252F5F00CFD405 /* RadarFlutterBackgroundRegistrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RadarFlutterBackgroundRegistrationTests.m; sourceTree = "<group>"; };
 		BAD57D47302B950F00B335F3 /* RadarFlutterEventCoordinatorTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RadarFlutterEventCoordinatorTests.m; sourceTree = "<group>"; };
+		BAE805BA3048AF6A000DA607 /* RadarFlutterPluginArgumentTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RadarFlutterPluginArgumentTests.m; sourceTree = "<group>"; };
 		CDC43AC9D7557F93D39C7F10 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		F71A02E28AC204AE2625A9F8 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -174,6 +176,7 @@
 		BA9712AB30252AB100CFD405 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
+				BAE805BA3048AF6A000DA607 /* RadarFlutterPluginArgumentTests.m */,
 				BAD57D47302B950F00B335F3 /* RadarFlutterEventCoordinatorTests.m */,
 				BA9712AA30252AB100CFD405 /* RadarFlutterBackgroundHandlerStoreTests.m */,
 				BA9712AD30252F5F00CFD405 /* RadarFlutterBackgroundRegistrationTests.m */,
@@ -415,6 +418,7 @@
 				BA9712AE30252F6D00CFD405 /* RadarFlutterBackgroundRegistrationTests.m in Sources */,
 				BAD57D48302B951800B335F3 /* RadarFlutterEventCoordinatorTests.m in Sources */,
 				BA9712AC30252AB100CFD405 /* RadarFlutterBackgroundHandlerStoreTests.m in Sources */,
+				BAE805BB3048AF81000DA607 /* RadarFlutterPluginArgumentTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

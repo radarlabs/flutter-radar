@@ -22,6 +22,9 @@
 - (void)deliverEventMethod:(NSString *)method
                    payload:(NSDictionary *)payload;
 
+- (CLLocation *)nearLocationFromValue:(id)value;
+- (BOOL)booleanFromValue:(id)value defaultValue:(BOOL)defaultValue;
+
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 @property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
 @property (strong, nonatomic) CLLocationManager *locationManager;
@@ -116,6 +119,38 @@ RadarFlutterSharedEventCoordinator(void) {
     [Radar setVerifiedDelegate:self];
 
     return self;
+}
+
+- (CLLocation *)nearLocationFromValue:(id)value {
+    if (![value isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+
+    NSDictionary *locationDict = (NSDictionary *)value;
+    NSNumber *latitudeNumber = locationDict[@"latitude"];
+    NSNumber *longitudeNumber = locationDict[@"longitude"];
+
+    if (![latitudeNumber isKindOfClass:[NSNumber class]] ||
+        ![longitudeNumber isKindOfClass:[NSNumber class]]) {
+        return nil;
+    }
+
+    return [[CLLocation alloc]
+        initWithCoordinate:CLLocationCoordinate2DMake(
+            [latitudeNumber doubleValue],
+            [longitudeNumber doubleValue])
+        altitude:-1
+        horizontalAccuracy:5
+        verticalAccuracy:-1
+        timestamp:[NSDate date]];
+}
+
+- (BOOL)booleanFromValue:(id)value defaultValue:(BOOL)defaultValue {
+    if (![value isKindOfClass:[NSNumber class]]) {
+        return defaultValue;
+    }
+
+    return [(NSNumber *)value boolValue];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
@@ -278,7 +313,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"4.0.0-beta.2" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"4.0.0-beta.3" forKey:@"radar-xPlatformSDKVersion"];
 
     NSDictionary *optionsDict = argsDict[@"options"];
     if (optionsDict) {
@@ -549,7 +584,6 @@ RadarFlutterSharedEventCoordinator(void) {
         [Radar trackOnceWithLocation:location completionHandler:completionHandler];
     } else {
         RadarTrackingOptionsDesiredAccuracy desiredAccuracy = RadarTrackingOptionsDesiredAccuracyMedium;
-        BOOL beaconsTrackingOption = NO;
 
         NSString *accuracy = argsDict[@"desiredAccuracy"];
 
@@ -564,11 +598,9 @@ RadarFlutterSharedEventCoordinator(void) {
             }
         }
         
-        BOOL beacons = argsDict[@"beacons"];
-
-        if (beacons) {
-            beaconsTrackingOption = beacons;
-        }
+        BOOL beaconsTrackingOption = [self
+            booleanFromValue:argsDict[@"beacons"]
+                defaultValue:NO];
         
         [Radar trackOnceWithDesiredAccuracy:desiredAccuracy beacons:beaconsTrackingOption completionHandler:completionHandler];
     }
@@ -917,15 +949,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSDictionary *argsDict = call.arguments;
 
-    CLLocation *near = nil;
-    NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
-        NSNumber *latitudeNumber = nearDict[@"latitude"];
-        NSNumber *longitudeNumber = nearDict[@"longitude"];
-        double latitude = [latitudeNumber doubleValue];
-        double longitude = [longitudeNumber doubleValue];
-        near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    }
+    CLLocation *near = [self nearLocationFromValue:argsDict[@"near"]];
     NSNumber *radiusNumber = argsDict[@"radius"];
     int radius = 1000;
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
@@ -968,15 +992,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSDictionary *argsDict = call.arguments;
 
-    CLLocation *near = nil;
-    NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
-        NSNumber *latitudeNumber = nearDict[@"latitude"];
-        NSNumber *longitudeNumber = nearDict[@"longitude"];
-        double latitude = [latitudeNumber doubleValue];
-        double longitude = [longitudeNumber doubleValue];
-        near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    }
+    CLLocation *near = [self nearLocationFromValue:argsDict[@"near"]];
     NSNumber *radiusNumber = argsDict[@"radius"];
     int radius = 1000;
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
@@ -1004,15 +1020,7 @@ RadarFlutterSharedEventCoordinator(void) {
     NSDictionary *argsDict = call.arguments;
     
     NSString *query = argsDict[@"query"];
-    CLLocation *near = nil;
-    NSDictionary *nearDict = argsDict[@"near"];
-    if (nearDict) {
-        NSNumber *latitudeNumber = nearDict[@"latitude"];
-        NSNumber *longitudeNumber = nearDict[@"longitude"];
-        double latitude = [latitudeNumber doubleValue];
-        double longitude = [longitudeNumber doubleValue];
-        near = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(latitude, longitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    }
+    CLLocation *near = [self nearLocationFromValue:argsDict[@"near"]];
     NSNumber *limitNumber = argsDict[@"limit"];
     int limit = 10;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
