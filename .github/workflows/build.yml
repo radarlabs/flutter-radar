@@ -38,6 +38,16 @@ jobs:
       - name: Install example dependencies
         working-directory: example
         run: flutter pub get
+      - name: Install Android NDK
+        run: |
+          for attempt in 1 2 3; do
+            if sdkmanager "ndk;27.0.12077973"; then
+              exit 0
+            fi
+            rm -rf "$ANDROID_HOME/ndk/27.0.12077973"
+            sleep $((attempt * 5))
+          done
+          exit 1
       - name: Run Android unit tests
         working-directory: example/android
         run: ./gradlew :flutter_radar:testDebugUnitTest
