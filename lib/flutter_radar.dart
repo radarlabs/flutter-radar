@@ -18,6 +18,7 @@ typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
 typedef IpChangedCallback = void Function();
 typedef SharingChangedCallback = void Function(bool sharing);
 
+@pragma("vm:entry-point")
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
