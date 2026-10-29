@@ -1,0 +1,506 @@
+name: Prepare native SDK update
+
+# Moves the vendored iOS SDK and the pinned Android SDK to their latest stable
+# releases together, so the API port checks parity against current SDKs on both
+# platforms. The release events from the SDK repos only trigger a run; the
+# versions always come from each repo's latest release. Each updated platform's
+# Fraud SDK also moves to its latest stable release, because new native SDKs can
+# require a newer Fraud SDK for trackVerified() and revealRisk().
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ios-sdk-release, android-sdk-release]
+
+concurrency:
+  group: native-sdk-update
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-native-sdks:
+    # macOS so the example app's iOS build can check the Objective-C bridge.
+    runs-on: macos-15
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout Flutter
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.14.1
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve latest stable native releases
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IOS_RELEASE=$(gh api repos/radarlabs/radar-sdk-ios/releases/latest)
+          ANDROID_RELEASE=$(gh api repos/radarlabs/radar-sdk-android/releases/latest)
+          TARGET_IOS=$(jq -r '.tag_name' <<< "$IOS_RELEASE")
+          TARGET_ANDROID=$(jq -r '.tag_name' <<< "$ANDROID_RELEASE")
+          PLAN=$(node scripts/native-sdk-sync.mjs plan "$TARGET_IOS" "$TARGET_ANDROID" "$GITHUB_WORKSPACE")
+          SYNC_ROOT="$RUNNER_TEMP/radar-native-sdk-sync"
+          CHANGES="$SYNC_ROOT/api-changes"
+          mkdir -p "$CHANGES"
+          echo "SYNC_ROOT=$SYNC_ROOT" >> "$GITHUB_ENV"
+
+          IOS_UPDATE=$(jq -r '.ios.update' <<< "$PLAN")
+          ANDROID_UPDATE=$(jq -r '.android.update' <<< "$PLAN")
+          IOS_DIGESTS='{}'
+          if [ "$IOS_UPDATE" = true ]; then
+            # The vendored iOS frameworks are this release's prebuilt zips.
+            IOS_DIGESTS=$(node scripts/native-sdk-sync.mjs ios-digests <<< "$IOS_RELEASE")
+          fi
+
+          # Each file is empty when that platform is not updated.
+          gh api --paginate --slurp repos/radarlabs/radar-sdk-ios/releases \
+            | jq 'add' \
+            | node scripts/native-sdk-sync.mjs release-notes "$(jq -r '.ios.current' <<< "$PLAN")" "$TARGET_IOS" \
+            > "$CHANGES/ios-release-notes.md"
+          gh api --paginate --slurp repos/radarlabs/radar-sdk-android/releases \
+            | jq 'add' \
+            | node scripts/native-sdk-sync.mjs release-notes "$(jq -r '.android.current' <<< "$PLAN")" "$TARGET_ANDROID" \
+            > "$CHANGES/android-release-notes.md"
+
+          # Fraud SDK releases: GitHub release assets on iOS and Maven Central on Android.
+          gh api --paginate --slurp repos/radarlabs/radar-sdk-ios-fraud-spm/releases \
+            | jq 'add' > "$SYNC_ROOT/ios-fraud-releases.json"
+          curl -fsSL https://repo1.maven.org/maven2/io/radar/sdk-fraud/maven-metadata.xml \
+            > "$SYNC_ROOT/android-fraud-metadata.xml"
+          jq -n \
+            --argjson plan "$PLAN" \
+            --slurpfile iosFraudReleases "$SYNC_ROOT/ios-fraud-releases.json" \
+            --rawfile androidFraudMetadata "$SYNC_ROOT/android-fraud-metadata.xml" \
+            --rawfile iosReleaseNotes "$CHANGES/ios-release-notes.md" \
+            --rawfile androidReleaseNotes "$CHANGES/android-release-notes.md" \
+            '{
+              iosUpdate: $plan.ios.update,
+              androidUpdate: $plan.android.update,
+              iosFraudReleases: $iosFraudReleases[0],
+              androidFraudMetadata: $androidFraudMetadata,
+              iosReleaseNotes: $iosReleaseNotes,
+              androidReleaseNotes: $androidReleaseNotes
+            }' \
+            | node scripts/native-sdk-sync.mjs plan-fraud "$GITHUB_WORKSPACE" \
+            > "$SYNC_ROOT/fraud-plan.json"
+          FRAUD_PLAN=$(cat "$SYNC_ROOT/fraud-plan.json")
+          # Names only the platforms this release moves, e.g. "iOS 3.43.0 / Android 3.38.0".
+          PLATFORMS=""
+          if [ "$IOS_UPDATE" = true ]; then PLATFORMS="iOS $TARGET_IOS"; fi
+          if [ "$ANDROID_UPDATE" = true ]; then
+            PLATFORMS="${PLATFORMS:+$PLATFORMS / }Android $TARGET_ANDROID"
+          fi
+          {
+            echo "status=$(jq -r '.status' <<< "$PLAN")"
+            echo "plugin_version=$(jq -r '.targetPluginVersion' <<< "$PLAN")"
+            echo "old_ios=$(jq -r '.ios.current' <<< "$PLAN")"
+            echo "target_ios=$TARGET_IOS"
+            echo "ios_update=$IOS_UPDATE"
+            echo "ios_sdk_sha256=$(jq -r '.sdk // ""' <<< "$IOS_DIGESTS")"
+            echo "ios_motion_sha256=$(jq -r '.motion // ""' <<< "$IOS_DIGESTS")"
+            echo "ios_release_url=$(jq -r '.html_url' <<< "$IOS_RELEASE")"
+            echo "old_android=$(jq -r '.android.current' <<< "$PLAN")"
+            echo "target_android=$TARGET_ANDROID"
+            echo "android_update=$ANDROID_UPDATE"
+            echo "android_release_url=$(jq -r '.html_url' <<< "$ANDROID_RELEASE")"
+            echo "platforms=$PLATFORMS"
+            echo "old_ios_fraud=$(jq -r '.ios.current' <<< "$FRAUD_PLAN")"
+            echo "target_ios_fraud=$(jq -r '.ios.target' <<< "$FRAUD_PLAN")"
+            echo "ios_fraud_update=$(jq -r '.ios.update' <<< "$FRAUD_PLAN")"
+            echo "ios_fraud_sha256=$(jq -r '.ios.sha256 // ""' <<< "$FRAUD_PLAN")"
+            echo "old_android_fraud=$(jq -r '.android.current' <<< "$FRAUD_PLAN")"
+            echo "target_android_fraud=$(jq -r '.android.target' <<< "$FRAUD_PLAN")"
+            echo "android_fraud_update=$(jq -r '.android.update' <<< "$FRAUD_PLAN")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stop when both native SDKs are current
+        if: steps.release.outputs.status != 'update'
+        run: echo "The latest stable iOS and Android releases are not newer than the pinned versions."
+
+      - name: Checkout native SDK sources
+        if: steps.release.outputs.status == 'update'
+        env:
+          TARGET_IOS: ${{ steps.release.outputs.target_ios }}
+          TARGET_ANDROID: ${{ steps.release.outputs.target_android }}
+        run: |
+          set -euo pipefail
+          # Full history (without blobs) so the Android API diff can compare tags.
+          git clone --filter=blob:none https://github.com/radarlabs/radar-sdk-ios.git "$SYNC_ROOT/upstream-ios"
+          git -C "$SYNC_ROOT/upstream-ios" checkout --detach "$TARGET_IOS"
+          git clone --filter=blob:none https://github.com/radarlabs/radar-sdk-android.git "$SYNC_ROOT/upstream-android"
+          git -C "$SYNC_ROOT/upstream-android" checkout --detach "$TARGET_ANDROID"
+
+      - name: Update deterministic SDK files
+        if: steps.release.outputs.status == 'update'
+        env:
+          PLUGIN_VERSION: ${{ steps.release.outputs.plugin_version }}
+          OLD_IOS: ${{ steps.release.outputs.old_ios }}
+          TARGET_IOS: ${{ steps.release.outputs.target_ios }}
+          IOS_UPDATE: ${{ steps.release.outputs.ios_update }}
+          IOS_SDK_SHA256: ${{ steps.release.outputs.ios_sdk_sha256 }}
+          IOS_MOTION_SHA256: ${{ steps.release.outputs.ios_motion_sha256 }}
+          OLD_ANDROID: ${{ steps.release.outputs.old_android }}
+          TARGET_ANDROID: ${{ steps.release.outputs.target_android }}
+          ANDROID_UPDATE: ${{ steps.release.outputs.android_update }}
+          TARGET_IOS_FRAUD: ${{ steps.release.outputs.target_ios_fraud }}
+          IOS_FRAUD_UPDATE: ${{ steps.release.outputs.ios_fraud_update }}
+          IOS_FRAUD_SHA256: ${{ steps.release.outputs.ios_fraud_sha256 }}
+          TARGET_ANDROID_FRAUD: ${{ steps.release.outputs.target_android_fraud }}
+          ANDROID_FRAUD_UPDATE: ${{ steps.release.outputs.android_fraud_update }}
+        run: |
+          set -euo pipefail
+          node scripts/native-sdk-sync.mjs apply-version "$PLUGIN_VERSION" "$GITHUB_WORKSPACE"
+          if [ "$ANDROID_UPDATE" = true ]; then
+            node scripts/native-sdk-sync.mjs apply-android-version "$TARGET_ANDROID" "$GITHUB_WORKSPACE"
+          fi
+          if [ "$ANDROID_FRAUD_UPDATE" = true ]; then
+            node scripts/native-sdk-sync.mjs apply-android-fraud-version "$TARGET_ANDROID_FRAUD" "$GITHUB_WORKSPACE"
+          fi
+          if [ "$IOS_UPDATE" = true ]; then
+            node scripts/native-sdk-sync.mjs apply-ios-version "$TARGET_IOS" "$IOS_SDK_SHA256" "$IOS_MOTION_SHA256" "$GITHUB_WORKSPACE"
+            if [ "$IOS_FRAUD_UPDATE" = true ]; then
+              node scripts/native-sdk-sync.mjs apply-ios-fraud-version "$TARGET_IOS_FRAUD" "$IOS_FRAUD_SHA256" "$GITHUB_WORKSPACE"
+            fi
+            # Downloads the pinned zips and checks each sha256.
+            scripts/download-xcframeworks.sh
+          fi
+          # Claude adds the ported APIs under this section.
+          {
+            if [ "$IOS_UPDATE" = true ]; then
+              echo "- Updates the Radar iOS SDK from \`$OLD_IOS\` to \`$TARGET_IOS\`."
+            fi
+            if [ "$ANDROID_UPDATE" = true ]; then
+              echo "- Updates the Radar Android SDK from \`$OLD_ANDROID\` to \`$TARGET_ANDROID\`."
+            fi
+          } | node scripts/native-sdk-sync.mjs changelog "$PLUGIN_VERSION" "$GITHUB_WORKSPACE"
+
+      - name: Collect native API changes
+        if: steps.release.outputs.status == 'update'
+        env:
+          OLD_ANDROID: ${{ steps.release.outputs.old_android }}
+          TARGET_ANDROID: ${{ steps.release.outputs.target_android }}
+        run: |
+          set -euo pipefail
+          # The release notes were collected while resolving the releases.
+          CHANGES="$SYNC_ROOT/api-changes"
+          # Diff the vendored framework's public interface, which is exactly what
+          # RadarFlutterPlugin.m can call. Intent-to-add makes new headers show up.
+          HEADERS=ios/Frameworks/RadarSDK.xcframework/ios-arm64/RadarSDK.framework/Headers
+          git add --intent-to-add "$HEADERS"
+          git diff -- "$HEADERS" ":(exclude)$HEADERS/RadarSDK-Swift.h" > "$CHANGES/objc-headers.diff"
+          git diff -- "$HEADERS/RadarSDK-Swift.h" > "$CHANGES/swift-header.diff"
+          git reset --quiet -- "$HEADERS"
+          # Android ships no headers; its public API is Radar.kt and the models.
+          git -C "$SYNC_ROOT/upstream-android" diff "$OLD_ANDROID" "$TARGET_ANDROID" -- \
+            sdk/src/main/java/io/radar/sdk/Radar.kt \
+            sdk/src/main/java/io/radar/sdk/model \
+            > "$CHANGES/android-api.diff"
+          wc -l "$CHANGES"/*
+
+      - name: Install Dart dependencies
+        if: steps.release.outputs.status == 'update'
+        id: install
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          flutter pub get
+          (cd example && flutter pub get)
+
+      - name: Adapt Flutter APIs with Claude
+        if: steps.release.outputs.status == 'update'
+        id: claude
+        continue-on-error: true
+        uses: anthropics/claude-code-action/base-action@ef8bb1e43bf303cff727a1dd0b8837029fe982a2 # v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Port the new public APIs in the Radar native SDKs to this Flutter plugin. The native
+            SDKs have already been moved to their latest stable releases and the plugin version is
+            already bumped; your job is the Dart API and the platform channel code.
+
+            - iOS: ${{ steps.release.outputs.old_ios }} -> ${{ steps.release.outputs.target_ios }}
+              (RadarSDKFraud ${{ steps.release.outputs.old_ios_fraud }} -> ${{ steps.release.outputs.target_ios_fraud }})
+            - Android: ${{ steps.release.outputs.old_android }} -> ${{ steps.release.outputs.target_android }}
+              (io.radar:sdk-fraud ${{ steps.release.outputs.old_android_fraud }} -> ${{ steps.release.outputs.target_android_fraud }})
+
+            When a platform's two versions are equal it was not updated, and its change files
+            below are empty.
+
+            ## Inputs
+
+            Start with these files in ${{ runner.temp }}/radar-native-sdk-sync/api-changes. Read
+            them before exploring anything else:
+            - ios-release-notes.md and android-release-notes.md: customer-facing notes for every
+              release in each range.
+            - objc-headers.diff: changes to the vendored iOS framework's Objective-C headers.
+            - swift-header.diff: changes to the generated RadarSDK-Swift.h. Most of it is internal
+              Objective-C to Swift migration that keeps the same API; look only for new methods,
+              properties, and enum cases.
+            - android-api.diff: changes to the Android SDK's Radar.kt and model classes.
+
+            The full sources at the new versions are in
+            ${{ runner.temp }}/radar-native-sdk-sync/upstream-ios and
+            ${{ runner.temp }}/radar-native-sdk-sync/upstream-android (public API:
+            sdk/src/main/java/io/radar/sdk/Radar.kt and sdk/src/main/java/io/radar/sdk/model).
+
+            ## Breaking native changes come first
+
+            A native major version can remove or change methods the plugin already calls. Before
+            porting anything, make the existing bridge compile against the new SDKs: fix every
+            call in ios/Classes and android/src/main whose native signature changed or was removed,
+            keeping the Dart API the same where you can. When a Dart API can no longer work, keep
+            it, return an error from the platform side, and list it under "Breaking changes" in
+            the summary. Do not remove or rename existing Dart APIs.
+
+            ## What to port
+
+            Judge parity against the new versions of both SDKs, not the old ones.
+            - New `Radar` methods, when both SDKs have them. Skip a method only one SDK has.
+            - New fields on models the plugin already returns, and new event types: the bridges
+              pass native `dictionaryValue`/`toJson` maps straight to Dart as untyped `Map`s, so
+              these need no plugin code. Confirm the bridge passes the whole native map through,
+              and add an Example app button for them.
+            List every one-sided API, ported or skipped, under "Platform gaps" in the summary.
+            Skip internal changes, bug fixes, and the Swift migration.
+
+            ## How to wire a method
+
+            Follow `setProduct` and `getProduct` as the pattern; `git grep -n setProduct` shows
+            every layer:
+            1. lib/flutter_radar.dart: a static method that calls `_channel.invokeMethod`.
+            2. ios/Classes/RadarFlutterPlugin.m: the `handleMethodCall` branch and a method
+               calling the iOS SDK. Convert `NSNull` arguments to nil as the neighbors do.
+            3. android/src/main/java/io/radar/flutter/RadarFlutterPlugin.java: the `switch` case
+               and a method calling the Android SDK.
+            4. test/flutter_radar_test.dart: a test using the mocked method channel, following the
+               existing tests.
+
+            ## Example app
+
+            Every ported API needs a way for a reviewer to see it working in example/lib/main.dart.
+            Add `ApiAction`s next to related actions and follow the existing ones (`setProduct`,
+            `getProduct`, `trackOnce()`): the label is the Dart call, and the callback returns the
+            value the console shows.
+            - New methods: an action that calls the method. For a setter, add a matching getter
+              action, or have the callback return something that shows the effect.
+            - New fields on returned models: an action that calls an existing API returning that
+              model (for example `trackOnce`) and returns only the new field, such as
+              `(await Radar.trackOnce())?['user']?['locationInsights']`. Returning the whole model
+              is not enough; the field gets lost in the output.
+            - New event types: they already reach the `onEvents` listener in the console; name
+              the event type in the test plan instead of adding an action.
+            - Platform-specific methods: guard with `Platform.isIOS`/`Platform.isAndroid`.
+            Do not change or remove existing actions.
+
+            ## Changelog
+
+            CHANGELOG.md already has a `# ${{ steps.release.outputs.plugin_version }}` section with
+            the native SDK updates. Add one bullet per ported or breaking API under it, in the
+            style of the earlier sections.
+
+            ## Checks
+
+            Run `flutter analyze` and `flutter test` after editing and fix what you broke.
+            Native code cannot be compiled here; the workflow builds the example app afterward.
+
+            ## Rules
+
+            Do not change the plugin version, vendored frameworks, gradle pins, Fraud SDK pins,
+            pubspec.lock, workflow files, or scripts. Do not commit, push, create a pull request,
+            or use GitHub write operations.
+
+            Each Bash call must be a single allowed command with absolute paths: no `cd`, `&&`,
+            `;`, or pipes. Use Read, Grep, and Glob to look at files.
+
+            ## Summary
+
+            Finish by writing ${{ runner.temp }}/radar-native-sdk-sync/claude-summary.md for the
+            pull request body, using these headings:
+            - `### Breaking changes`: native changes that forced bridge changes, and any Dart API
+              that no longer works. Write "None" when there are none.
+            - `### Ported`, `### Skipped`, `### Platform gaps`: one line per API with the SDK
+              version that added it and, for skips and gaps, the reason.
+            - `### Check by hand`: at most five items a reviewer cannot confirm from CI.
+            Leave manual testing out of it.
+
+            ## Test plan
+
+            Also write ${{ runner.temp }}/radar-native-sdk-sync/claude-test-plan.md: numbered
+            Markdown steps a reviewer follows in the Example app, under a `###` heading per ported
+            API (never `#` or `##`). Each step names the exact `ApiAction` label to tap, the
+            platform to run it on (iOS, Android, or both, and what to expect on the platform
+            without the API), any prerequisite (location permission, tracking started, dashboard
+            setup such as home and work places), the text expected in the console, and what a
+            failure looks like. Base the expected output on the native models and
+            dictionaryValue/toJson code you read, not on guesses.
+
+            Start with a `### Native SDK versions` section: tap `sdkVersion()` on iOS and confirm
+            it shows `${{ steps.release.outputs.target_ios }}`, then on Android and confirm it
+            shows `${{ steps.release.outputs.target_android }}`. If nothing was ported, that
+            section is the whole plan. The pull request already includes build and setup steps; do
+            not repeat them.
+          claude_args: |
+            --max-turns 150
+            --add-dir ${{ runner.temp }}/radar-native-sdk-sync
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git -C:*),Bash(git diff:*),Bash(git grep:*),Bash(git log:*),Bash(git show:*),Bash(git status:*),Bash(rg:*),Bash(ls:*),Bash(flutter analyze:*),Bash(flutter test:*),Bash(dart format:*)"
+
+      - name: Validate generated changes
+        if: steps.release.outputs.status == 'update'
+        id: validation
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # The example builds rewrite tracked files (gradle.properties, the Xcode
+          # project); stage the update so those rewrites can be dropped afterward.
+          git add -A
+          status=0
+          node --test scripts/tests/native-sdk-sync.test.mjs || status=1
+          flutter analyze || status=1
+          flutter test || status=1
+          (cd example/android && ./gradlew :flutter_radar:testDebugUnitTest) || status=1
+          (cd example && flutter build apk --debug) || status=1
+          (cd example && flutter build ios --debug --no-codesign) || status=1
+          git checkout -- .
+          git clean -fdq
+          git reset --quiet
+          exit "$status"
+
+      - name: Summarize Claude run
+        if: steps.release.outputs.status == 'update'
+        id: summary
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          OLD_IOS: ${{ steps.release.outputs.old_ios }}
+          TARGET_IOS: ${{ steps.release.outputs.target_ios }}
+          IOS_UPDATE: ${{ steps.release.outputs.ios_update }}
+          IOS_RELEASE_URL: ${{ steps.release.outputs.ios_release_url }}
+          OLD_ANDROID: ${{ steps.release.outputs.old_android }}
+          TARGET_ANDROID: ${{ steps.release.outputs.target_android }}
+          ANDROID_UPDATE: ${{ steps.release.outputs.android_update }}
+          ANDROID_RELEASE_URL: ${{ steps.release.outputs.android_release_url }}
+        run: |
+          set -euo pipefail
+          {
+            if [ "$IOS_UPDATE" = true ]; then
+              echo "- Updates the vendored Radar iOS SDK from \`$OLD_IOS\` to [\`$TARGET_IOS\`]($IOS_RELEASE_URL)."
+            else
+              echo "- Radar iOS SDK stays at \`$OLD_IOS\` (latest stable release)."
+            fi
+            if [ "$ANDROID_UPDATE" = true ]; then
+              echo "- Updates the Radar Android SDK from \`$OLD_ANDROID\` to [\`$TARGET_ANDROID\`]($ANDROID_RELEASE_URL)."
+            else
+              echo "- Radar Android SDK stays at \`$OLD_ANDROID\` (latest stable release)."
+            fi
+            node scripts/native-sdk-sync.mjs describe-fraud < "$SYNC_ROOT/fraud-plan.json"
+          } > "$SYNC_ROOT/pr-versions.md"
+
+          EXECUTION_FILE="${EXECUTION_FILE:-$RUNNER_TEMP/claude-execution-output.json}"
+          {
+            if [ -f "$EXECUTION_FILE" ]; then
+              jq -r '
+                [.[] | select(.type == "result")] | last // {} |
+                "- Claude result: `\(.subtype // "unknown")` after \(.num_turns // "?") turns",
+                (.permission_denials // [] | map(.tool_name + (if .tool_input.command then " `" + .tool_input.command + "`" else "" end)) | unique | .[] | "- Denied: " + .)
+              ' "$EXECUTION_FILE"
+            else
+              echo "- Claude did not produce an execution log."
+            fi
+            echo
+            if [ -s "$SYNC_ROOT/claude-summary.md" ]; then
+              cat "$SYNC_ROOT/claude-summary.md"
+            else
+              echo "Claude did not write a summary; the port is probably incomplete."
+            fi
+          } > "$SYNC_ROOT/pr-summary.md"
+          if [ -s "$SYNC_ROOT/claude-test-plan.md" ]; then
+            # The test plan sits under "## Test Plan"; keep its headings below that level.
+            sed -E 's/^#{1,2} /### /' "$SYNC_ROOT/claude-test-plan.md" > "$SYNC_ROOT/pr-test-plan.md"
+          else
+            cat > "$SYNC_ROOT/pr-test-plan.md" <<PLAN
+          ### Native SDK versions
+
+          Claude did not write a test plan.
+
+          1. Tap \`sdkVersion()\` on iOS and confirm it shows \`$TARGET_IOS\`.
+          2. Tap \`sdkVersion()\` on Android and confirm it shows \`$TARGET_ANDROID\`.
+          3. Exercise any new Example app actions and confirm their result or event appears.
+          PLAN
+          fi
+          DELIMITER="EOF_$(openssl rand -hex 8)"
+          {
+            echo "versions<<$DELIMITER"
+            cat "$SYNC_ROOT/pr-versions.md"
+            echo "$DELIMITER"
+            echo "body<<$DELIMITER"
+            cat "$SYNC_ROOT/pr-summary.md"
+            echo "$DELIMITER"
+            echo "test_plan<<$DELIMITER"
+            cat "$SYNC_ROOT/pr-test-plan.md"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create or update draft pull request
+        if: steps.release.outputs.status == 'update'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          token: ${{ github.token }}
+          base: master
+          branch: automation/native-sdk-update
+          delete-branch: true
+          draft: always-true
+          commit-message: Prepare Flutter ${{ steps.release.outputs.plugin_version }} for Radar ${{ steps.release.outputs.platforms }}
+          title: Prepare Flutter ${{ steps.release.outputs.plugin_version }} for Radar ${{ steps.release.outputs.platforms }}
+          body: |
+            ## Summary
+
+            ${{ steps.summary.outputs.versions }}
+            - Prepares flutter_radar `${{ steps.release.outputs.plugin_version }}` as a best-effort native API port.
+            - Claude output may be incomplete; review the native diff and cross-platform parity before merging.
+
+            ## API Port
+
+            ${{ steps.summary.outputs.body }}
+
+            ## Test Plan
+
+            ### Setup
+
+            1. Check out this branch and run `cd example && flutter pub get`.
+            2. Put a test publishable key in `publishableKey` in `example/lib/main.dart`. Do not commit it.
+            3. Run `flutter run` on an iOS device or simulator and on an Android device or emulator, and confirm Radar initializes without an error on both.
+            4. Tap `trackVerified()` on iOS and Android and confirm neither returns `ERROR_PLUGIN`, which means the Fraud SDK does not match the native SDK.
+
+            ${{ steps.summary.outputs.test_plan }}
+
+            ## Validation
+
+            - flutter pub get: `${{ steps.install.outcome }}`
+            - Claude step: `${{ steps.claude.outcome }}`
+            - Sync script tests, `flutter analyze`, `flutter test`, Android unit tests, and example APK and iOS builds: `${{ steps.validation.outcome }}`
+            - [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - The Flutter build workflow provides independent validation on this draft.
+          labels: |
+            native-sdk-update
+            needs-human

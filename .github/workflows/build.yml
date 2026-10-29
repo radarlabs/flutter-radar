@@ -35,6 +35,8 @@ jobs:
       # Flutter's Gradle migration and would fail pub's clean-git-state check.
       - run: dart pub publish --dry-run
       - run: flutter test
+      - name: Test native SDK sync script
+        run: node --test scripts/tests/native-sdk-sync.test.mjs
       - name: Install example dependencies
         working-directory: example
         run: flutter pub get
