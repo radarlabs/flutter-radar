@@ -40,12 +40,14 @@ import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener;
 
 import io.radar.sdk.Radar;
+import io.radar.sdk.RadarAutocompleteSession;
 import io.radar.sdk.RadarReceiver;
 import io.radar.sdk.RadarVerifiedReceiver;
 import io.radar.sdk.RadarNotificationOptions;
 import io.radar.sdk.RadarTrackingOptions;
 import io.radar.sdk.RadarTripOptions;
 import io.radar.sdk.model.RadarAddress;
+import io.radar.sdk.model.RadarAutocompleteEnrichedAddress;
 import io.radar.sdk.model.RadarContext;
 import io.radar.sdk.model.RadarEvent;
 import io.radar.sdk.model.RadarGeofence;
@@ -470,6 +472,27 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "setExpectedJurisdiction":
                         setExpectedJurisdiction(call, result);
                         break;
+                    case "setExpectedAddress":
+                        setExpectedAddress(call, result);
+                        break;
+                    case "startRangingBeacons":
+                        startRangingBeacons(result);
+                        break;
+                    case "stopRangingBeacons":
+                        stopRangingBeacons(result);
+                        break;
+                    case "validateAddressWithStreet":
+                        validateAddressWithStreet(call, result);
+                        break;
+                    case "validateAddressWithAddressLabel":
+                        validateAddressWithAddressLabel(call, result);
+                        break;
+                    case "autocompleteSession":
+                        autocompleteSession(call, result);
+                        break;
+                    case "selectAutocompleteAddress":
+                        selectAutocompleteAddress(call, result);
+                        break;
                     case "revealRisk":
                         revealRisk(call, result);
                         break;
@@ -500,7 +523,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             .edit();
 
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "4.0.0-beta.3");
+        editor.putString("x_platform_sdk_version", "4.0.0-beta.4");
         editor.apply();
 
         Radar.initialize(
@@ -1250,7 +1273,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String[] layers = layersList != null ? layersList.toArray(new String[0]) : new String[0];
         Boolean mailable = call.argument("mailable");
 
-        Radar.autocomplete(query, near, layers, limit, country, true, mailable, new Radar.RadarGeocodeCallback() {
+        Radar.autocomplete(query, near, layers, limit, country, mailable, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -1338,13 +1361,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void ipGeocode(MethodCall call, final Result result) {
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
-            @SuppressWarnings("deprecation")
-            // Deprecated upstream but still abstract, so Java must implement it.
-            @Override
-            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
-                onComplete(status, address, proxy, null);
-            }
-
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy, final Throwable throwable) {
                 runOnMainThread(new Runnable() {
@@ -1639,7 +1655,139 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }
 
     public static void validateAddress(MethodCall call, final Result result) throws JSONException {
-        Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
+        HashMap addressMap= call.argument("address");
+        JSONObject addressJSON = jsonForMap(addressMap);
+        RadarAddress address = RadarAddress.fromJson(addressJSON);
+        Radar.validateAddress(address, validateAddressCallback(result));
+    }
+
+    // The SDK rejects empty required fields with ERROR_BAD_REQUEST, so a missing
+    // argument is sent as "" rather than tripping Kotlin's non-null check.
+    private static String requiredString(MethodCall call, String key) {
+        Object value = call.argument(key);
+        return value instanceof String ? (String) value : "";
+    }
+
+    private static String optionalString(MethodCall call, String key) {
+        Object value = call.argument(key);
+        return value instanceof String ? (String) value : null;
+    }
+
+    public static void validateAddressWithStreet(MethodCall call, final Result result) {
+        Radar.validateAddress(
+            requiredString(call, "street"),
+            requiredString(call, "number"),
+            optionalString(call, "unit"),
+            requiredString(call, "city"),
+            requiredString(call, "stateCode"),
+            requiredString(call, "postalCode"),
+            requiredString(call, "countryCode"),
+            validateAddressCallback(result)
+        );
+    }
+
+    public static void validateAddressWithAddressLabel(MethodCall call, final Result result) {
+        Radar.validateAddress(
+            requiredString(call, "addressLabel"),
+            optionalString(call, "unit"),
+            requiredString(call, "city"),
+            requiredString(call, "stateCode"),
+            requiredString(call, "postalCode"),
+            requiredString(call, "countryCode"),
+            validateAddressCallback(result)
+        );
+    }
+
+    private static void setExpectedAddress(MethodCall call, Result result) {
+        Radar.setExpectedAddress(optionalString(call, "address"));
+        result.success(true);
+    }
+
+    private static void startRangingBeacons(Result result) {
+        Radar.startRangingBeacons();
+        result.success(true);
+    }
+
+    private static void stopRangingBeacons(Result result) {
+        Radar.stopRangingBeacons();
+        result.success(true);
+    }
+
+    public static void autocompleteSession(MethodCall call, final Result result) {
+        // The session constructor that takes a token is Kotlin-internal, which
+        // compiles to a public JVM constructor for wrapper SDKs. It throws
+        // IllegalArgumentException for a non-UUID token, which onMethodCall
+        // returns as a Flutter error.
+        RadarAutocompleteSession session = new RadarAutocompleteSession(requiredString(call, "sessionToken"));
+        String query = requiredString(call, "query");
+        Location near = locationForMap((HashMap)call.argument("near"));
+        Integer limit = call.argument("limit") instanceof Number ? ((Number)call.argument("limit")).intValue() : 10;
+        String country = optionalString(call, "country");
+        ArrayList<String> layersList = call.argument("layers");
+        String[] layers = layersList != null ? layersList.toArray(new String[0]) : null;
+        Boolean mailable = call.argument("mailable") instanceof Boolean ? (Boolean)call.argument("mailable") : null;
+
+        session.autocomplete(query, near, layers, limit, country, mailable, new Radar.RadarGeocodeCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (addresses != null) {
+                                obj.put("addresses", RadarAddress.toJson(addresses));
+                            }
+
+                            HashMap<String, Object> map = mapForJson(obj);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    public static void selectAutocompleteAddress(MethodCall call, final Result result) {
+        RadarAutocompleteSession session = new RadarAutocompleteSession(requiredString(call, "sessionToken"));
+        HashMap addressMap = call.argument("address");
+        // JSONObject(Map) wraps nested maps, so resultId and the rest of the
+        // address returned by autocompleteSession round-trip intact.
+        RadarAddress address = addressMap != null ? RadarAddress.fromJson(new JSONObject(addressMap)) : null;
+        if (address == null) {
+            result.error("ERROR_BAD_REQUEST", "selectAutocompleteAddress requires an address", null);
+            return;
+        }
+
+        session.select(address, new Radar.RadarAutocompleteSelectCallback() {
+            @Override
+            public void onComplete(final Radar.RadarStatus status, final RadarAutocompleteEnrichedAddress enrichedAddress) {
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("status", status.toString());
+                            if (enrichedAddress != null) {
+                                obj.put("address", enrichedAddress.toJson());
+                            }
+
+                            HashMap<String, Object> map = mapForJson(obj);
+                            result.success(map);
+                        } catch (Exception e) {
+                            result.error(e.toString(), e.getMessage(), e.getMessage());
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private static Radar.RadarValidateAddressCallback validateAddressCallback(final Result result) {
+        return new Radar.RadarValidateAddressCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final Radar.RadarAddressVerificationStatus verificationStatus) {
                 runOnMainThread(new Runnable() {
@@ -1664,11 +1812,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 });
             }
         };
-
-        HashMap addressMap= call.argument("address");
-        JSONObject addressJSON = jsonForMap(addressMap);
-        RadarAddress address = RadarAddress.fromJson(addressJSON);
-        Radar.validateAddress(address, callback);
     }
 
     private static void setProduct(MethodCall call, Result result) {

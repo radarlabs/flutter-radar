@@ -1,3 +1,15 @@
+# 4.0.0-beta.4
+
+- Updates the Radar iOS SDK from `3.38.0` to `3.46.0`.
+- Updates the Radar Android SDK from `3.36.1` to `4.3.0`.
+- Updates `Radar.autocomplete()` on Android to call the Radar Android SDK `4.x` overload, which no longer takes `expandUnits`. Results are unchanged.
+- Requires apps that call `Radar.startTracking('continuous')` or set `foregroundServiceEnabled` on Android to declare `io.radar.sdk.RadarForegroundService` and the `FOREGROUND_SERVICE_LOCATION` permission in their app manifest. The Radar Android SDK `4.0.0` no longer declares the service, and without it tracking runs without a foreground service.
+- Updates `Radar.ipGeocode()` on Android to implement the Radar Android SDK `4.x` callback, which removed the deprecated 3-argument `onComplete()`. Results are unchanged.
+- Adds `Radar.startRangingBeacons()` and `Radar.stopRangingBeacons()` to continuously range nearby beacons for `Radar.trackVerified(beacons: true)`.
+- Adds `Radar.setExpectedAddress()`. `Radar.trackVerified()` returns the comparison as `user.expectedAddress`.
+- Adds `Radar.validateAddressWithStreet()` and `Radar.validateAddressWithAddressLabel()`.
+- Adds `RadarAutocompleteSession`, with `autocomplete()` and `select()` to report the result a user chose and return the enriched address where available.
+
 # 4.0.0-beta.3
 
 - Updates optional `near` location handling for `Radar.autocomplete()`, `Radar.searchPlaces()`, and `Radar.searchGeofences()` on Android and iOS.

@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:math' show Random;
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
@@ -681,6 +682,38 @@ class Radar {
     }
   }
 
+  /// Sets the user's expected address, which `trackVerified()` compares with
+  /// the user's location and returns as `user.expectedAddress`. Pass `null`
+  /// to clear it.
+  static Future setExpectedAddress(String? address) async {
+    try {
+      await _channel.invokeMethod('setExpectedAddress', {'address': address});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  /// Starts continuously ranging nearby beacons while the app is in the
+  /// foreground, so `trackVerified(beacons: true)` can attach nearby beacons
+  /// without waiting on a new ranging window. Call [stopRangingBeacons] when
+  /// beacons are no longer needed. Requires Android 8.0 (API 26) or later.
+  static Future startRangingBeacons() async {
+    try {
+      await _channel.invokeMethod('startRangingBeacons');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  /// Stops ranging beacons started with [startRangingBeacons].
+  static Future stopRangingBeacons() async {
+    try {
+      await _channel.invokeMethod('stopRangingBeacons');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
@@ -689,6 +722,60 @@ class Radar {
     try {
       return await _channel.invokeMethod('validateAddress', {
         'address': address,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Validates an address from its street and number. Every field except
+  /// [unit] is required; if one is empty, the result status is
+  /// `ERROR_BAD_REQUEST` and no request is sent.
+  static Future<Map?> validateAddressWithStreet({
+    required String street,
+    required String number,
+    String? unit,
+    required String city,
+    required String stateCode,
+    required String postalCode,
+    required String countryCode,
+  }) async {
+    try {
+      return await _channel.invokeMethod('validateAddressWithStreet', {
+        'street': street,
+        'number': number,
+        'unit': unit,
+        'city': city,
+        'stateCode': stateCode,
+        'postalCode': postalCode,
+        'countryCode': countryCode,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Validates an address from a single-line address label, such as
+  /// `20 Jay St`. Every field except [unit] is required; if one is empty, the
+  /// result status is `ERROR_BAD_REQUEST` and no request is sent.
+  static Future<Map?> validateAddressWithAddressLabel({
+    required String addressLabel,
+    String? unit,
+    required String city,
+    required String stateCode,
+    required String postalCode,
+    required String countryCode,
+  }) async {
+    try {
+      return await _channel.invokeMethod('validateAddressWithAddressLabel', {
+        'addressLabel': addressLabel,
+        'unit': unit,
+        'city': city,
+        'stateCode': stateCode,
+        'postalCode': postalCode,
+        'countryCode': countryCode,
       });
     } on PlatformException catch (e) {
       print(e);
@@ -1086,6 +1173,75 @@ class Radar {
       Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
   static Map<String, dynamic> presetEfficient =
       Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
+}
+
+/// An autocomplete search field and the selection a user makes in it.
+///
+/// Create one session per address field. Call [autocomplete] as the user
+/// types, then pass the chosen address from its `addresses` list to [select].
+class RadarAutocompleteSession {
+  /// The UUID this session sends with each request.
+  final String sessionToken;
+
+  /// Opens a session with a newly minted token.
+  RadarAutocompleteSession() : sessionToken = _uuidV4();
+
+  /// Resumes a session from a token minted elsewhere. [sessionToken] must be
+  /// a UUID; the native SDKs return an error for anything else.
+  RadarAutocompleteSession.withSessionToken(this.sessionToken);
+
+  static String _uuidV4() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  /// Autocompletes partial addresses and place names within this session,
+  /// sorted by relevance. Returns `status` and `addresses`.
+  Future<Map?> autocomplete({
+    required String query,
+    Map<String, dynamic>? near,
+    int? limit,
+    String? country,
+    List? layers,
+    bool? mailable,
+  }) async {
+    try {
+      return await Radar._channel.invokeMethod('autocompleteSession', {
+        'sessionToken': sessionToken,
+        'query': query,
+        'near': near,
+        'limit': limit,
+        'country': country,
+        'layers': layers,
+        'mailable': mailable,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Reports which result the user chose. [address] must be one of the
+  /// `addresses` returned by this session's [autocomplete]; any other address
+  /// returns `ERROR_BAD_REQUEST`. Returns `status` and, if address enrichment
+  /// is enabled for the project, the enriched `address` with
+  /// `formattedAddress` and `locationDetails`.
+  Future<Map?> select(Map address) async {
+    try {
+      return await Radar._channel.invokeMethod('selectAutocompleteAddress', {
+        'sessionToken': sessionToken,
+        'address': address,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
 }
 
 class RadarInitializeOptions {
