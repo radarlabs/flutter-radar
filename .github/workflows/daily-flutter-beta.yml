@@ -33,7 +33,7 @@ jobs:
     outputs:
       flutter_version: ${{ steps.summary.outputs.flutter_version }}
       failed_steps: ${{ steps.summary.outputs.failed_steps }}
-      failing_tests: ${{ steps.summary.outputs.failing_tests }}
+      failures: ${{ steps.summary.outputs.failures }}
       signature: ${{ steps.summary.outputs.signature }}
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,9 @@ jobs:
       # every broken step instead of only the first.
       - id: analyze
         if: ${{ !cancelled() && steps.pubget.outcome == 'success' }}
-        run: flutter analyze
+        # Explicit bash enables pipefail, so tee keeps analyze's exit code.
+        shell: bash
+        run: flutter analyze 2>&1 | tee analyze.txt
       - id: test
         if: ${{ !cancelled() && steps.pubget.outcome == 'success' }}
         run: flutter test --file-reporter json:flutter-test.json
@@ -90,28 +92,55 @@ jobs:
           failed_steps=""
           for s in "${failed[@]}"; do failed_steps="${failed_steps:+$failed_steps, }$s"; done
 
-          tests=""
+          # Individual failures, one per line, prefixed by source.
+          failures_file=$(mktemp)
+
           if [ -f flutter-test.json ]; then
-            tests=$(jq -rs '
+            jq -rs '
               (map(select(.type == "testStart"))
                 | map({key: (.test.id | tostring), value: .test.name})
                 | from_entries) as $names
               | map(select(.type == "testDone" and .result != "success"))
-              | map($names[(.testID | tostring)])
-              | unique | .[]' flutter-test.json || true)
+              | map("flutter test: " + $names[(.testID | tostring)])
+              | .[]' flutter-test.json >> "$failures_file" || true
           fi
 
-          # Fingerprint = which steps failed + which tests failed. The Flutter
-          # version is reported but not part of it, so a new beta with the
-          # same breakage doesn't re-notify.
-          signature=$(printf '%s\n%s' "$failed_steps" "$tests" | sha256sum | cut -c1-12)
+          # Gradle JUnit reports. example/android/build.gradle redirects
+          # subproject build dirs to example/build/<project>.
+          python3 - >> "$failures_file" <<'PY' || true
+          import glob
+          import xml.etree.ElementTree as ET
+          for path in glob.glob("example/build/flutter_radar/test-results/testDebugUnitTest/*.xml"):
+              for case in ET.parse(path).getroot().iter("testcase"):
+                  if case.find("failure") is not None or case.find("error") is not None:
+                      cls = (case.get("classname") or "").rsplit(".", 1)[-1]
+                      print(f"Android: {cls}.{case.get('name')}")
+          PY
+
+          # Analyzer lines look like "info • message • path:line:col • code".
+          # Line numbers are dropped so unrelated edits don't change the fingerprint.
+          if [ -f analyze.txt ]; then
+            awk -F ' • ' '
+              NF >= 4 && $1 ~ /^ *(error|warning|info)$/ {
+                sev = $1; gsub(/ /, "", sev)
+                loc = $(NF-1); sub(/:[0-9]+:[0-9]+$/, "", loc)
+                print "analyze: " sev " " $NF " " loc
+              }' analyze.txt >> "$failures_file" || true
+          fi
+
+          failures=$(sort -u "$failures_file")
+
+          # Fingerprint = which steps failed + the individual failures. The
+          # Flutter version is reported but not part of it, so a new beta with
+          # the same breakage doesn't re-notify.
+          signature=$(printf '%s\n%s' "$failed_steps" "$failures" | sha256sum | cut -c1-12)
 
           {
             echo "flutter_version=${version:-unknown}"
             echo "failed_steps=$failed_steps"
             echo "signature=$signature"
-            echo "failing_tests<<__EOF__"
-            echo "$tests"
+            echo "failures<<__EOF__"
+            echo "$failures"
             echo "__EOF__"
           } >> "$GITHUB_OUTPUT"
 
@@ -131,7 +160,7 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       FLUTTER_VERSION: ${{ needs.test.outputs.flutter_version }}
       FAILED_STEPS: ${{ needs.test.outputs.failed_steps }}
-      FAILING_TESTS: ${{ needs.test.outputs.failing_tests }}
+      FAILURES: ${{ needs.test.outputs.failures }}
       SIGNATURE: ${{ needs.test.outputs.signature }}
     steps:
       - name: Open, update, or close the tracking issue
@@ -147,10 +176,10 @@ jobs:
             exit 0
           fi
 
-          if [ -n "$FAILING_TESTS" ]; then
-            tests_md=$(printf '%s\n' "$FAILING_TESTS" | sed 's/^/- `/; s/$/`/')
+          if [ -n "$FAILURES" ]; then
+            failures_md=$(printf '%s\n' "$FAILURES" | sed 's/^/- `/; s/$/`/')
           else
-            tests_md="_No individual test failures parsed. See the run log._"
+            failures_md="_No individual failures parsed. See the run log._"
           fi
 
           details=$(cat <<EOF
@@ -158,8 +187,8 @@ jobs:
           **Flutter:** ${FLUTTER_VERSION} (beta)
           **Failed steps:** ${FAILED_STEPS:-unknown}
 
-          **Failing tests:**
-          $tests_md
+          **Failures:**
+          $failures_md
           EOF
           )
 
