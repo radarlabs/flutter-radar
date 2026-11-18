@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_radar/flutter_radar.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -78,6 +80,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _permissionStatus = 'UNKNOWN';
   String? _tripId;
   List<String> _legIds = [];
+  String? _autocompleteSessionToken;
+  Map? _autocompleteResult;
 
   final Set<String> _enabledListeners = {};
 
@@ -194,6 +198,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               .whereType<String>()
               .toList()
           : <String>[];
+    });
+  }
+
+  /// `selectAutocompleteAddress` reports a result the session returned, so the
+  /// first address of the last session autocomplete is stashed for it.
+  void _captureAutocompleteResult(Object? response) {
+    if (response is! Map) return;
+    final addresses = response['addresses'];
+    setState(() {
+      _autocompleteResult = addresses is List && addresses.isNotEmpty
+          ? addresses.first as Map?
+          : null;
     });
   }
 
@@ -410,6 +426,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('trackOnce()', () => Radar.trackOnce()),
             ApiAction('trackOnce(location)',
                 () => Radar.trackOnce(location: Map<String, dynamic>.from(_manhattan))),
+            ApiAction('trackOnce() → user.locationInsights', () async {
+              if (!Platform.isIOS) {
+                return 'iOS only. The Android SDK does not return locationInsights.';
+              }
+              return (await Radar.trackOnce())?['user']?['locationInsights'];
+            }),
             ApiAction("getLocation('high')", () => Radar.getLocation('high')),
             ApiAction("startTracking('responsive')", () async {
               await Radar.startTracking('responsive');
@@ -496,6 +518,35 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('setExpectedJurisdiction(clear)', () async {
               await Radar.setExpectedJurisdiction();
               return 'cleared';
+            }),
+            ApiAction('setExpectedAddress(20 Jay St)', () async {
+              await Radar.setExpectedAddress(
+                  '20 Jay St, Brooklyn, NY 11201, USA');
+              return '20 Jay St, Brooklyn, NY 11201, USA';
+            }),
+            ApiAction('setExpectedAddress(clear)', () async {
+              await Radar.setExpectedAddress(null);
+              return 'cleared';
+            }),
+            ApiAction('trackVerified() → user.expectedAddress', () async {
+              final response = await Radar.trackVerified();
+              return response?['token']?['user']?['expectedAddress'];
+            }),
+            ApiAction('trackVerified() → token.format', () async {
+              final response = await Radar.trackVerified();
+              return response?['token']?['format'];
+            }),
+            ApiAction('revealRisk() → revealRisk.format', () async {
+              final response = await Radar.revealRisk();
+              return response?['revealRisk']?['format'];
+            }),
+            ApiAction('startRangingBeacons()', () async {
+              await Radar.startRangingBeacons();
+              return 'ranging';
+            }),
+            ApiAction('stopRangingBeacons()', () async {
+              await Radar.stopRangingBeacons();
+              return 'stopped';
             }),
           ],
         ),
@@ -604,6 +655,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   country: 'US',
                   mailable: false,
                 )),
+            ApiAction('createAutocompleteSession()', () async {
+              final token = await Radar.createAutocompleteSession();
+              setState(() {
+                _autocompleteSessionToken = token;
+                _autocompleteResult = null;
+              });
+              return token;
+            }),
+            ApiAction('autocomplete(sessionToken)', () async {
+              final sessionToken = _autocompleteSessionToken;
+              if (sessionToken == null) {
+                return 'No session. Run "createAutocompleteSession()" first.';
+              }
+              final response = await Radar.autocomplete(
+                query: 'brooklyn roasting',
+                near: Map<String, dynamic>.from(_manhattan),
+                limit: 10,
+                country: 'US',
+                sessionToken: sessionToken,
+              );
+              _captureAutocompleteResult(response);
+              return response;
+            }),
+            ApiAction('selectAutocompleteAddress(first result)', () async {
+              final sessionToken = _autocompleteSessionToken;
+              final address = _autocompleteResult;
+              if (sessionToken == null || address == null) {
+                return 'No session result. Run "autocomplete(sessionToken)" first.';
+              }
+              return Radar.selectAutocompleteAddress(
+                sessionToken: sessionToken,
+                address: address,
+              );
+            }),
             ApiAction('geocode()', () => Radar.geocode('20 jay st brooklyn')),
             ApiAction('reverseGeocode()', () => Radar.reverseGeocode()),
             ApiAction('ipGeocode()', () => Radar.ipGeocode()),
@@ -632,6 +717,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   'street': 'BROADWAY',
                   'number': '841',
                 })),
+            ApiAction('validateStreetAddress()', () => Radar.validateStreetAddress(
+                  street: 'BROADWAY',
+                  number: '841',
+                  city: 'NEW YORK',
+                  stateCode: 'NY',
+                  postalCode: '10003',
+                  countryCode: 'US',
+                )),
+            ApiAction('validateAddressLabel()', () => Radar.validateAddressLabel(
+                  addressLabel: '841 BROADWAY',
+                  city: 'NEW YORK',
+                  stateCode: 'NY',
+                  postalCode: '10003',
+                  countryCode: 'US',
+                )),
           ],
         ),
         ApiSection(

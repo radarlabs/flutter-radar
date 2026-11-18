@@ -1,3 +1,16 @@
+# 4.0.0-beta.4
+
+- Updates the Radar iOS SDK from `3.38.0` to `4.0.0`.
+- Updates the Radar Android SDK from `3.36.1` to `5.0.0`.
+- Raises the minimum Android API level from `21` to `23`, which the Radar Android SDK `5.0.0` requires.
+- Adds `Radar.setExpectedAddress()`, and returns the resulting `expectedAddress` state on `user`.
+- Adds `Radar.startRangingBeacons()` and `Radar.stopRangingBeacons()` for continuous foreground beacon ranging.
+- Adds `Radar.validateStreetAddress()` and `Radar.validateAddressLabel()`, which send a street and number or an address label. `Radar.validateAddress()` is unchanged but deprecated natively.
+- Adds autocomplete sessions: `Radar.createAutocompleteSession()`, an optional `sessionToken` on `Radar.autocomplete()`, and `Radar.selectAutocompleteAddress()` to report the selected result and return the enriched address.
+- Returns the new `user.locationInsights` field on iOS, and the new `user.entered_home`, `user.exited_home`, `user.entered_work`, `user.exited_work`, `user.started_traveling`, `user.stopped_traveling`, `user.started_commuting`, and `user.stopped_commuting` events.
+- Returns the `format` field on verified location and reveal risk tokens for projects using `JWE` or `ID` response formats, where `user`, `events`, `failureReasons`, `risk`, `network`, and `device` are omitted.
+- Updates the Android example app to declare `io.radar.sdk.RadarForegroundService`, which the Radar Android SDK `4.0.0` removed from its own manifest.
+
 # 4.0.0-beta.3
 
 - Updates optional `near` location handling for `Radar.autocomplete()`, `Radar.searchPlaces()`, and `Radar.searchGeofences()` on Android and iOS.

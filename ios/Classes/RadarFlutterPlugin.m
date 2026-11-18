@@ -29,6 +29,10 @@
 @property (strong, nonatomic) FlutterMethodChannel *backgroundChannel;
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property (strong, nonatomic) FlutterResult permissionsRequestResult;
+/// Autocomplete sessions opened from Dart, keyed by session token. Dart holds
+/// the token, not the session, so the session must outlive the call that
+/// created it.
+@property (strong, nonatomic) NSMutableDictionary<NSString *, RadarAutocompleteSession *> *autocompleteSessions;
 
 @end
 
@@ -112,6 +116,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     self.backgroundHandlerStore = backgroundHandlerStore;
     self.eventCoordinator = eventCoordinator;
+    self.autocompleteSessions = [NSMutableDictionary new];
     self.locationManager = [CLLocationManager new];
     self.locationManager.delegate = self;
 
@@ -233,6 +238,10 @@ RadarFlutterSharedEventCoordinator(void) {
         [self searchPlaces:call withResult:result];
     } else if ([@"autocomplete" isEqualToString:call.method]) {
         [self autocomplete:call withResult:result];
+    } else if ([@"createAutocompleteSession" isEqualToString:call.method]) {
+        [self createAutocompleteSession:call withResult:result];
+    } else if ([@"selectAutocompleteAddress" isEqualToString:call.method]) {
+        [self selectAutocompleteAddress:call withResult:result];
     } else if ([@"forwardGeocode" isEqualToString:call.method]) {
       [self geocode:call withResult:result];
     } else if ([@"reverseGeocode" isEqualToString:call.method]) {
@@ -262,7 +271,15 @@ RadarFlutterSharedEventCoordinator(void) {
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
-        [self validateAddress:call withResult:result];    
+        [self validateAddress:call withResult:result];
+    } else if ([@"validateStreetAddress" isEqualToString:call.method]) {
+        [self validateStreetAddress:call withResult:result];
+    } else if ([@"validateAddressLabel" isEqualToString:call.method]) {
+        [self validateAddressLabel:call withResult:result];
+    } else if ([@"startRangingBeacons" isEqualToString:call.method]) {
+        [self startRangingBeacons:call withResult:result];
+    } else if ([@"stopRangingBeacons" isEqualToString:call.method]) {
+        [self stopRangingBeacons:call withResult:result];
     } else if ([@"setProduct" isEqualToString:call.method]) {
         [self setProduct:call withResult:result];
     } else if ([@"getProduct" isEqualToString:call.method]) {
@@ -297,6 +314,8 @@ RadarFlutterSharedEventCoordinator(void) {
         [self clearSharing:call withResult:result];
     } else if ([@"setExpectedJurisdiction" isEqualToString:call.method]) {
         [self setExpectedJurisdiction:call withResult:result];
+    } else if ([@"setExpectedAddress" isEqualToString:call.method]) {
+        [self setExpectedAddress:call withResult:result];
     } else if ([@"clearVerifiedLocationToken" isEqualToString:call.method]) {
         [self clearVerifiedLocationToken:call withResult:result];
     } else if ([@"revealRisk" isEqualToString:call.method]) {
@@ -313,7 +332,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSString *publishableKey = argsDict[@"publishableKey"];
     [[NSUserDefaults standardUserDefaults] setObject:@"Flutter" forKey:@"radar-xPlatformSDKType"];
-    [[NSUserDefaults standardUserDefaults] setObject:@"4.0.0-beta.3" forKey:@"radar-xPlatformSDKVersion"];
+    [[NSUserDefaults standardUserDefaults] setObject:@"4.0.0-beta.4" forKey:@"radar-xPlatformSDKVersion"];
 
     NSDictionary *optionsDict = argsDict[@"options"];
     if (optionsDict) {
@@ -834,7 +853,9 @@ RadarFlutterSharedEventCoordinator(void) {
     NSDictionary *argsDict = call.arguments;
     NSString *tripId = [argsDict[@"tripId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"tripId"];
     NSString *legId = [argsDict[@"legId"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"legId"];
-    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"status"];
+    // RadarTripLeg is declared in Swift as of iOS SDK 3.42.0, so statusForString:
+    // takes a nonnull string and traps on nil.
+    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSString class]] ? argsDict[@"status"] : @"unknown";
     RadarTripLegStatus legStatus = [RadarTripLeg statusForString:statusStr];
 
     RadarTripLegCompletionHandler completionHandler = ^(RadarStatus status, RadarTrip *trip, RadarTripLeg *leg, NSArray<RadarEvent *> *events) {
@@ -861,7 +882,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
 - (void)updateCurrentTripLeg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
-    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"status"];
+    NSString *statusStr = [argsDict[@"status"] isKindOfClass:[NSString class]] ? argsDict[@"status"] : @"unknown";
     RadarTripLegStatus legStatus = [RadarTripLeg statusForString:statusStr];
 
     [Radar updateCurrentTripLegWithStatus:legStatus completionHandler:^(RadarStatus status, RadarTrip *trip, RadarTripLeg *leg, NSArray<RadarEvent *> *events) {
@@ -1040,12 +1061,64 @@ RadarFlutterSharedEventCoordinator(void) {
 
     
     NSNumber *mailableNumber = argsDict[@"mailable"];
-    if (mailableNumber != nil && [mailableNumber isKindOfClass:[NSNumber class]]) {
-        BOOL mailable = [mailableNumber boolValue];
+    BOOL hasMailable = mailableNumber != nil && [mailableNumber isKindOfClass:[NSNumber class]];
+    BOOL mailable = hasMailable ? [mailableNumber boolValue] : NO;
+
+    NSString *sessionToken = [argsDict[@"sessionToken"] isKindOfClass:[NSString class]] ? argsDict[@"sessionToken"] : nil;
+    if (sessionToken) {
+        RadarAutocompleteSession *session = self.autocompleteSessions[sessionToken];
+        if (!session) {
+            result([FlutterError errorWithCode:@"ERROR_INVALID_ARGUMENT"
+                                       message:@"Unknown autocomplete session. Call createAutocompleteSession() first."
+                                       details:nil]);
+            return;
+        }
+        [session autocompleteQuery:query near:near layers:layers limit:limit country:country mailable:mailable completionHandler:completionHandler];
+        return;
+    }
+
+    if (hasMailable) {
         [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country mailable:mailable completionHandler:completionHandler];
     } else {
         [Radar autocompleteQuery:query near:near layers:layers limit:limit country:country completionHandler:completionHandler];
     }
+}
+
+- (void)createAutocompleteSession:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    RadarAutocompleteSession *session = [[RadarAutocompleteSession alloc] init];
+    self.autocompleteSessions[session.sessionToken] = session;
+    result(session.sessionToken);
+}
+
+- (void)selectAutocompleteAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *sessionToken = [argsDict[@"sessionToken"] isKindOfClass:[NSString class]] ? argsDict[@"sessionToken"] : nil;
+    RadarAutocompleteSession *session = sessionToken ? self.autocompleteSessions[sessionToken] : nil;
+    if (!session) {
+        result([FlutterError errorWithCode:@"ERROR_INVALID_ARGUMENT"
+                                   message:@"Unknown autocomplete session. Call createAutocompleteSession() first."
+                                   details:nil]);
+        return;
+    }
+
+    NSDictionary *addressDict = [argsDict[@"address"] isKindOfClass:[NSDictionary class]] ? argsDict[@"address"] : nil;
+    RadarAddress *address = addressDict ? [RadarAddress addressFromObject:addressDict] : nil;
+    if (!address) {
+        result([FlutterError errorWithCode:@"ERROR_INVALID_ARGUMENT"
+                                   message:@"selectAutocompleteAddress requires an address from autocomplete()"
+                                   details:nil]);
+        return;
+    }
+
+    [session selectAddress:address completionHandler:^(RadarStatus status, RadarAutocompleteEnrichedAddress *_Nullable enrichedAddress) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (enrichedAddress) {
+            [dict setObject:[enrichedAddress dictionaryValue] forKey:@"address"];
+        }
+        result(dict);
+    }];
 }
 
 - (void)geocode:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1348,6 +1421,57 @@ RadarFlutterSharedEventCoordinator(void) {
   [Radar validateAddress:address completionHandler:completionHandler];
 }
 
+- (RadarValidateAddressCompletionHandler)validateAddressCompletionHandler:(FlutterResult)result {
+    return ^(RadarStatus status, RadarAddress *_Nullable address, RadarAddressVerificationStatus verificationStatus) {
+        NSMutableDictionary *dict = [NSMutableDictionary new];
+        [dict setObject:[Radar stringForStatus:status] forKey:@"status"];
+        if (address) {
+            [dict setObject:[address dictionaryValue] forKey:@"address"];
+        }
+        [dict setObject:[Radar stringForVerificationStatus:verificationStatus] forKey:@"verificationStatus"];
+        result(dict);
+    };
+}
+
+- (NSString *)stringFromValue:(id)value {
+    return [value isKindOfClass:[NSString class]] ? (NSString *)value : nil;
+}
+
+- (void)validateStreetAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    [Radar validateAddressWithStreet:[self stringFromValue:argsDict[@"street"]] ?: @""
+                              number:[self stringFromValue:argsDict[@"number"]] ?: @""
+                                unit:[self stringFromValue:argsDict[@"unit"]]
+                                city:[self stringFromValue:argsDict[@"city"]] ?: @""
+                           stateCode:[self stringFromValue:argsDict[@"stateCode"]] ?: @""
+                          postalCode:[self stringFromValue:argsDict[@"postalCode"]] ?: @""
+                         countryCode:[self stringFromValue:argsDict[@"countryCode"]] ?: @""
+                   completionHandler:[self validateAddressCompletionHandler:result]];
+}
+
+- (void)validateAddressLabel:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    [Radar validateAddressWithAddressLabel:[self stringFromValue:argsDict[@"addressLabel"]] ?: @""
+                                      unit:[self stringFromValue:argsDict[@"unit"]]
+                                      city:[self stringFromValue:argsDict[@"city"]] ?: @""
+                                 stateCode:[self stringFromValue:argsDict[@"stateCode"]] ?: @""
+                                postalCode:[self stringFromValue:argsDict[@"postalCode"]] ?: @""
+                               countryCode:[self stringFromValue:argsDict[@"countryCode"]] ?: @""
+                         completionHandler:[self validateAddressCompletionHandler:result]];
+}
+
+- (void)startRangingBeacons:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar startRangingBeacons];
+    result(nil);
+}
+
+- (void)stopRangingBeacons:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [Radar stopRangingBeacons];
+    result(nil);
+}
+
 - (void)didReceiveEvents:(NSArray<RadarEvent *> *)events user:(RadarUser *)user {
     NSDictionary *dict = @{@"events": [RadarEvent arrayForEvents:events], @"user": user ? [user dictionaryValue] : @""};
 
@@ -1499,6 +1623,14 @@ RadarFlutterSharedEventCoordinator(void) {
     NSString *countryCode = [argsDict[@"countryCode"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"countryCode"];
     NSString *stateCode = [argsDict[@"stateCode"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"stateCode"];
     [Radar setExpectedJurisdictionWithCountryCode:countryCode stateCode:stateCode];
+    result(nil);
+}
+
+- (void)setExpectedAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *argsDict = call.arguments;
+
+    NSString *address = [argsDict[@"address"] isKindOfClass:[NSNull class]] ? nil : argsDict[@"address"];
+    [Radar setExpectedAddress:address];
     result(nil);
 }
 

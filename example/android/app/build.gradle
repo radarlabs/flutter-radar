@@ -38,7 +38,7 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "io.radar.example"
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion Math.max(flutter.minSdkVersion, 23)
         targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -54,7 +54,7 @@ android {
 }
 
 dependencies {
-    implementation 'io.radar:sdk:3.36.1'
+    implementation 'io.radar:sdk:5.0.0'
     implementation "com.google.android.play:integrity:1.2.0"
 }
 

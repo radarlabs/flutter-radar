@@ -443,6 +443,11 @@ class Radar {
     }
   }
 
+  /// Autocompletes partial addresses and place names.
+  ///
+  /// Pass the [sessionToken] returned by [createAutocompleteSession] to scope
+  /// the request to an autocomplete session, so that the result the user picks
+  /// can be reported with [selectAutocompleteAddress].
   static Future<Map?> autocomplete({
     String? query,
     Map<String, dynamic>? near,
@@ -450,6 +455,7 @@ class Radar {
     String? country,
     List? layers,
     bool? mailable,
+    String? sessionToken,
   }) async {
     try {
       return await _channel.invokeMethod('autocomplete', {
@@ -459,6 +465,36 @@ class Radar {
         'country': country,
         'layers': layers,
         'mailable': mailable,
+        'sessionToken': sessionToken,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Opens an autocomplete session and returns its session token. Create one
+  /// session per address field.
+  static Future<String?> createAutocompleteSession() async {
+    try {
+      return await _channel.invokeMethod('createAutocompleteSession');
+    } on PlatformException catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  /// Reports which [address] the user chose in the session identified by
+  /// [sessionToken]. [address] must be a result returned by [autocomplete] for
+  /// that session. Returns the enriched address where available.
+  static Future<Map?> selectAutocompleteAddress({
+    required String sessionToken,
+    required Map address,
+  }) async {
+    try {
+      return await _channel.invokeMethod('selectAutocompleteAddress', {
+        'sessionToken': sessionToken,
+        'address': address,
       });
     } on PlatformException catch (e) {
       print(e);
@@ -681,6 +717,37 @@ class Radar {
     }
   }
 
+  /// Optionally sets the user's expected address for verified location checks.
+  /// Pass `null` to clear it.
+  static Future setExpectedAddress(String? address) async {
+    try {
+      await _channel.invokeMethod('setExpectedAddress', {'address': address});
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  /// Starts continuously ranging nearby beacons while the app is in the
+  /// foreground, so that `trackVerified(beacons: true)` does not have to wait
+  /// on a new ranging window. Requires location and Bluetooth permissions, and
+  /// Android 8.0 or later on Android.
+  static Future startRangingBeacons() async {
+    try {
+      await _channel.invokeMethod('startRangingBeacons');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
+  /// Stops ranging beacons started with [startRangingBeacons].
+  static Future stopRangingBeacons() async {
+    try {
+      await _channel.invokeMethod('stopRangingBeacons');
+    } on PlatformException catch (e) {
+      print(e);
+    }
+  }
+
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
@@ -689,6 +756,60 @@ class Radar {
     try {
       return await _channel.invokeMethod('validateAddress', {
         'address': address,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Validates an address from its street and number. Every field except
+  /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
+  /// sending a request.
+  static Future<Map?> validateStreetAddress({
+    required String street,
+    required String number,
+    String? unit,
+    required String city,
+    required String stateCode,
+    required String postalCode,
+    required String countryCode,
+  }) async {
+    try {
+      return await _channel.invokeMethod('validateStreetAddress', {
+        'street': street,
+        'number': number,
+        'unit': unit,
+        'city': city,
+        'stateCode': stateCode,
+        'postalCode': postalCode,
+        'countryCode': countryCode,
+      });
+    } on PlatformException catch (e) {
+      print(e);
+      return {'error': e.code};
+    }
+  }
+
+  /// Validates an address from a single-line address label. Every field except
+  /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
+  /// sending a request.
+  static Future<Map?> validateAddressLabel({
+    required String addressLabel,
+    String? unit,
+    required String city,
+    required String stateCode,
+    required String postalCode,
+    required String countryCode,
+  }) async {
+    try {
+      return await _channel.invokeMethod('validateAddressLabel', {
+        'addressLabel': addressLabel,
+        'unit': unit,
+        'city': city,
+        'stateCode': stateCode,
+        'postalCode': postalCode,
+        'countryCode': countryCode,
       });
     } on PlatformException catch (e) {
       print(e);
