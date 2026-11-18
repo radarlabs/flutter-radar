@@ -47,6 +47,9 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # Matches the latest job in build.yml. Flutter 3.50 needs AGP 9 and
+          # Gradle 9.3.1, which the example app is not on yet.
+          flutter-version: '3.47.9'
           channel: stable
           cache: true
 
@@ -172,8 +175,16 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/native-sdk-sync.mjs apply-version "$PLUGIN_VERSION" "$GITHUB_WORKSPACE"
+          MIN_SDK='{"update":false}'
           if [ "$ANDROID_UPDATE" = true ]; then
             node scripts/native-sdk-sync.mjs apply-android-version "$TARGET_ANDROID" "$GITHUB_WORKSPACE"
+            # A new Android SDK can raise its minSdk, which apps using the plugin must meet.
+            MIN_SDK=$(node scripts/native-sdk-sync.mjs apply-android-min-sdk \
+              "$SYNC_ROOT/upstream-android/sdk/build.gradle" "$GITHUB_WORKSPACE")
+          fi
+          if [ "$(jq -r '.update' <<< "$MIN_SDK")" = true ]; then
+            echo "- Raises the minimum Android API level from \`$(jq -r '.current' <<< "$MIN_SDK")\` to \`$(jq -r '.target' <<< "$MIN_SDK")\`, which the Radar Android SDK \`$TARGET_ANDROID\` requires." \
+              > "$SYNC_ROOT/min-sdk.md"
           fi
           if [ "$ANDROID_FRAUD_UPDATE" = true ]; then
             node scripts/native-sdk-sync.mjs apply-android-fraud-version "$TARGET_ANDROID_FRAUD" "$GITHUB_WORKSPACE"
@@ -193,6 +204,9 @@ jobs:
             fi
             if [ "$ANDROID_UPDATE" = true ]; then
               echo "- Updates the Radar Android SDK from \`$OLD_ANDROID\` to \`$TARGET_ANDROID\`."
+            fi
+            if [ -s "$SYNC_ROOT/min-sdk.md" ]; then
+              cat "$SYNC_ROOT/min-sdk.md"
             fi
           } | node scripts/native-sdk-sync.mjs changelog "$PLUGIN_VERSION" "$GITHUB_WORKSPACE"
 
@@ -327,7 +341,7 @@ jobs:
 
             ## Rules
 
-            Do not change the plugin version, vendored frameworks, gradle pins, Fraud SDK pins,
+            Do not change the plugin version, vendored frameworks, gradle pins, minSdk, Fraud SDK pins,
             pubspec.lock, workflow files, or scripts. Do not commit, push, create a pull request,
             or use GitHub write operations.
 
@@ -412,6 +426,9 @@ jobs:
               echo "- Updates the Radar Android SDK from \`$OLD_ANDROID\` to [\`$TARGET_ANDROID\`]($ANDROID_RELEASE_URL)."
             else
               echo "- Radar Android SDK stays at \`$OLD_ANDROID\` (latest stable release)."
+            fi
+            if [ -s "$SYNC_ROOT/min-sdk.md" ]; then
+              cat "$SYNC_ROOT/min-sdk.md"
             fi
             node scripts/native-sdk-sync.mjs describe-fraud < "$SYNC_ROOT/fraud-plan.json"
           } > "$SYNC_ROOT/pr-versions.md"
@@ -500,7 +517,7 @@ jobs:
             - Claude step: `${{ steps.claude.outcome }}`
             - Sync script tests, `flutter analyze`, `flutter test`, Android unit tests, and example APK and iOS builds: `${{ steps.validation.outcome }}`
             - [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - The Flutter build workflow provides independent validation on this draft.
+            - CI doesn't run on this pull request automatically, because the workflow token opened it. Close and reopen it to run the Flutter build workflow.
           labels: |
             native-sdk-update
             needs-human

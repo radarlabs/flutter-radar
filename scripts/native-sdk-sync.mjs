@@ -175,6 +175,45 @@ export function applyAndroidVersion(root, version) {
   }
 }
 
+// Reads the minSdk that the Radar Android SDK's sdk/build.gradle declares.
+export function upstreamAndroidMinSdk(sdkGradleSource) {
+  const match = sdkGradleSource.match(/^\s*minSdk\s+(\d+)\s*$/m);
+  if (!match) throw new Error("Could not read minSdk from the Android SDK's build.gradle");
+  return Number(match[1]);
+}
+
+const pluginMinSdkPattern = /^(\s*minSdk\s+)(\d+)(\s*)$/m;
+// The example app keeps Flutter's default when it is higher than the SDK's minimum.
+const exampleMinSdkPattern =
+  /^(\s*minSdkVersion\s+)(?:flutter\.minSdkVersion|Math\.max\(flutter\.minSdkVersion, \d+\))(\s*)$/m;
+
+// Raises the plugin's minSdk, and the example app's floor under Flutter's
+// default, to the Android SDK's minSdk. Never lowers either one.
+export function applyAndroidMinSdk(root, minSdk) {
+  const pluginPath = path.join(root, androidGradle);
+  const pluginSource = readFileSync(pluginPath, "utf8");
+  const pluginMatch = pluginSource.match(pluginMinSdkPattern);
+  if (!pluginMatch) throw new Error(`Could not read minSdk from ${androidGradle}`);
+  const current = Number(pluginMatch[2]);
+  const update = minSdk > current;
+  if (update) {
+    writeFileSync(pluginPath, pluginSource.replace(pluginMinSdkPattern, `$1${minSdk}$3`));
+    const examplePath = path.join(root, exampleGradle);
+    const exampleSource = readFileSync(examplePath, "utf8");
+    if (!exampleMinSdkPattern.test(exampleSource)) {
+      throw new Error(`Could not read minSdkVersion from ${exampleGradle}`);
+    }
+    writeFileSync(
+      examplePath,
+      exampleSource.replace(
+        exampleMinSdkPattern,
+        `$1Math.max(flutter.minSdkVersion, ${minSdk})$2`
+      )
+    );
+  }
+  return { current, target: update ? minSdk : current, update };
+}
+
 function maxStableVersion(versions) {
   return versions
     .filter((version) => stableVersionPattern.test(version))
@@ -379,6 +418,10 @@ function main() {
     applyIosVersion(iosRoot, version, sdkSha256, motionSha256);
   } else if (command === "apply-android-version") {
     applyAndroidVersion(root, value);
+  } else if (command === "apply-android-min-sdk") {
+    // apply-android-min-sdk <path to the Android SDK's sdk/build.gradle> [root]
+    const minSdk = upstreamAndroidMinSdk(readFileSync(value, "utf8"));
+    process.stdout.write(JSON.stringify(applyAndroidMinSdk(root, minSdk)));
   } else if (command === "plan-fraud") {
     // Reads the planFraudUpdate inputs as JSON from stdin.
     const inputs = JSON.parse(readFileSync(0, "utf8"));

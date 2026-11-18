@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   addChangelogEntry,
   applyAndroidFraudVersion,
+  applyAndroidMinSdk,
   applyAndroidVersion,
   applyIosFraudVersion,
   applyIosVersion,
@@ -21,6 +22,7 @@ import {
   planUpdate,
   releaseNotesBetween,
   requiredFraudVersion,
+  upstreamAndroidMinSdk,
 } from "../native-sdk-sync.mjs";
 
 const OLD_SHA = "a".repeat(64);
@@ -133,6 +135,56 @@ test("updates the Android SDK pin in the plugin and the example app", () => {
 
   writeFileSync(path.join(root, "example/android/app/build.gradle"), "dependencies {}\n");
   assert.throws(() => applyAndroidVersion(root, "4.2.0"), /0 markers/);
+});
+
+test("reads the Android SDK's minSdk", () => {
+  assert.equal(
+    upstreamAndroidMinSdk("android {\n    defaultConfig {\n        minSdk 23\n        targetSdk 35\n    }\n}\n"),
+    23
+  );
+  assert.throws(() => upstreamAndroidMinSdk("android {}\n"), /Could not read minSdk/);
+});
+
+test("raises the plugin and example app minSdk to the Android SDK's", () => {
+  const root = fixtureRoot();
+  const pluginMinSdk = (minSdk) =>
+    `android {\n    defaultConfig {\n        minSdk ${minSdk}\n    }\n}\n${pluginGradle()}`;
+  const exampleMinSdk = (line) =>
+    `android {\n    defaultConfig {\n        ${line}\n        targetSdkVersion 35\n    }\n}\n`;
+  writeFileSync(path.join(root, "android/build.gradle"), pluginMinSdk(21));
+  writeFileSync(
+    path.join(root, "example/android/app/build.gradle"),
+    exampleMinSdk("minSdkVersion flutter.minSdkVersion")
+  );
+
+  assert.deepEqual(applyAndroidMinSdk(root, 23), { current: 21, target: 23, update: true });
+  assert.equal(read(root, "android/build.gradle"), pluginMinSdk(23));
+  assert.equal(
+    read(root, "example/android/app/build.gradle"),
+    exampleMinSdk("minSdkVersion Math.max(flutter.minSdkVersion, 23)")
+  );
+
+  // A later raise moves the example's floor; an equal or lower minSdk changes nothing.
+  assert.deepEqual(applyAndroidMinSdk(root, 24), { current: 23, target: 24, update: true });
+  assert.equal(
+    read(root, "example/android/app/build.gradle"),
+    exampleMinSdk("minSdkVersion Math.max(flutter.minSdkVersion, 24)")
+  );
+  assert.deepEqual(applyAndroidMinSdk(root, 21), { current: 24, target: 24, update: false });
+  assert.equal(read(root, "android/build.gradle"), pluginMinSdk(24));
+});
+
+test("fails when the example app's minSdkVersion is not a known form", () => {
+  const root = fixtureRoot();
+  writeFileSync(
+    path.join(root, "android/build.gradle"),
+    `android {\n    defaultConfig {\n        minSdk 21\n    }\n}\n`
+  );
+  writeFileSync(
+    path.join(root, "example/android/app/build.gradle"),
+    "android {\n    defaultConfig {\n        minSdkVersion 19\n    }\n}\n"
+  );
+  assert.throws(() => applyAndroidMinSdk(root, 23), /Could not read minSdkVersion/);
 });
 
 test("reads the RadarSDK and RadarSDKMotion zip digests from an iOS release", () => {
