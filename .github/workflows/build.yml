@@ -16,8 +16,12 @@ jobs:
         include:
           - flutter_name: minimum
             flutter_version: '3.29.0'
+          # Pinned to the last stable release before 3.50. Flutter 3.50 requires
+          # Gradle 9.3.1, AGP 9.1.1, and Kotlin 2.4.10 (the example is on 8.14,
+          # 8.11.1, and 2.2.20) and deprecates package:flutter/material.dart,
+          # which flutter analyze reports. Unpin after the AGP 9 upgrade.
           - flutter_name: latest
-            flutter_version: ''
+            flutter_version: '3.47.9'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
