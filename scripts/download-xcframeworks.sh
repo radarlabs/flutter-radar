@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
-SDK_VERSION="${1:-3.38.0}"
-FRAUD_VERSION="${2:-1.3.0}"
-
+# The vendored versions and the sha256 of each release zip;
+# scripts/native-sdk-sync.mjs updates these lines.
+SDK_VERSION="3.38.0"
 SDK_SHA256="8ee64edcd7b4391e90a0302bfcf158d717a5b337834bfded8f9b7097c5612b75"
 MOTION_SHA256="c5c2f5f007d0ae03f7eeefa277839fde826d6eb168834911228d12e0294ab35e"
+FRAUD_VERSION="1.3.0"
 FRAUD_SHA256="cc344d59d4bd1127748dcbc52bd864844596d38e35234d3ca4829c9493708483"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
