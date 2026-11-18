@@ -1,0 +1,195 @@
+name: Nightly Flutter beta
+
+# Builds and tests the plugin against the Flutter beta channel so breaking
+# changes show up before they reach stable. Failures are tracked in a single
+# GitHub issue labeled `flutter-beta-nightly`:
+#   - first failure opens the issue (Slack is subscribed to this label)
+#   - the same failure again only edits the issue body (no notification)
+#   - a different failure adds a comment (notifies issue watchers)
+#   - the first passing run closes the issue
+#
+# Test and report are separate jobs so the write-scoped token never shares a
+# job with pub dependencies, build scripts, or the beta SDK.
+
+on:
+  schedule:
+    # ~5-6am ET daily
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-flutter-beta
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  test:
+    name: Build and test (Flutter beta)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      flutter_version: ${{ steps.summary.outputs.flutter_version }}
+      failed_steps: ${{ steps.summary.outputs.failed_steps }}
+      failing_tests: ${{ steps.summary.outputs.failing_tests }}
+      signature: ${{ steps.summary.outputs.signature }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: beta
+      - id: pubget
+        run: flutter pub get
+
+      # Each check runs even if an earlier one failed, so the report lists
+      # every broken step instead of only the first.
+      - id: analyze
+        if: ${{ !cancelled() && steps.pubget.outcome == 'success' }}
+        run: flutter analyze
+      - id: test
+        if: ${{ !cancelled() && steps.pubget.outcome == 'success' }}
+        run: flutter test --file-reporter json:flutter-test.json
+      - id: example_pubget
+        if: ${{ !cancelled() && steps.pubget.outcome == 'success' }}
+        working-directory: example
+        run: flutter pub get
+      - id: android_unit
+        if: ${{ !cancelled() && steps.example_pubget.outcome == 'success' }}
+        working-directory: example/android
+        run: ./gradlew :flutter_radar:testDebugUnitTest
+      - id: build_apk
+        if: ${{ !cancelled() && steps.example_pubget.outcome == 'success' }}
+        working-directory: example
+        run: flutter build apk --debug
+
+      - id: summary
+        if: ${{ always() }}
+        env:
+          PUBGET: ${{ steps.pubget.outcome }}
+          ANALYZE: ${{ steps.analyze.outcome }}
+          TEST: ${{ steps.test.outcome }}
+          EXAMPLE_PUBGET: ${{ steps.example_pubget.outcome }}
+          ANDROID_UNIT: ${{ steps.android_unit.outcome }}
+          BUILD_APK: ${{ steps.build_apk.outcome }}
+        run: |
+          version=$(flutter --version --machine 2>/dev/null | jq -r '.frameworkVersion // empty' || true)
+
+          failed=()
+          [ "$PUBGET" = "success" ] || failed+=("setup / flutter pub get")
+          [ "$ANALYZE" = "failure" ] && failed+=("flutter analyze")
+          [ "$TEST" = "failure" ] && failed+=("flutter test")
+          [ "$EXAMPLE_PUBGET" = "failure" ] && failed+=("example pub get")
+          [ "$ANDROID_UNIT" = "failure" ] && failed+=("Android unit tests")
+          [ "$BUILD_APK" = "failure" ] && failed+=("example APK build")
+          failed_steps=""
+          for s in "${failed[@]}"; do failed_steps="${failed_steps:+$failed_steps, }$s"; done
+
+          tests=""
+          if [ -f flutter-test.json ]; then
+            tests=$(jq -rs '
+              (map(select(.type == "testStart"))
+                | map({key: (.test.id | tostring), value: .test.name})
+                | from_entries) as $names
+              | map(select(.type == "testDone" and .result != "success"))
+              | map($names[(.testID | tostring)])
+              | unique | .[]' flutter-test.json || true)
+          fi
+
+          # Fingerprint = which steps failed + which tests failed. The Flutter
+          # version is reported but not part of it, so a new beta with the
+          # same breakage doesn't re-notify.
+          signature=$(printf '%s\n%s' "$failed_steps" "$tests" | sha256sum | cut -c1-12)
+
+          {
+            echo "flutter_version=${version:-unknown}"
+            echo "failed_steps=$failed_steps"
+            echo "signature=$signature"
+            echo "failing_tests<<__EOF__"
+            echo "$tests"
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+  report:
+    name: Update tracking issue
+    needs: test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      LABEL: flutter-beta-nightly
+      RESULT: ${{ needs.test.result }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      FLUTTER_VERSION: ${{ needs.test.outputs.flutter_version }}
+      FAILED_STEPS: ${{ needs.test.outputs.failed_steps }}
+      FAILING_TESTS: ${{ needs.test.outputs.failing_tests }}
+      SIGNATURE: ${{ needs.test.outputs.signature }}
+    steps:
+      - name: Open, update, or close the tracking issue
+        run: |
+          set -euo pipefail
+
+          issue=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$issue" ]; then
+              gh issue close "$issue" --comment "Passing again on Flutter ${FLUTTER_VERSION}: $RUN_URL"
+            fi
+            exit 0
+          fi
+
+          if [ -n "$FAILING_TESTS" ]; then
+            tests_md=$(printf '%s\n' "$FAILING_TESTS" | sed 's/^/- `/; s/$/`/')
+          else
+            tests_md="_No individual test failures parsed. See the run log._"
+          fi
+
+          details=$(cat <<EOF
+          **Run:** $RUN_URL
+          **Flutter:** ${FLUTTER_VERSION} (beta)
+          **Failed steps:** ${FAILED_STEPS:-unknown}
+
+          **Failing tests:**
+          $tests_md
+          EOF
+          )
+
+          body=$(cat <<EOF
+          The nightly build against the Flutter **beta** channel is failing.
+
+          ### Latest failure ($(date -u +%Y-%m-%d))
+          $details
+
+          ---
+          _Maintained by \`.github/workflows/nightly-flutter-beta.yml\`. The body updates silently while the failure stays the same, a comment is added when it changes, and the issue closes on the next passing run._
+
+          <!-- nightly-sig: $SIGNATURE -->
+          EOF
+          )
+
+          if [ -z "$issue" ]; then
+            gh label create "$LABEL" --color D93F0B \
+              --description "Nightly Flutter beta build failures" 2>/dev/null || true
+            gh issue create --label "$LABEL" \
+              --title "Nightly Flutter beta build is failing" \
+              --body "$body"
+            exit 0
+          fi
+
+          previous=$(gh issue view "$issue" --json body --jq '.body' \
+            | sed -n 's/.*<!-- nightly-sig: \([0-9a-f]*\) -->.*/\1/p')
+
+          gh issue edit "$issue" --body "$body"
+
+          if [ "$previous" != "$SIGNATURE" ]; then
+            gh issue comment "$issue" --body "$(printf 'The failure changed.\n\n%s\n' "$details")"
+          fi
