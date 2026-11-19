@@ -30,6 +30,7 @@ T _require<T>(T? value) =>
 final class RadarLocationResult {
   const RadarLocationResult({required this.location, required this.stopped});
 
+  /// The device's location.
   final RadarLocation location;
 
   /// Whether the device is stopped.
@@ -91,7 +92,10 @@ final class RadarTripResult {
 final class RadarContextResult {
   const RadarContextResult({required this.location, required this.context});
 
+  /// The location the context is for.
   final RadarLocation location;
+
+  /// The context for the location.
   final RadarContext context;
 
   @internal
@@ -110,6 +114,8 @@ final class RadarSearchGeofencesResult {
 
   /// The location the search was centered on.
   final RadarLocation location;
+
+  /// The matching geofences, sorted by distance.
   final List<RadarGeofence> geofences;
 
   @internal
@@ -126,6 +132,8 @@ final class RadarSearchPlacesResult {
 
   /// The location the search was centered on.
   final RadarLocation location;
+
+  /// The matching places, sorted by distance.
   final List<RadarPlace> places;
 
   @internal
@@ -140,6 +148,7 @@ final class RadarSearchPlacesResult {
 final class RadarIpGeocodeResult {
   const RadarIpGeocodeResult({required this.address, required this.proxy});
 
+  /// The geocoding result, a partial address.
   final RadarAddress address;
 
   /// Whether the IP address is a known proxy.
@@ -162,6 +171,8 @@ final class RadarValidateAddressResult {
 
   /// The validated address, with its property type and plus4.
   final RadarAddress address;
+
+  /// The verification status of the address.
   final RadarAddressVerificationStatus verificationStatus;
 
   @internal

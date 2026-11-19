@@ -5,7 +5,10 @@ import 'radar_location.dart';
 
 /// The beacon protocol.
 enum RadarBeaconType implements RadarWireEnum {
+  /// iBeacon.
   iBeacon('ibeacon'),
+
+  /// Eddystone.
   eddystone('eddystone');
 
   const RadarBeaconType(this.wireValue);
@@ -14,7 +17,6 @@ enum RadarBeaconType implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native beacon type. Unrecognized values become [iBeacon].
   @internal
   static RadarBeaconType fromWire(Object? value) =>
       readEnum(values, value, iBeacon);
@@ -43,7 +45,11 @@ final class RadarBeacon {
   /// The description of the beacon. Null for a ranged beacon that doesn't
   /// match a beacon in the project.
   final String? description;
+
+  /// The tag of the beacon.
   final String? tag;
+
+  /// The external ID of the beacon.
   final String? externalId;
 
   /// The iBeacon UUID, or the Eddystone namespace UID.
@@ -54,11 +60,17 @@ final class RadarBeacon {
 
   /// The iBeacon minor value. Empty for Eddystone beacons.
   final String minor;
+
+  /// The optional set of custom key-value pairs for the beacon.
   final Map<String, Object?>? metadata;
+
+  /// The location of the beacon.
   final RadarCoordinate? location;
 
   /// The received signal strength in dBm, for ranged beacons.
   final int? rssi;
+
+  /// The type of the beacon.
   final RadarBeaconType type;
 
   @internal
