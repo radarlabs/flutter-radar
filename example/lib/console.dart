@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -201,7 +202,7 @@ class _ConsolePanelState extends State<ConsolePanel> {
               onPressed: count == 0
                   ? null
                   : () {
-                      Clipboard.setData(ClipboardData(text: console.asText()));
+                      unawaited(Clipboard.setData(ClipboardData(text: console.asText())));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Console copied'),
@@ -263,7 +264,7 @@ class _EntryTileState extends State<_EntryTile> {
       child: InkWell(
         onTap: isTruncatable ? () => setState(() => _expanded = !_expanded) : null,
         onLongPress: () {
-          Clipboard.setData(ClipboardData(text: '${entry.label}\n${entry.body}'));
+          unawaited(Clipboard.setData(ClipboardData(text: '${entry.label}\n${entry.body}')));
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Entry copied'),

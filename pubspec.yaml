@@ -13,6 +13,7 @@ dependencies:
   meta: ^1.16.0
 
 dev_dependencies:
+  flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
 
