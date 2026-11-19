@@ -72,7 +72,16 @@ case $platform in
     ;;
 esac
 
+# flutter test uninstalls the app afterwards by default, which wipes the keys
+# and environment saved in the app's Settings. Keep it installed where the
+# flag exists (it's missing from older Flutter versions such as 3.29).
+keep_installed=()
+if "$flutter" test -h 2>/dev/null | grep -q -- '--\[no-\]uninstall'; then
+  keep_installed=(--no-uninstall)
+fi
+
 exec "$flutter" test integration_test/radar_e2e_test.dart \
   -d "$device" \
   --dart-define-from-file=.env.e2e \
+  ${keep_installed[@]+"${keep_installed[@]}"} \
   "$@"
