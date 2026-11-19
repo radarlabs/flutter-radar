@@ -8,11 +8,11 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter_radar/flutter_radar.dart';
+import 'package:flutter_radar_example/environment.dart' show setRadarHosts;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'support/e2e_config.dart';
-import 'support/e2e_host.dart';
 
 // The point scripts/e2e.sh sets as the simulated device location.
 const _nyc = <String, dynamic>{

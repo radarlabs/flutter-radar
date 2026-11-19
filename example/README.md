@@ -43,7 +43,7 @@ On a simulator or emulator, `trackVerified` returns a token, but `passed` is
 usually `false` because attestation fails there. The tests check only that the
 field is present.
 
-The API host is set through a test-only method channel in the example app
-(`io.radar.example/e2e`, in `AppDelegate.m` and `MainActivity.java`). It writes
-the storage keys the native SDKs read the host from; there is no public SDK
-API for it.
+The suite sets the API host with `setRadarHosts` from `lib/environment.dart`,
+the same code the app's Settings page uses. It writes the storage keys the
+native SDKs read the host from; there is no public SDK API for it. A run
+overwrites the host the app last saved; the app rewrites it on its next launch.
