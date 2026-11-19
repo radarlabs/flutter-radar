@@ -1,22 +1,23 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_radar_example/environment.dart';
 import 'package:flutter_radar_example/environment_card.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
+// These run on the host (not Android), so the SDK host overrides use the iOS
+// keys.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const channel = MethodChannel('io.radar.example/environment');
-  late List<MethodCall> calls;
+  // Backs SharedPreferencesAsync, which writes the SDK's host keys.
+  late SharedPreferencesAsyncPlatform sdkStore;
+  late SharedPreferencesAsync sdkPrefs;
 
   setUp(() {
-    calls = [];
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          calls.add(call);
-          return null;
-        });
+    sdkStore = InMemorySharedPreferencesAsync.empty();
+    SharedPreferencesAsyncPlatform.instance = sdkStore;
+    sdkPrefs = SharedPreferencesAsync();
   });
 
   test('defaults to production with the placeholder key', () async {
@@ -29,12 +30,17 @@ void main() {
   });
 
   test('production clears the host overrides', () async {
+    await sdkPrefs.setString('radar-host', 'https://api.radar-staging.com');
+    await sdkPrefs.setString(
+      'radar-verifiedHost',
+      'https://api-verified.radar-staging.com',
+    );
     SharedPreferences.setMockInitialValues({});
     final settings = await EnvironmentSettings.load();
     await settings.applyHosts();
 
-    expect(calls.single.method, 'setHosts');
-    expect(calls.single.arguments, {'host': null, 'verifiedHost': null});
+    expect(await sdkPrefs.getString('radar-host'), isNull);
+    expect(await sdkPrefs.getString('radar-verifiedHost'), isNull);
   });
 
   test('staging writes the staging hosts and uses its own key', () async {
@@ -53,10 +59,16 @@ void main() {
       settings.publishableKey(RadarEnvironment.production),
       defaultPublishableKey,
     );
-    expect(calls.single.arguments, {
-      'host': 'https://api.radar-staging.com',
-      'verifiedHost': 'https://api-verified.radar-staging.com',
-    });
+    // Written without the legacy API's `flutter.` prefix, where the SDK
+    // reads them.
+    expect(
+      await sdkPrefs.getString('radar-host'),
+      'https://api.radar-staging.com',
+    );
+    expect(
+      await sdkPrefs.getString('radar-verifiedHost'),
+      'https://api-verified.radar-staging.com',
+    );
   });
 
   test('local uses the Local URL for both hosts unless one is set', () async {

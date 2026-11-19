@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_android/shared_preferences_android.dart';
+import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
 
 /// The publishable key used when none is saved for an environment. Replace it,
 /// or set a key per environment in the app's Environment card.
@@ -128,19 +129,51 @@ class EnvironmentSettings {
   }
 }
 
-const _channel = MethodChannel('io.radar.example/environment');
-
-/// Neither native SDK has a public host setter: they read these storage keys
-/// on every request (UserDefaults `radar-host` / `radar-verifiedHost` on iOS,
-/// SharedPreferences `RadarSDK` `host` / `verified_host` on Android). The
-/// example app's native code writes them (AppDelegate.m, MainActivity.java).
+/// Writes the native SDKs' host overrides. Neither SDK has a public host
+/// setter: they read these storage keys on every request.
+///
+/// - iOS: standard UserDefaults, keys `radar-host` / `radar-verifiedHost`.
+/// - Android: SharedPreferences file `RadarSDK`, keys `host` /
+///   `verified_host`. This needs the plugin's legacy SharedPreferences
+///   backend (not DataStore) to write that file.
+///
+/// Unlike the legacy `SharedPreferences` API, `SharedPreferencesAsync` doesn't
+/// prefix keys with `flutter.`, so these land exactly where the SDKs look.
 /// A null host removes the override.
-Future<void> _setHosts({String? host, String? verifiedHost}) {
-  return _channel.invokeMethod<void>('setHosts', {
-    'host': host,
-    'verifiedHost': verifiedHost,
-  });
+Future<void> _setHosts({String? host, String? verifiedHost}) async {
+  final SharedPreferencesAsync prefs;
+  final String hostKey;
+  final String verifiedHostKey;
+  if (Platform.isAndroid) {
+    prefs = SharedPreferencesAsync(
+      options: const SharedPreferencesAsyncAndroidOptions(
+        backend: SharedPreferencesAndroidBackendLibrary.SharedPreferences,
+        originalSharedPreferencesOptions: AndroidSharedPreferencesStoreOptions(
+          fileName: 'RadarSDK',
+        ),
+      ),
+    );
+    hostKey = 'host';
+    verifiedHostKey = 'verified_host';
+  } else {
+    prefs = SharedPreferencesAsync(
+      options: SharedPreferencesAsyncFoundationOptions(),
+    );
+    hostKey = 'radar-host';
+    verifiedHostKey = 'radar-verifiedHost';
+  }
+  await _setOrRemove(prefs, hostKey, host);
+  await _setOrRemove(prefs, verifiedHostKey, verifiedHost);
 }
+
+Future<void> _setOrRemove(
+  SharedPreferencesAsync prefs,
+  String key,
+  String? value,
+) =>
+    value == null || value.isEmpty
+        ? prefs.remove(key)
+        : prefs.setString(key, value);
 
 /// Which environments a publishable key is valid on. A key's string doesn't
 /// say whether it belongs to staging or production, so [check] asks each
