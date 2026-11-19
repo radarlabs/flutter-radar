@@ -1,724 +1,568 @@
-import 'dart:io' show Platform;
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'src/models/parsing.dart';
+import 'src/models/radar_address.dart';
+import 'src/models/radar_event.dart';
+import 'src/models/radar_reveal_risk_token.dart';
+import 'src/models/radar_routes.dart';
+import 'src/models/radar_verified_location_token.dart';
+import 'src/models/radar_enums.dart';
+import 'src/models/radar_exception.dart';
+import 'src/models/radar_foreground_service_options.dart';
+import 'src/models/radar_in_app_message.dart';
+import 'src/models/radar_location.dart';
+import 'src/models/radar_notification_options.dart';
+import 'src/models/radar_results.dart';
+import 'src/models/radar_status.dart';
+import 'src/models/radar_tracking_options.dart';
+import 'src/models/radar_trip.dart';
+import 'src/models/radar_update.dart';
 import 'src/radar_background.dart';
 
-export 'src/radar_background.dart'
-    show RadarBackgroundEvent, RadarBackgroundEventType, RadarBackgroundHandler;
+export 'src/models/models.dart';
+export 'src/radar_background.dart' show RadarBackgroundHandler;
 
-typedef LocationCallback = void Function(Map<dynamic, dynamic> locationEvent);
-typedef ClientLocationCallback =
-    void Function(Map<dynamic, dynamic> locationEvent);
-typedef ErrorCallback = void Function(Map<dynamic, dynamic> errorEvent);
-typedef LogCallback = void Function(Map<dynamic, dynamic> logEvent);
-typedef EventsCallback = void Function(Map<dynamic, dynamic> eventsEvent);
-typedef TokenCallback = void Function(Map<dynamic, dynamic> tokenEvent);
-typedef IpChangedCallback = void Function();
-typedef SharingChangedCallback = void Function(bool sharing);
-
+/// The Radar SDK.
+///
+/// Methods that make a request, such as [trackOnce] or [searchPlaces], throw
+/// a [RadarException] with a [RadarStatus] when the request fails. Any
+/// location the SDK obtains along the way is still delivered to
+/// [onClientLocation] and the background handler, even if the request then
+/// fails.
+///
+/// A failure in the plugin itself, such as a native error, throws a
+/// `PlatformException`. Errors from background tracking, where nothing is
+/// awaiting a result, are delivered to [onError] and the background handler.
 class Radar {
   static const MethodChannel _channel = const MethodChannel('flutter_radar');
 
-  static const Set<String> _tripLegStatuses = {
-    'unknown',
-    'pending',
-    'started',
-    'approaching',
-    'arrived',
-    'completed',
-    'canceled',
-    'expired',
-  };
+  static void Function(RadarLocationUpdate update)? _onLocation;
+  static void Function(RadarClientLocationUpdate update)? _onClientLocation;
+  static void Function(RadarErrorUpdate update)? _onError;
+  static void Function(RadarLogUpdate update)? _onLog;
+  static void Function(RadarEventsUpdate update)? _onEvents;
+  static void Function(RadarTokenUpdate update)? _onToken;
+  static void Function(RadarIpChangedUpdate update)? _onIpChanged;
+  static void Function(RadarSharingChangedUpdate update)? _onSharingChanged;
 
-  static void _assertTripLegStatus(String status) {
-    if (!_tripLegStatuses.contains(status)) {
-      throw ArgumentError.value(
-        status,
-        'status',
-        'Invalid trip leg status. Expected one of: ${_tripLegStatuses.join(', ')}',
-      );
-    }
+  /// Invokes [method] and parses its map result with [fromMap].
+  ///
+  /// Throws a [RadarException] if the native SDK reports a status other than
+  /// [RadarStatus.success].
+  static Future<T> _request<T>(
+    String method,
+    Map<String, Object?>? arguments,
+    T Function(ChannelMap map) fromMap,
+  ) async {
+    final result =
+        await _channel.invokeMapMethod<Object?, Object?>(
+          method,
+          _arguments(arguments),
+        ) ??
+        const {};
+    final status = RadarStatus.fromWire(result['status']);
+    if (!status.isSuccess) throw RadarException(status);
+    return fromMap(result);
   }
 
-  static LocationCallback? foregroundLocationCallback;
-  static ClientLocationCallback? foregroundClientLocationCallback;
-  static ErrorCallback? foregroundErrorCallback;
-  static LogCallback? foregroundLogCallback;
-  static EventsCallback? foregroundEventsCallback;
-  static TokenCallback? foregroundTokenCallback;
-  static IpChangedCallback? foregroundIpChangedCallback;
-  static SharingChangedCallback? foregroundSharingChangedCallback;
+  /// Invokes [method], leaving out arguments that are null.
+  static Future<T?> _invoke<T>(
+    String method, [
+    Map<String, Object?>? arguments,
+  ]) => _channel.invokeMethod<T>(method, _arguments(arguments));
 
-  static Future initialize(
+  /// Removes null-valued arguments. Several bridge handlers check only
+  /// whether an argument is present (Android `call.hasArgument`, iOS
+  /// `argsDict[key]`, which is `NSNull` for null), so a null argument would
+  /// skip their defaults and pass null on to the native SDK.
+  static Map<String, Object?>? _arguments(Map<String, Object?>? arguments) =>
+      arguments == null ? null : compact({...arguments});
+
+  /// Returns [value], or throws [RadarException] with
+  /// [RadarStatus.errorServer] if a successful response is missing it, which
+  /// is what the native SDKs do when they can't parse a response.
+  static T _require<T>(T? value) =>
+      value ?? (throw const RadarException(RadarStatus.errorServer));
+
+  static List<RadarAddress> _addresses(ChannelMap map) =>
+      readList(map['addresses'], RadarAddress.fromMap);
+
+  static RadarVerifiedLocationToken _token(ChannelMap map) =>
+      _require(readObject(map['token'], RadarVerifiedLocationToken.fromMap));
+
+  static Future<void> initialize(
     String publishableKey, {
     RadarInitializeOptions? options,
   }) async {
-    try {
-      await _channel.invokeMethod('initialize', {
-        'publishableKey': publishableKey,
-        if (options != null) 'options': options.toMap(),
-      });
-      _channel.setMethodCallHandler(_handleMethodCall);
-    } on PlatformException catch (e) {
-      print(e);
-    }
+    await _invoke<void>('initialize', {
+      'publishableKey': publishableKey,
+      if (options != null) 'options': options.toMap(),
+    });
+    _channel.setMethodCallHandler(_handleMethodCall);
   }
 
-  static Future _handleMethodCall(MethodCall call) async {
+  static Future<void> _handleMethodCall(MethodCall call) async {
     final args = call.arguments;
-    switch (call.method) {
-      case 'location':
-        foregroundLocationCallback?.call(args[1] as Map<dynamic, dynamic>);
-        break;
-      case 'clientLocation':
-        foregroundClientLocationCallback?.call(
-          args[1] as Map<dynamic, dynamic>,
-        );
-        break;
-      case 'error':
-        foregroundErrorCallback?.call(args[1] as Map<dynamic, dynamic>);
-        break;
-      case 'log':
-        foregroundLogCallback?.call(args[1] as Map<dynamic, dynamic>);
-        break;
-      case 'events':
-        foregroundEventsCallback?.call(args[1] as Map<dynamic, dynamic>);
-        break;
-      case 'token':
-        foregroundTokenCallback?.call(args[1] as Map<dynamic, dynamic>);
-        break;
-      case 'ipChanged':
-        foregroundIpChangedCallback?.call();
-        break;
-      case 'sharingChanged':
-        foregroundSharingChangedCallback?.call(
-          (args[1] as Map)['sharing'] as bool,
-        );
+    final payload = args is List && args.length > 1 ? readMap(args[1]) : null;
+    final update = RadarUpdate.fromMethodCall(call.method, payload ?? const {});
+    switch (update) {
+      case RadarLocationUpdate():
+        _onLocation?.call(update);
+      case RadarClientLocationUpdate():
+        _onClientLocation?.call(update);
+      case RadarErrorUpdate():
+        _onError?.call(update);
+      case RadarLogUpdate():
+        _onLog?.call(update);
+      case RadarEventsUpdate():
+        _onEvents?.call(update);
+      case RadarTokenUpdate():
+        _onToken?.call(update);
+      case RadarIpChangedUpdate():
+        _onIpChanged?.call(update);
+      case RadarSharingChangedUpdate():
+        _onSharingChanged?.call(update);
+      case null:
         break;
     }
   }
 
-  static Future setLogLevel(String logLevel) async {
-    try {
-      await _channel.invokeMethod('setLogLevel', {'logLevel': logLevel});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setLogLevel(RadarLogLevel logLevel) async {
+    await _invoke<void>('setLogLevel', {'logLevel': logLevel.wireValue});
   }
 
-  static Future<String?> getPermissionsStatus() async {
-    return await _channel.invokeMethod('getPermissionsStatus');
+  static Future<RadarPermissionsStatus> getPermissionsStatus() async {
+    return RadarPermissionsStatus.fromWire(
+      await _invoke<String>('getPermissionsStatus'),
+    );
   }
 
-  static Future requestPermissions(bool background) async {
-    try {
-      return await _channel.invokeMethod('requestPermissions', {
-        'background': background,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> requestPermissions(bool background) async {
+    await _invoke<void>('requestPermissions', {'background': background});
   }
 
-  static Future setUserId(String userId) async {
-    try {
-      await _channel.invokeMethod('setUserId', {'userId': userId});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setUserId(String userId) async {
+    await _invoke<void>('setUserId', {'userId': userId});
   }
 
   static Future<String?> getUserId() async {
-    return await _channel.invokeMethod('getUserId');
+    return await _invoke('getUserId');
   }
 
-  static Future setDescription(String description) async {
-    try {
-      await _channel.invokeMethod('setDescription', {
-        'description': description,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setDescription(String description) async {
+    await _invoke<void>('setDescription', {'description': description});
   }
 
   static Future<String?> getDescription() async {
-    return await _channel.invokeMethod('getDescription');
+    return await _invoke('getDescription');
   }
 
-  static Future setMetadata(Map<String, dynamic> metadata) async {
-    try {
-      await _channel.invokeMethod('setMetadata', metadata);
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setMetadata(Map<String, dynamic> metadata) async {
+    await _channel.invokeMethod('setMetadata', metadata);
   }
 
-  static Future<Map?> getMetadata() async {
-    return await _channel.invokeMethod('getMetadata');
+  static Future<Map<String, Object?>?> getMetadata() async {
+    return readJson(await _invoke('getMetadata'));
   }
 
-  static Future setAnonymousTrackingEnabled(bool enabled) async {
-    try {
-      await _channel.invokeMethod('setAnonymousTrackingEnabled', {
-        'enabled': enabled,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setAnonymousTrackingEnabled(bool enabled) async {
+    await _invoke<void>('setAnonymousTrackingEnabled', {'enabled': enabled});
   }
 
-  static Future<Map?> getLocation([String? accuracy]) async {
-    try {
-      return await _channel.invokeMethod('getLocation', {'accuracy': accuracy});
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarLocationResult> getLocation([
+    RadarTrackingOptionsDesiredAccuracy? accuracy,
+  ]) {
+    return _request('getLocation', {
+      'accuracy': accuracy?.wireValue,
+    }, RadarLocationResult.fromMap);
   }
 
-  static Future<Map?> trackOnce({
-    Map<String, dynamic>? location,
-    String? desiredAccuracy,
+  static Future<RadarTrackResult> trackOnce({
+    RadarLocation? location,
+    RadarTrackingOptionsDesiredAccuracy? desiredAccuracy,
     bool? beacons,
-  }) async {
-    try {
-      return await _channel.invokeMethod('trackOnce', {
-        'location': location,
-        'desiredAccuracy': desiredAccuracy,
-        'beacons': beacons,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('trackOnce', {
+      'location': location?.toMap(),
+      'desiredAccuracy': desiredAccuracy?.wireValue,
+      'beacons': beacons,
+    }, RadarTrackResult.fromMap);
   }
 
-  static Future startTracking(String preset) async {
-    try {
-      await _channel.invokeMethod('startTracking', {'preset': preset});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> startTracking(RadarTrackingPreset preset) async {
+    await _invoke<void>('startTracking', {'preset': preset.wireValue});
   }
 
-  static Future startTrackingCustom(Map<String, dynamic> options) async {
-    try {
-      await _channel.invokeMethod('startTrackingCustom', options);
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> startTrackingCustom(RadarTrackingOptions options) async {
+    await _invoke<void>('startTrackingCustom', options.toMap());
   }
 
-  static Future startTrackingVerified(int interval, bool beacons) async {
-    try {
-      await _channel.invokeMethod('startTrackingVerified', {
-        'interval': interval,
-        'beacons': beacons,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> startTrackingVerified(int interval, bool beacons) async {
+    await _invoke<void>('startTrackingVerified', {
+      'interval': interval,
+      'beacons': beacons,
+    });
   }
 
-  static Future stopTracking() async {
-    try {
-      await _channel.invokeMethod('stopTracking');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> stopTracking() async {
+    await _invoke<void>('stopTracking');
   }
 
-  static Future stopTrackingVerified() async {
-    try {
-      await _channel.invokeMethod('stopTrackingVerified');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> stopTrackingVerified() async {
+    await _invoke<void>('stopTrackingVerified');
   }
 
   /// Starts ranging nearby beacons in the foreground so `trackVerified` with
   /// `beacons: true` does not wait on a new ranging window. Requires
   /// foreground location permission and Bluetooth, and Android 8.0 or later.
-  static Future startRangingBeacons() async {
-    try {
-      await _channel.invokeMethod('startRangingBeacons');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> startRangingBeacons() async {
+    await _invoke<void>('startRangingBeacons');
   }
 
   /// Stops ranging started by [startRangingBeacons].
-  static Future stopRangingBeacons() async {
-    try {
-      await _channel.invokeMethod('stopRangingBeacons');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> stopRangingBeacons() async {
+    await _invoke<void>('stopRangingBeacons');
   }
 
   static Future<bool?> isTracking() async {
-    return await _channel.invokeMethod('isTracking');
+    return await _invoke('isTracking');
   }
 
-  static Future<Map?> getTrackingOptions() async {
-    try {
-      return await _channel.invokeMethod('getTrackingOptions');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTrackingOptions?> getTrackingOptions() async {
+    return readObject(
+      await _invoke<Object?>('getTrackingOptions'),
+      RadarTrackingOptions.fromMap,
+    );
   }
 
-  static Future<Map?> mockTracking({
-    Map<String, double>? origin,
-    Map<String, double>? destination,
-    String? mode,
+  /// Simulates a trip from [origin] to [destination] for testing, tracking
+  /// [steps] locations along the route, [interval] seconds apart.
+  ///
+  /// Returns once the simulation starts. Each step is delivered to the
+  /// listeners, such as [onLocation] and [onEvents], and to the background
+  /// handler, like any other location update.
+  static Future<void> mockTracking({
+    required RadarLocation origin,
+    required RadarLocation destination,
+    RadarRouteMode? mode,
     int? steps,
     int? interval,
   }) async {
-    try {
-      return await _channel.invokeMethod('mockTracking', {
-        'origin': origin,
-        'destination': destination,
-        'mode': mode,
+    // Neither native bridge replies to this call, so awaiting it would never
+    // complete.
+    unawaited(
+      _invoke<void>('mockTracking', {
+        'origin': origin.toMap(),
+        'destination': destination.toMap(),
+        'mode': mode?.wireValue,
         'steps': steps,
         'interval': interval,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+      }),
+    );
   }
 
-  static Future<Map?> startTrip({
-    Map<String, dynamic>? tripOptions,
-    Map<String, dynamic>? trackingOptions,
-  }) async {
-    try {
-      return await _channel.invokeMethod('startTrip', {
-        'tripOptions': tripOptions,
-        'trackingOptions': trackingOptions,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTripResult> startTrip({
+    required RadarTripOptions tripOptions,
+    RadarTrackingOptions? trackingOptions,
+  }) {
+    return _request('startTrip', {
+      'tripOptions': tripOptions.toMap(),
+      'trackingOptions': trackingOptions?.toMap(),
+    }, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> updateTrip({
-    required Map<String, dynamic> options,
-    required String status,
-  }) async {
-    try {
-      return await _channel.invokeMethod('updateTrip', {
-        'tripOptions': options,
-        'status': status,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTripResult> updateTrip({
+    required RadarTripOptions options,
+    required RadarTripStatus status,
+  }) {
+    return _request('updateTrip', {
+      'tripOptions': options.toMap(),
+      'status': status.wireValue,
+    }, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> getTripOptions() async {
-    return await _channel.invokeMethod('getTripOptions');
+  static Future<RadarTripOptions?> getTripOptions() async {
+    return readObject(
+      await _invoke<Object?>('getTripOptions'),
+      RadarTripOptions.fromMap,
+    );
   }
 
-  static Future<Map?> completeTrip() async {
-    try {
-      return await _channel.invokeMethod('completeTrip');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTripResult> completeTrip() {
+    return _request('completeTrip', null, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> cancelTrip() async {
-    try {
-      return await _channel.invokeMethod('cancelTrip');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTripResult> cancelTrip() {
+    return _request('cancelTrip', null, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> getTrip() async {
-    try {
-      return await _channel.invokeMethod('getTrip');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTrip?> getTrip() async {
+    return readObject(await _invoke<Object?>('getTrip'), RadarTrip.fromMap);
   }
 
   /// Updates a leg on a multi-destination trip. Omit [tripId] to target the
-  /// current trip. [status] must be one of: unknown, pending, started,
-  /// approaching, arrived, completed, canceled, expired.
-  static Future<Map?> updateTripLeg({
+  /// current trip.
+  static Future<RadarTripResult> updateTripLeg({
     String? tripId,
     required String legId,
-    required String status,
-  }) async {
-    _assertTripLegStatus(status);
-    try {
-      return await _channel.invokeMethod('updateTripLeg', {
-        'tripId': tripId,
-        'legId': legId,
-        'status': status,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+    required RadarTripLegStatus status,
+  }) {
+    return _request('updateTripLeg', {
+      'tripId': tripId,
+      'legId': legId,
+      'status': status.wireValue,
+    }, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> updateCurrentTripLeg({required String status}) async {
-    _assertTripLegStatus(status);
-    try {
-      return await _channel.invokeMethod('updateCurrentTripLeg', {
-        'status': status,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarTripResult> updateCurrentTripLeg({
+    required RadarTripLegStatus status,
+  }) {
+    return _request('updateCurrentTripLeg', {
+      'status': status.wireValue,
+    }, RadarTripResult.fromMap);
   }
 
   /// Reorders legs on a multi-destination trip. Omit [tripId] to target the
   /// current trip.
-  static Future<Map?> reorderTripLegs({
+  static Future<RadarTripResult> reorderTripLegs({
     String? tripId,
     required List<String> legIds,
-  }) async {
-    try {
-      return await _channel.invokeMethod('reorderTripLegs', {
-        'tripId': tripId,
-        'legIds': legIds,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('reorderTripLegs', {
+      'tripId': tripId,
+      'legIds': legIds,
+    }, RadarTripResult.fromMap);
   }
 
-  static Future<Map?> getContext(Map<String, dynamic> location) async {
-    try {
-      return await _channel.invokeMethod('getContext', {'location': location});
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  /// Gets the context for [location], or for the device's current location
+  /// if omitted.
+  static Future<RadarContextResult> getContext([RadarLocation? location]) {
+    return _request('getContext', {
+      'location': location?.toMap(),
+    }, RadarContextResult.fromMap);
   }
 
-  static Future<Map?> searchGeofences({
-    Map<String, dynamic>? near,
+  static Future<RadarSearchGeofencesResult> searchGeofences({
+    RadarLocation? near,
     int? radius,
-    List? tags,
+    List<String>? tags,
     Map<String, dynamic>? metadata,
     int? limit,
     bool? includeGeometry,
-  }) async {
-    try {
-      return await _channel.invokeMethod('searchGeofences', <String, dynamic>{
-        'near': near,
-        'radius': radius,
-        'limit': limit,
-        'tags': tags,
-        'metadata': metadata,
-        'includeGeometry': includeGeometry,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('searchGeofences', <String, dynamic>{
+      'near': near?.toMap(),
+      'radius': radius,
+      'limit': limit,
+      'tags': tags,
+      'metadata': metadata,
+      'includeGeometry': includeGeometry,
+    }, RadarSearchGeofencesResult.fromMap);
   }
 
-  static Future<Map?> searchPlaces({
-    Map<String, dynamic>? near,
+  static Future<RadarSearchPlacesResult> searchPlaces({
+    RadarLocation? near,
     int? radius,
     int? limit,
-    List? chains,
+    List<String>? chains,
     Map<String, String>? chainMetadata,
-    List? categories,
-    List? groups,
+    List<String>? categories,
+    List<String>? groups,
     List<String>? countryCodes,
-  }) async {
-    try {
-      return await _channel.invokeMethod('searchPlaces', {
-        'near': near,
-        'radius': radius,
-        'limit': limit,
-        'chains': chains,
-        'chainMetadata': chainMetadata,
-        'categories': categories,
-        'groups': groups,
-        'countryCodes': countryCodes,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('searchPlaces', {
+      'near': near?.toMap(),
+      'radius': radius,
+      'limit': limit,
+      'chains': chains,
+      'chainMetadata': chainMetadata,
+      'categories': categories,
+      'groups': groups,
+      'countryCodes': countryCodes,
+    }, RadarSearchPlacesResult.fromMap);
   }
 
-  static Future<Map?> autocomplete({
-    String? query,
-    Map<String, dynamic>? near,
+  static Future<List<RadarAddress>> autocomplete({
+    required String query,
+    RadarLocation? near,
     int? limit,
     String? country,
-    List? layers,
+    List<String>? layers,
     bool? mailable,
-  }) async {
-    try {
-      return await _channel.invokeMethod('autocomplete', {
-        'query': query,
-        'near': near,
-        'limit': limit,
-        'country': country,
-        'layers': layers,
-        'mailable': mailable,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('autocomplete', {
+      'query': query,
+      'near': near?.toMap(),
+      'limit': limit,
+      'country': country,
+      'layers': layers,
+      'mailable': mailable,
+    }, _addresses);
   }
 
-  static Future<Map?> geocode(String query) async {
-    try {
-      final Map? geocodeResult = await _channel.invokeMethod('forwardGeocode', {
-        'query': query,
-      });
-      return geocodeResult;
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<List<RadarAddress>> geocode(String query) {
+    return _request('forwardGeocode', {'query': query}, _addresses);
   }
 
-  static Future<Map?> reverseGeocode({
-    Map<String, dynamic>? location,
-    List? layers,
-  }) async {
-    try {
-      final Map<String, dynamic> arguments = {
-        'location': location != null ? location : null,
-        'layers': layers != null ? layers : null,
-      };
-      return await _channel.invokeMethod('reverseGeocode', arguments);
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<List<RadarAddress>> reverseGeocode({
+    RadarLocation? location,
+    List<String>? layers,
+  }) {
+    return _request('reverseGeocode', {
+      'location': location?.toMap(),
+      'layers': layers,
+    }, _addresses);
   }
 
-  static Future<Map?> ipGeocode() async {
-    try {
-      return await _channel.invokeMethod('ipGeocode');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarIpGeocodeResult> ipGeocode() {
+    return _request('ipGeocode', null, RadarIpGeocodeResult.fromMap);
   }
 
-  static Future<Map?> revealRisk() async {
-    try {
-      return await _channel.invokeMethod('revealRisk');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarRevealRiskToken> revealRisk() {
+    return _request(
+      'revealRisk',
+      null,
+      (map) =>
+          _require(readObject(map['revealRisk'], RadarRevealRiskToken.fromMap)),
+    );
   }
 
-  static Future<Map?> getDistance({
-    Map<String, double>? origin,
-    Map<String, double>? destination,
-    List? modes,
-    String? units,
-  }) async {
-    try {
-      return await _channel.invokeMethod('getDistance', {
-        'origin': origin,
-        'destination': destination,
-        'modes': modes,
-        'units': units,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  /// Gets the distance and duration to [destination] from [origin], or from
+  /// the device's current location if [origin] is omitted.
+  static Future<RadarRoutes> getDistance({
+    RadarLocation? origin,
+    required RadarLocation destination,
+    required Set<RadarRouteMode> modes,
+    required RadarRouteUnits units,
+  }) {
+    return _request('getDistance', {
+      'origin': origin?.toMap(),
+      'destination': destination.toMap(),
+      'modes': [for (final mode in modes) mode.wireValue],
+      'units': units.wireValue,
+    }, (map) => _require(readObject(map['routes'], RadarRoutes.fromMap)));
   }
 
-  static Future<Map?> logConversion({
+  static Future<RadarEvent> logConversion({
     required String name,
     double? revenue,
-    required Map<String, dynamic> metadata,
-  }) async {
-    try {
-      return await _channel.invokeMethod('logConversion', {
-        'name': name,
-        'revenue': revenue,
-        'metadata': metadata,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+    Map<String, dynamic>? metadata,
+  }) {
+    return _request('logConversion', {
+      'name': name,
+      'revenue': revenue,
+      'metadata': metadata ?? const <String, dynamic>{},
+    }, (map) => _require(readObject(map['event'], RadarEvent.fromMap)));
   }
 
-  // iOS only
-  static Future logTermination() async {
-    try {
-      await _channel.invokeMethod('logTermination');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  /// iOS only. Does nothing on other platforms.
+  static Future<void> logTermination() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    await _invoke<void>('logTermination');
   }
 
-  static Future logBackgrounding() async {
-    try {
-      await _channel.invokeMethod('logBackgrounding');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> logBackgrounding() async {
+    await _invoke<void>('logBackgrounding');
   }
 
-  static Future logResigningActive() async {
-    try {
-      await _channel.invokeMethod('logResigningActive');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> logResigningActive() async {
+    await _invoke<void>('logResigningActive');
   }
 
-  // Android only
-  static Future setNotificationOptions(
-    Map<String, dynamic> notificationOptions,
+  /// Android only. Does nothing on other platforms.
+  static Future<void> setNotificationOptions(
+    RadarNotificationOptions notificationOptions,
   ) async {
-    try {
-      await _channel.invokeMethod(
-        'setNotificationOptions',
-        notificationOptions,
-      );
-    } on PlatformException catch (e) {
-      print(e);
-    }
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    await _invoke<void>('setNotificationOptions', notificationOptions.toMap());
   }
 
-  static Future<Map?> getMatrix({
-    required List origins,
-    required List destinations,
-    required String mode,
-    required String units,
-  }) async {
-    try {
-      return await _channel.invokeMethod('getMatrix', {
-        'origins': origins,
-        'destinations': destinations,
-        'mode': mode,
-        'units': units,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarRouteMatrix> getMatrix({
+    required List<RadarLocation> origins,
+    required List<RadarLocation> destinations,
+    required RadarRouteMode mode,
+    required RadarRouteUnits units,
+  }) {
+    return _request('getMatrix', {
+      'origins': [for (final origin in origins) origin.toMap()],
+      'destinations': [
+        for (final destination in destinations) destination.toMap(),
+      ],
+      'mode': mode.wireValue,
+      'units': units.wireValue,
+    }, (map) => _require(RadarRouteMatrix.fromWire(map['matrix'])));
   }
 
-  static Future setForegroundServiceOptions(
-    Map<String, dynamic> foregroundServiceOptions,
+  /// Android only. Does nothing on other platforms.
+  static Future<void> setForegroundServiceOptions(
+    RadarForegroundServiceOptions foregroundServiceOptions,
   ) async {
-    try {
-      await _channel.invokeMethod(
-        'setForegroundServiceOptions',
-        foregroundServiceOptions,
-      );
-    } on PlatformException catch (e) {
-      print(e);
-    }
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    await _invoke<void>(
+      'setForegroundServiceOptions',
+      foregroundServiceOptions.toMap(),
+    );
   }
 
-  static Future<Map?> trackVerified({
+  static Future<RadarVerifiedLocationToken> trackVerified({
     bool? beacons,
-    String? desiredAccuracy,
+    RadarTrackingOptionsDesiredAccuracy? desiredAccuracy,
     String? reason,
     String? transactionId,
-  }) async {
-    try {
-      return await _channel.invokeMethod('trackVerified', {
-        'beacons': beacons != null ? beacons : false,
-        'desiredAccuracy': desiredAccuracy,
-        'reason': reason,
-        'transactionId': transactionId,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('trackVerified', {
+      'beacons': beacons ?? false,
+      'desiredAccuracy': desiredAccuracy?.wireValue,
+      'reason': reason,
+      'transactionId': transactionId,
+    }, _token);
   }
 
-  static Future<Map?> getVerifiedLocationToken() async {
-    try {
-      return await _channel.invokeMethod('getVerifiedLocationToken');
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  static Future<RadarVerifiedLocationToken> getVerifiedLocationToken() {
+    return _request('getVerifiedLocationToken', null, _token);
   }
 
   static Future<bool?> isSharing() async {
-    return await _channel.invokeMethod('isSharing');
+    return await _invoke('isSharing');
   }
 
-  static Future clearSharing() async {
-    try {
-      await _channel.invokeMethod('clearSharing');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> clearSharing() async {
+    await _invoke<void>('clearSharing');
   }
 
-  static Future setProduct(String? product) async {
-    try {
-      await _channel.invokeMethod('setProduct', {'product': product});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setProduct(String? product) async {
+    await _invoke<void>('setProduct', {'product': product});
   }
 
-  static Future setExpectedJurisdiction({
+  static Future<void> setExpectedJurisdiction({
     String? countryCode,
     String? stateCode,
   }) async {
-    try {
-      await _channel.invokeMethod('setExpectedJurisdiction', {
-        'countryCode': countryCode,
-        'stateCode': stateCode,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+    await _invoke<void>('setExpectedJurisdiction', {
+      'countryCode': countryCode,
+      'stateCode': stateCode,
+    });
   }
 
   /// Sets the user's expected address for address checks. Pass `null` to clear
-  /// it. The result is returned on `user.expectedAddress`.
-  static Future setExpectedAddress(String? address) async {
-    try {
-      await _channel.invokeMethod('setExpectedAddress', {'address': address});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  /// it. The result is returned on [RadarUser.expectedAddress].
+  static Future<void> setExpectedAddress(String? address) async {
+    await _invoke<void>('setExpectedAddress', {'address': address});
   }
 
   static Future<bool?> isUsingRemoteTrackingOptions() async {
-    return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
+    return await _invoke('isUsingRemoteTrackingOptions');
   }
 
-  /// Validates an address from its street and number. Every field except
-  /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
-  /// sending a request.
-  static Future<Map?> validateStreetAddress({
+  /// Validates an address from its [street] and [number], and returns its
+  /// verification status, property type, and plus4.
+  ///
+  /// Every field except [unit] is required.
+  static Future<RadarValidateAddressResult> validateStreetAddress({
     required String street,
     required String number,
     String? unit,
@@ -726,238 +570,199 @@ class Radar {
     required String stateCode,
     required String postalCode,
     required String countryCode,
-  }) async {
-    try {
-      return await _channel.invokeMethod('validateStreetAddress', {
-        'street': street,
-        'number': number,
-        'unit': unit,
-        'city': city,
-        'stateCode': stateCode,
-        'postalCode': postalCode,
-        'countryCode': countryCode,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('validateStreetAddress', {
+      'street': street,
+      'number': number,
+      'unit': unit,
+      'city': city,
+      'stateCode': stateCode,
+      'postalCode': postalCode,
+      'countryCode': countryCode,
+    }, RadarValidateAddressResult.fromMap);
   }
 
-  /// Validates an address from a single-line address label. Every field except
-  /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
-  /// sending a request.
-  static Future<Map?> validateAddressLabel({
+  /// Validates an address from a single-line [addressLabel], such as
+  /// `"20 Jay St"`, and returns its verification status, property type, and
+  /// plus4.
+  ///
+  /// Every field except [unit] is required.
+  static Future<RadarValidateAddressResult> validateAddressLabel({
     required String addressLabel,
     String? unit,
     required String city,
     required String stateCode,
     required String postalCode,
     required String countryCode,
-  }) async {
-    try {
-      return await _channel.invokeMethod('validateAddressLabel', {
-        'addressLabel': addressLabel,
-        'unit': unit,
-        'city': city,
-        'stateCode': stateCode,
-        'postalCode': postalCode,
-        'countryCode': countryCode,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
+  }) {
+    return _request('validateAddressLabel', {
+      'addressLabel': addressLabel,
+      'unit': unit,
+      'city': city,
+      'stateCode': stateCode,
+      'postalCode': postalCode,
+      'countryCode': countryCode,
+    }, RadarValidateAddressResult.fromMap);
   }
 
   static Future<String?> getProduct() async {
-    return await _channel.invokeMethod('getProduct');
+    return await _invoke('getProduct');
   }
 
   static Future<List<String>?> getTags() async {
-    return await _channel.invokeMethod('getTags');
+    return await _invoke('getTags');
   }
 
-  static Future addTags(List<String> tags) async {
-    try {
-      await _channel.invokeMethod('addTags', {'tags': tags});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> addTags(List<String> tags) async {
+    await _invoke<void>('addTags', {'tags': tags});
   }
 
-  static Future removeTags(List<String> tags) async {
-    try {
-      await _channel.invokeMethod('removeTags', {'tags': tags});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> removeTags(List<String> tags) async {
+    await _invoke<void>('removeTags', {'tags': tags});
   }
 
   static Future<bool?> isInitialized() async {
-    return await _channel.invokeMethod('isInitialized');
+    return await _invoke('isInitialized');
   }
 
   static Future<String?> sdkVersion() async {
-    return await _channel.invokeMethod('sdkVersion');
+    return await _invoke('sdkVersion');
   }
 
-  static Future setUserLanguage(String? userLanguage) async {
-    try {
-      await _channel.invokeMethod('setUserLanguage', {
-        'userLanguage': userLanguage,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setUserLanguage(String? userLanguage) async {
+    await _invoke<void>('setUserLanguage', {'userLanguage': userLanguage});
   }
 
   static Future<String?> getUserLanguage() async {
-    return await _channel.invokeMethod('getUserLanguage');
+    return await _invoke('getUserLanguage');
   }
 
-  static Future setTags(List<String> tags) async {
-    try {
-      await _channel.invokeMethod('setTags', {'tags': tags});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setTags(List<String> tags) async {
+    await _invoke<void>('setTags', {'tags': tags});
   }
 
-  static Future acceptEvent(String eventId, {String? verifiedPlaceId}) async {
-    try {
-      await _channel.invokeMethod('acceptEvent', {
-        'eventId': eventId,
-        'verifiedPlaceId': verifiedPlaceId,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> acceptEvent(
+    String eventId, {
+    String? verifiedPlaceId,
+  }) async {
+    await _invoke<void>('acceptEvent', {
+      'eventId': eventId,
+      'verifiedPlaceId': verifiedPlaceId,
+    });
   }
 
-  static Future rejectEvent(String eventId) async {
-    try {
-      await _channel.invokeMethod('rejectEvent', {'eventId': eventId});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> rejectEvent(String eventId) async {
+    await _invoke<void>('rejectEvent', {'eventId': eventId});
   }
 
-  static Future setPushNotificationToken(String? token) async {
-    try {
-      await _channel.invokeMethod('setPushNotificationToken', {'token': token});
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> setPushNotificationToken(String? token) async {
+    await _invoke<void>('setPushNotificationToken', {'token': token});
   }
 
   static Future<bool?> isTrackingVerified() async {
-    return await _channel.invokeMethod('isTrackingVerified');
+    return await _invoke('isTrackingVerified');
   }
 
-  static Future clearVerifiedLocationToken() async {
-    try {
-      await _channel.invokeMethod('clearVerifiedLocationToken');
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> clearVerifiedLocationToken() async {
+    await _invoke<void>('clearVerifiedLocationToken');
   }
 
-  static Future showInAppMessage(Map<String, dynamic> inAppMessage) async {
-    try {
-      await _channel.invokeMethod('showInAppMessage', {
-        'inAppMessage': inAppMessage,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-    }
+  static Future<void> showInAppMessage(RadarInAppMessage inAppMessage) async {
+    await _invoke<void>('showInAppMessage', {
+      'inAppMessage': inAppMessage.toMap(),
+    });
   }
 
-  static onLocation(LocationCallback callback) {
-    if (foregroundLocationCallback != null) {
+  static void onLocation(void Function(RadarLocationUpdate update) callback) {
+    if (_onLocation != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundLocationCallback = callback;
+    _onLocation = callback;
   }
 
-  static offLocation() {
-    foregroundLocationCallback = null;
+  static void offLocation() {
+    _onLocation = null;
   }
 
-  static void onClientLocation(ClientLocationCallback callback) {
-    if (foregroundClientLocationCallback != null) {
+  static void onClientLocation(
+    void Function(RadarClientLocationUpdate update) callback,
+  ) {
+    if (_onClientLocation != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundClientLocationCallback = callback;
+    _onClientLocation = callback;
   }
 
-  static offClientLocation() {
-    foregroundClientLocationCallback = null;
+  static void offClientLocation() {
+    _onClientLocation = null;
   }
 
-  static onError(ErrorCallback callback) {
-    if (foregroundErrorCallback != null) {
+  static void onError(void Function(RadarErrorUpdate update) callback) {
+    if (_onError != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundErrorCallback = callback;
+    _onError = callback;
   }
 
-  static offError() {
-    foregroundErrorCallback = null;
+  static void offError() {
+    _onError = null;
   }
 
-  static onLog(LogCallback callback) {
-    if (foregroundLogCallback != null) {
+  static void onLog(void Function(RadarLogUpdate update) callback) {
+    if (_onLog != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundLogCallback = callback;
+    _onLog = callback;
   }
 
-  static offLog() {
-    foregroundLogCallback = null;
+  static void offLog() {
+    _onLog = null;
   }
 
-  static onEvents(EventsCallback callback) {
-    if (foregroundEventsCallback != null) {
+  static void onEvents(void Function(RadarEventsUpdate update) callback) {
+    if (_onEvents != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundEventsCallback = callback;
+    _onEvents = callback;
   }
 
-  static offEvents() {
-    foregroundEventsCallback = null;
+  static void offEvents() {
+    _onEvents = null;
   }
 
-  static onIpChanged(IpChangedCallback callback) {
-    if (foregroundIpChangedCallback != null) {
+  static void onIpChanged(void Function(RadarIpChangedUpdate update) callback) {
+    if (_onIpChanged != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundIpChangedCallback = callback;
+    _onIpChanged = callback;
   }
 
-  static offIpChanged() {
-    foregroundIpChangedCallback = null;
+  static void offIpChanged() {
+    _onIpChanged = null;
   }
 
-  static onSharingChanged(SharingChangedCallback callback) {
-    if (foregroundSharingChangedCallback != null) {
+  static void onSharingChanged(
+    void Function(RadarSharingChangedUpdate update) callback,
+  ) {
+    if (_onSharingChanged != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundSharingChangedCallback = callback;
+    _onSharingChanged = callback;
   }
 
-  static offSharingChanged() {
-    foregroundSharingChangedCallback = null;
+  static void offSharingChanged() {
+    _onSharingChanged = null;
   }
 
-  static onToken(TokenCallback callback) {
-    if (foregroundTokenCallback != null) {
+  static void onToken(void Function(RadarTokenUpdate update) callback) {
+    if (_onToken != null) {
       throw RadarExistingCallbackException();
     }
-    foregroundTokenCallback = callback;
+    _onToken = callback;
   }
 
-  static offToken() {
-    foregroundTokenCallback = null;
+  static void offToken() {
+    _onToken = null;
   }
 
   /// Registers [handler] as the durable event sink across foreground,
@@ -994,7 +799,7 @@ class Radar {
 
     installRadarBackgroundMethodCallHandler();
 
-    await _channel.invokeMethod<void>('registerBackgroundHandler', {
+    await _invoke<void>('registerBackgroundHandler', {
       'dispatcherHandle': dispatcherHandle.toRawHandle(),
       'callbackHandle': callbackHandle.toRawHandle(),
     });
@@ -1002,163 +807,9 @@ class Radar {
 
   /// Removes the persisted handler and stops durable event delivery.
   static Future<void> unregisterBackgroundHandler() async {
-    await _channel.invokeMethod<void>('unregisterBackgroundHandler');
+    await _invoke<void>('unregisterBackgroundHandler');
     removeRadarBackgroundMethodCallHandler();
   }
-
-  static Map<String, dynamic> presetContinuousIOS = {
-    "desiredStoppedUpdateInterval": 30,
-    "desiredMovingUpdateInterval": 30,
-    "desiredSyncInterval": 20,
-    "desiredAccuracy": 'high',
-    "stopDuration": 140,
-    "stopDistance": 70,
-    "replay": 'none',
-    "useStoppedGeofence": false,
-    "showBlueBar": true,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-    "stoppedGeofenceRadius": 0,
-    "useMovingGeofence": false,
-    "movingGeofenceRadius": 0,
-    "syncGeofences": true,
-    "useVisits": false,
-    "useSignificantLocationChanges": false,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "sync": 'all',
-  };
-
-  static Map<String, dynamic> presetContinuousAndroid = {
-    "desiredStoppedUpdateInterval": 30,
-    "fastestStoppedUpdateInterval": 30,
-    "desiredMovingUpdateInterval": 30,
-    "fastestMovingUpdateInterval": 30,
-    "desiredSyncInterval": 20,
-    "desiredAccuracy": 'high',
-    "stopDuration": 140,
-    "stopDistance": 70,
-    "replay": 'none',
-    "sync": 'all',
-    "useStoppedGeofence": false,
-    "stoppedGeofenceRadius": 0,
-    "useMovingGeofence": false,
-    "movingGeofenceRadius": 0,
-    "syncGeofences": true,
-    "syncGeofencesLimit": 0,
-    "foregroundServiceEnabled": true,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-  };
-
-  static Map<String, dynamic> presetResponsiveIOS = {
-    "desiredStoppedUpdateInterval": 0,
-    "desiredMovingUpdateInterval": 150,
-    "desiredSyncInterval": 20,
-    "desiredAccuracy": 'medium',
-    "stopDuration": 140,
-    "stopDistance": 70,
-    "replay": 'stops',
-    "useStoppedGeofence": true,
-    "showBlueBar": false,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-    "stoppedGeofenceRadius": 100,
-    "useMovingGeofence": true,
-    "movingGeofenceRadius": 100,
-    "syncGeofences": true,
-    "useVisits": true,
-    "useSignificantLocationChanges": true,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "sync": 'all',
-  };
-
-  static Map<String, dynamic> presetResponsiveAndroid = {
-    "desiredStoppedUpdateInterval": 0,
-    "fastestStoppedUpdateInterval": 0,
-    "desiredMovingUpdateInterval": 150,
-    "fastestMovingUpdateInterval": 30,
-    "desiredSyncInterval": 20,
-    "desiredAccuracy": "medium",
-    "stopDuration": 140,
-    "stopDistance": 70,
-    "replay": 'stops',
-    "sync": 'all',
-    "useStoppedGeofence": true,
-    "stoppedGeofenceRadius": 100,
-    "useMovingGeofence": true,
-    "movingGeofenceRadius": 100,
-    "syncGeofences": true,
-    "syncGeofencesLimit": 10,
-    "foregroundServiceEnabled": false,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-  };
-
-  static Map<String, dynamic> presetEfficientIOS = {
-    "desiredStoppedUpdateInterval": 0,
-    "desiredMovingUpdateInterval": 0,
-    "desiredSyncInterval": 0,
-    "desiredAccuracy": "medium",
-    "stopDuration": 0,
-    "stopDistance": 0,
-    "replay": 'stops',
-    "useStoppedGeofence": false,
-    "showBlueBar": false,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-    "stoppedGeofenceRadius": 0,
-    "useMovingGeofence": false,
-    "movingGeofenceRadius": 0,
-    "syncGeofences": true,
-    "useVisits": true,
-    "useSignificantLocationChanges": false,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "sync": 'all',
-  };
-
-  static Map<String, dynamic> presetEfficientAndroid = {
-    "desiredStoppedUpdateInterval": 3600,
-    "fastestStoppedUpdateInterval": 1200,
-    "desiredMovingUpdateInterval": 1200,
-    "fastestMovingUpdateInterval": 360,
-    "desiredSyncInterval": 140,
-    "desiredAccuracy": 'medium',
-    "stopDuration": 140,
-    "stopDistance": 70,
-    "replay": 'stops',
-    "sync": 'all',
-    "useStoppedGeofence": false,
-    "stoppedGeofenceRadius": 0,
-    "useMovingGeofence": false,
-    "movingGeofenceRadius": 0,
-    "syncGeofences": true,
-    "syncGeofencesLimit": 10,
-    "foregroundServiceEnabled": false,
-    "beacons": false,
-    "useMotion": false,
-    "usePressure": false,
-    "startTrackingAfter": null,
-    "stopTrackingAfter": null,
-  };
-
-  static Map<String, dynamic> presetResponsive =
-      Platform.isIOS ? presetResponsiveIOS : presetResponsiveAndroid;
-  static Map<String, dynamic> presetContinuous =
-      Platform.isIOS ? presetContinuousIOS : presetContinuousAndroid;
-  static Map<String, dynamic> presetEfficient =
-      Platform.isIOS ? presetEfficientIOS : presetEfficientAndroid;
 }
 
 class RadarInitializeOptions {
