@@ -45,6 +45,8 @@ The Radar Android SDK moves to `5.0.0`, which brings these changes from its `4.0
 
 - The minimum Android API level is now 23. Apps with a lower `minSdkVersion` must raise it to 23.
 
+On both platforms, event maps now omit `location` and `actualCreatedAt` when those values are absent. Conversion events can have no location. Check these fields for null before accessing nested values, for example `event['location']?['latitude']`, and handle a missing `actualCreatedAt` instead of assuming it is always present.
+
 ## 3.1.x to 3.2.0
 - `Radar.setAdIdEnabled()` has been removed.
 - Custom events have been renamed to conversions.
