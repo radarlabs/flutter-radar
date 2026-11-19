@@ -46,15 +46,27 @@ final class RadarGeofence {
     this.stopDetection,
   });
 
+  /// The Radar ID of the geofence.
   final String id;
+
+  /// The description of the geofence.
   final String description;
+
+  /// The tag of the geofence.
   final String? tag;
+
+  /// The external ID of the geofence.
   final String? externalId;
+
+  /// The optional set of custom key-value pairs for the geofence.
   final Map<String, Object?>? metadata;
 
   /// Opening hours by day (such as `monday`), each a list of
   /// `[open, close]` time pairs like `["08:00", "17:00"]`.
   final Map<String, List<List<String>>>? operatingHours;
+
+  /// The geometry of the geofence. Null if the geometry type is not
+  /// recognized.
   final RadarGeofenceGeometry? geometry;
 
   /// Minutes the user must stay in the geofence to generate a dwell event.

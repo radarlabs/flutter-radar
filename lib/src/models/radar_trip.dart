@@ -24,7 +24,6 @@ enum RadarTripStatus implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native trip status. Unrecognized values become [unknown].
   @internal
   static RadarTripStatus fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -47,7 +46,6 @@ enum RadarTripLegStatus implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native trip leg status. Unrecognized values become [unknown].
   @internal
   static RadarTripLegStatus fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -66,7 +64,6 @@ enum RadarTripLegDestinationType implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a destination type. Unrecognized values become [unknown].
   @internal
   static RadarTripLegDestinationType fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -86,7 +83,6 @@ enum RadarTripOrderStatus implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a trip order status. Unrecognized values become [unknown].
   @internal
   static RadarTripOrderStatus fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -159,35 +155,58 @@ final class RadarTripLeg {
 
   /// The Radar ID of the leg. Pass it to [Radar.updateTripLeg].
   final String? id;
+
+  /// The status of the leg. Set by Radar.
   final RadarTripLegStatus status;
 
   /// How the destination is specified. Inferred from the destination fields
-  /// when the native SDK does not send it.
+  /// when the native SDK does not send it. Not sent when starting a trip;
+  /// Radar infers it from the destination fields you set.
   final RadarTripLegDestinationType destinationType;
+
+  /// When the leg was created. Set by Radar; not sent when starting a trip.
   final DateTime? createdAt;
+
+  /// When the leg was last updated. Set by Radar; not sent when starting a
+  /// trip.
   final DateTime? updatedAt;
 
-  /// The distance to the destination in meters.
+  /// The distance to the leg's destination in meters. Set by Radar; not sent
+  /// when starting a trip.
   final double? etaDistance;
 
-  /// The ETA to the destination in minutes.
+  /// The ETA to the leg's destination in minutes. Set by Radar; not sent when
+  /// starting a trip.
   final double? etaDuration;
+
+  /// The tag of the destination geofence. For a geofence destination, set
+  /// with [destinationGeofenceExternalId].
   final String? destinationGeofenceTag;
+
+  /// The external ID of the destination geofence. For a geofence destination,
+  /// set with [destinationGeofenceTag].
   final String? destinationGeofenceExternalId;
+
+  /// The Radar ID of the destination geofence. An alternative to
+  /// [destinationGeofenceTag] and [destinationGeofenceExternalId].
   final String? destinationGeofenceId;
+
+  /// The address of the destination, for an address destination.
   final String? address;
+
+  /// The coordinates of the destination, for a coordinates destination.
   final RadarCoordinate? coordinates;
 
-  /// The arrival radius in meters, for a coordinates destination.
+  /// The arrival radius in meters, for a coordinates destination. Only used
+  /// when [coordinates] is set.
   final int? arrivalRadius;
 
   /// How long the user is expected to stay at the destination, in minutes.
   final int? stopDuration;
+
+  /// Custom key-value pairs for the leg.
   final Map<String, Object?>? metadata;
 
-  /// Parses a leg in either the format the native SDKs serialize (flat
-  /// destination fields) or the API's format (`destination.type`,
-  /// `destination.source`, and a GeoJSON `destination.location`).
   @internal
   factory RadarTripLeg.fromMap(ChannelMap map) {
     var type = RadarTripLegDestinationType.unknown;
@@ -260,9 +279,6 @@ final class RadarTripLeg {
     );
   }
 
-  /// Serializes the leg in the format the native bridges parse for
-  /// [RadarTripOptions.legs]. Response-only fields (timestamps and ETA) are
-  /// omitted.
   @internal
   Map<String, Object?> toMap() {
     final coordinates = this.coordinates;
@@ -310,22 +326,35 @@ final class RadarTrip {
 
   /// The external ID of the trip, set in [RadarTripOptions.externalId].
   final String externalId;
+
+  /// Custom key-value pairs for the trip.
   final Map<String, Object?>? metadata;
+
+  /// For trips with a destination, the tag of the destination geofence.
   final String? destinationGeofenceTag;
+
+  /// For trips with a destination, the external ID of the destination
+  /// geofence.
   final String? destinationGeofenceExternalId;
 
-  /// The location of the destination geofence.
+  /// For trips with a destination, the location of the destination geofence.
   final RadarCoordinate? destinationLocation;
 
   /// The travel mode. Null if the native SDK did not report one.
   final RadarRouteMode? mode;
 
-  /// The distance to the destination geofence in meters.
+  /// For trips with a destination, the distance to the destination geofence
+  /// in meters, based on the travel mode.
   final double? etaDistance;
 
-  /// The ETA to the destination geofence in minutes.
+  /// For trips with a destination, the ETA to the destination geofence in
+  /// minutes, based on the travel mode.
   final double? etaDuration;
+
+  /// The status of the trip.
   final RadarTripStatus status;
+
+  /// The orders associated with the trip. Empty if there are none.
   final List<RadarTripOrder> orders;
 
   /// For multi-destination trips, the legs of the trip.
@@ -376,6 +405,8 @@ final class RadarTripOptions {
 
   /// A stable unique ID for the trip.
   final String externalId;
+
+  /// Custom key-value pairs for the trip.
   final Map<String, Object?>? metadata;
 
   /// For trips with a destination, the tag of the destination geofence.
@@ -387,6 +418,8 @@ final class RadarTripOptions {
 
   /// For trips with a destination, the travel mode.
   final RadarRouteMode mode;
+
+  /// The scheduled arrival time for the trip.
   final DateTime? scheduledArrivalAt;
 
   /// The number of minutes before arrival at which the trip becomes
@@ -414,10 +447,6 @@ final class RadarTripOptions {
     legs: readList(map['legs'], RadarTripLeg.fromMap),
   );
 
-  /// Serializes the options in the format the native bridges parse with
-  /// `RadarTripOptions.fromJson` (Android) and
-  /// `tripOptionsFromDictionary:` (iOS). [scheduledArrivalAt] is sent as
-  /// milliseconds since the epoch, which both platforms accept.
   @internal
   Map<String, Object?> toMap() => compact({
     'externalId': externalId,

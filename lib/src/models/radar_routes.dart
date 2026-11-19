@@ -59,12 +59,18 @@ final class RadarRouteGeometry {
   }
 }
 
-/// A route between an origin and a destination.
+/// A route between an origin and a destination. See the
+/// [routing API docs](https://radar.com/documentation/api#routing).
 final class RadarRoute {
   const RadarRoute({this.distance, this.duration, this.geometry});
 
+  /// The distance of the route.
   final RadarRouteDistance? distance;
+
+  /// The duration of the route.
   final RadarRouteDuration? duration;
+
+  /// The geometry of the route.
   final RadarRouteGeometry? geometry;
 
   @internal
@@ -76,7 +82,8 @@ final class RadarRoute {
 }
 
 /// Routes between an origin and a destination for each travel mode, from
-/// [Radar.getDistance]. A mode is null if it was not requested.
+/// [Radar.getDistance]. A mode is null if it was not requested. See the
+/// [distance API docs](https://radar.com/documentation/api#distance).
 final class RadarRoutes {
   const RadarRoutes({
     this.geodesic,
@@ -89,10 +96,25 @@ final class RadarRoutes {
 
   /// The straight-line distance. Has no duration or geometry.
   final RadarRoute? geodesic;
+
+  /// The route by foot. Null if the mode was not requested or the route is
+  /// unavailable.
   final RadarRoute? foot;
+
+  /// The route by bike. Null if the mode was not requested or the route is
+  /// unavailable.
   final RadarRoute? bike;
+
+  /// The route by car. Null if the mode was not requested or the route is
+  /// unavailable.
   final RadarRoute? car;
+
+  /// The route by truck. Null if the mode was not requested or the route is
+  /// unavailable.
   final RadarRoute? truck;
+
+  /// The route by motorbike. Null if the mode was not requested or the route
+  /// is unavailable.
   final RadarRoute? motorbike;
 
   @internal
@@ -107,7 +129,8 @@ final class RadarRoutes {
 }
 
 /// A matrix of routes between multiple origins and destinations, from
-/// [Radar.getMatrix].
+/// [Radar.getMatrix]. See the
+/// [matrix API docs](https://radar.com/documentation/api#matrix).
 final class RadarRouteMatrix {
   const RadarRouteMatrix({this.rows = const []});
 
@@ -115,8 +138,6 @@ final class RadarRouteMatrix {
   /// null if the native SDK could not parse it.
   final List<List<RadarRoute?>> rows;
 
-  /// Parses the native matrix, which both platforms send as a list of rows
-  /// (not a map). Returns null if [value] is not a list.
   @internal
   static RadarRouteMatrix? fromWire(Object? value) {
     if (value is! List) return null;

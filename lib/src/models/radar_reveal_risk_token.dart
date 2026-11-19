@@ -5,9 +5,16 @@ import 'radar_location.dart';
 
 /// The risk level of a reveal risk check.
 enum RadarRevealRiskLevel implements RadarWireEnum {
+  /// No risk.
   none('none'),
+
+  /// Low risk.
   low('low'),
+
+  /// Medium risk.
   medium('medium'),
+
+  /// High risk.
   high('high');
 
   const RadarRevealRiskLevel(this.wireValue);
@@ -16,7 +23,6 @@ enum RadarRevealRiskLevel implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a risk level. Unrecognized values become [none].
   @internal
   static RadarRevealRiskLevel fromWire(Object? value) =>
       readEnum(values, value, none);
@@ -64,17 +70,26 @@ final class RadarRevealRiskToken {
     this.raw = const {},
   });
 
+  /// The Radar ID of the reveal risk check.
   final String id;
 
   /// The response format selected by the server.
   final RadarResponseFormat format;
+
+  /// The risk information for the reveal risk check.
   final RadarRevealRiskTokenRisk? risk;
+
+  /// The network information for the reveal risk check.
   final RadarRevealRiskTokenNetwork? network;
+
+  /// The device information for the reveal risk check.
   final RadarRevealRiskTokenDevice? device;
 
   /// A signed JWT containing the risk, network, and device information.
   /// Verify it server-side with your secret key.
   final String? token;
+
+  /// When the token expires.
   final DateTime? expiresAt;
 
   /// Seconds until the token expires.
@@ -104,6 +119,7 @@ final class RadarRevealRiskTokenRisk {
     this.reasons = const [],
   });
 
+  /// The risk level.
   final RadarRevealRiskLevel level;
 
   /// The risk signals that contributed to [level].
@@ -121,8 +137,13 @@ final class RadarRevealRiskTokenRisk {
 final class RadarRevealRiskTokenNetwork {
   const RadarRevealRiskTokenNetwork({this.ipAddress, this.privacy, this.asn});
 
+  /// The IP address and IP geolocation for the reveal risk check.
   final RadarRevealRiskTokenIpAddress? ipAddress;
+
+  /// The IP privacy information for the reveal risk check.
   final RadarRevealRiskTokenPrivacy? privacy;
+
+  /// The IP ASN information for the reveal risk check.
   final RadarRevealRiskTokenAsn? asn;
 
   @internal

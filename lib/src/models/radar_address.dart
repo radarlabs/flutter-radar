@@ -5,9 +5,16 @@ import 'radar_location.dart';
 
 /// How confident Radar is in a geocoded address.
 enum RadarAddressConfidence implements RadarWireEnum {
+  /// Exact.
   exact('exact'),
+
+  /// Interpolated.
   interpolated('interpolated'),
+
+  /// Fallback.
   fallback('fallback'),
+
+  /// Unknown. Also used for unrecognized values.
   none('none');
 
   const RadarAddressConfidence(this.wireValue);
@@ -16,7 +23,6 @@ enum RadarAddressConfidence implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native confidence string. Unrecognized values become [none].
   @internal
   static RadarAddressConfidence fromWire(Object? value) =>
       readEnum(values, value, none);
@@ -25,10 +31,21 @@ enum RadarAddressConfidence implements RadarWireEnum {
 /// The result of validating an address with [Radar.validateStreetAddress] or
 /// [Radar.validateAddressLabel].
 enum RadarAddressVerificationStatus implements RadarWireEnum {
+  /// A complete match was made between the input and a single record from the
+  /// available reference data.
   verified('VERIFIED'),
+
+  /// A partial match was made between the input and a single record from the
+  /// available reference data.
   partiallyVerified('PARTIALLY_VERIFIED'),
+
+  /// More than one close reference data match.
   ambiguous('AMBIGUOUS'),
+
+  /// Unable to verify. The output fields contain the input data.
   unverified('UNVERIFIED'),
+
+  /// Unknown. Also used for unrecognized values.
   none('NONE');
 
   const RadarAddressVerificationStatus(this.wireValue);
@@ -37,10 +54,6 @@ enum RadarAddressVerificationStatus implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native verification status. Android sends the enum name (for
-  /// example `PARTIALLY_VERIFIED` or `NONE`); iOS sends the same names but
-  /// `UNKNOWN` for none. The API's lowercase form (`partially verified`) is
-  /// accepted too. Unrecognized values become [none].
   @internal
   static RadarAddressVerificationStatus fromWire(Object? value) {
     if (value is String) {
@@ -64,6 +77,8 @@ final class RadarTimeZone {
 
   /// The IANA time zone ID, such as `America/New_York`.
   final String id;
+
+  /// The name of the time zone.
   final String? name;
 
   /// The abbreviation, such as `EST`.
@@ -122,9 +137,16 @@ final class RadarAddress {
     this.resultId,
   });
 
+  /// The location coordinate of the address.
   final RadarCoordinate? coordinate;
+
+  /// The formatted string representation of the address.
   final String? formattedAddress;
+
+  /// The name of the country of the address.
   final String? country;
+
+  /// The unique code of the country of the address.
   final String? countryCode;
 
   /// The country flag emoji.
@@ -132,20 +154,44 @@ final class RadarAddress {
 
   /// The designated market area name.
   final String? dma;
+
+  /// The unique code of the DMA of the address.
   final String? dmaCode;
+
+  /// The name of the state of the address.
   final String? state;
+
+  /// The unique code of the state of the address.
   final String? stateCode;
+
+  /// The postal code of the address.
   final String? postalCode;
+
+  /// The city of the address.
   final String? city;
+
+  /// The borough of the address.
   final String? borough;
+
+  /// The county of the address.
   final String? county;
+
+  /// The neighborhood of the address.
   final String? neighborhood;
+
+  /// The street name of the address.
   final String? street;
 
   /// The street number.
   final String? number;
+
+  /// The label of the address.
   final String? addressLabel;
+
+  /// The label of the place.
   final String? placeLabel;
+
+  /// The unit of the address.
   final String? unit;
 
   /// The ZIP+4 extension (US only).
@@ -156,8 +202,14 @@ final class RadarAddress {
 
   /// The geocoding layer, such as `address`, `place`, or `postalCode`.
   final String? layer;
+
+  /// The metadata of the address.
   final Map<String, Object?>? metadata;
+
+  /// The confidence level of the geocoding result.
   final RadarAddressConfidence confidence;
+
+  /// The time zone of the address.
   final RadarTimeZone? timeZone;
 
   /// Place categories, for addresses of the `place` layer.

@@ -94,6 +94,11 @@ class Radar {
   static RadarVerifiedLocationToken _token(ChannelMap map) =>
       _require(readObject(map['token'], RadarVerifiedLocationToken.fromMap));
 
+  /// Initializes the Radar SDK with your [publishableKey].
+  ///
+  /// Call this before calling any other Radar methods. Pass [options] to
+  /// configure optional features. See the
+  /// [SDK docs](https://radar.com/documentation/sdk/flutter).
   static Future<void> initialize(
     String publishableKey, {
     RadarInitializeOptions? options,
@@ -131,48 +136,79 @@ class Radar {
     }
   }
 
+  /// Sets the log level for debug logs.
+  ///
+  /// The remote SDK configuration set in the dashboard can override this.
   static Future<void> setLogLevel(RadarLogLevel logLevel) async {
     await _invoke<void>('setLogLevel', {'logLevel': logLevel.wireValue});
   }
 
+  /// Returns the app's current location permissions status.
   static Future<RadarPermissionsStatus> getPermissionsStatus() async {
     return RadarPermissionsStatus.fromWire(
       await _invoke<String>('getPermissionsStatus'),
     );
   }
 
+  /// Requests location permissions.
+  ///
+  /// If [background] is true, requests background permissions: on iOS, this
+  /// asks for "always" authorization once "when in use" is granted; on Android
+  /// 10 and later, it requests background location along with foreground
+  /// location. Otherwise, requests foreground permissions.
   static Future<void> requestPermissions(bool background) async {
     await _invoke<void>('requestPermissions', {'background': background});
   }
 
+  /// Identifies the user with [userId], a stable unique ID for the user.
+  ///
+  /// Until you identify the user, Radar identifies the user by device ID. See the
+  /// [SDK docs](https://radar.com/documentation/sdk/flutter).
   static Future<void> setUserId(String userId) async {
     await _invoke<void>('setUserId', {'userId': userId});
   }
 
+  /// Returns the current user ID, or null if none is set.
   static Future<String?> getUserId() async {
     return await _invoke('getUserId');
   }
 
+  /// Sets an optional [description] for the user, displayed in the dashboard.
   static Future<void> setDescription(String description) async {
     await _invoke<void>('setDescription', {'description': description});
   }
 
+  /// Returns the current user description, or null if none is set.
   static Future<String?> getDescription() async {
     return await _invoke('getDescription');
   }
 
+  /// Sets an optional set of custom key-value pairs for the user.
+  ///
+  /// [metadata] must have 16 or fewer keys, and its values must be strings,
+  /// booleans, or numbers.
   static Future<void> setMetadata(Map<String, dynamic> metadata) async {
     await _channel.invokeMethod('setMetadata', metadata);
   }
 
+  /// Returns the current user metadata, or null if none is set.
   static Future<Map<String, Object?>?> getMetadata() async {
     return readJson(await _invoke('getMetadata'));
   }
 
+  /// Enables or disables anonymous tracking for privacy reasons.
+  ///
+  /// When [enabled], [trackOnce] and [startTracking] don't create user records on
+  /// the server and don't send stable device IDs, user IDs, or user metadata.
+  /// Disabled by default.
   static Future<void> setAnonymousTrackingEnabled(bool enabled) async {
     await _invoke<void>('setAnonymousTrackingEnabled', {'enabled': enabled});
   }
 
+  /// Gets the device's current location, with the desired [accuracy] if
+  /// given.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarLocationResult> getLocation([
     RadarTrackingOptionsDesiredAccuracy? accuracy,
   ]) {
@@ -181,6 +217,14 @@ class Radar {
     }, RadarLocationResult.fromMap);
   }
 
+  /// Tracks the user's location once in the foreground.
+  ///
+  /// Pass [location] to track it as a manual location instead of getting one
+  /// from the device. Otherwise, the SDK gets the device's location with
+  /// [desiredAccuracy], and ranges beacons if [beacons] is true. These calls are
+  /// subject to rate limits.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTrackResult> trackOnce({
     RadarLocation? location,
     RadarTrackingOptionsDesiredAccuracy? desiredAccuracy,
@@ -193,14 +237,29 @@ class Radar {
     }, RadarTrackResult.fromMap);
   }
 
+  /// Starts tracking the user's location in the background with one of the
+  /// tracking [preset]s.
+  ///
+  /// See the [background tracking docs](https://radar.com/documentation/sdk/tracking).
   static Future<void> startTracking(RadarTrackingPreset preset) async {
     await _invoke<void>('startTracking', {'preset': preset.wireValue});
   }
 
+  /// Starts tracking the user's location in the background with custom
+  /// tracking [options].
+  ///
+  /// See the [background tracking docs](https://radar.com/documentation/sdk/tracking).
   static Future<void> startTrackingCustom(RadarTrackingOptions options) async {
     await _invoke<void>('startTrackingCustom', options.toMap());
   }
 
+  /// Starts tracking the user's location with device integrity information
+  /// for location verification use cases.
+  ///
+  /// [interval] is the default number of seconds between location updates.
+  /// If [beacons] is true, ranges beacons. You must configure SSL pinning
+  /// before calling this method. See the
+  /// [fraud docs](https://radar.com/documentation/fraud).
   static Future<void> startTrackingVerified(int interval, bool beacons) async {
     await _invoke<void>('startTrackingVerified', {
       'interval': interval,
@@ -208,10 +267,12 @@ class Radar {
     });
   }
 
+  /// Stops tracking the user's location in the background.
   static Future<void> stopTracking() async {
     await _invoke<void>('stopTracking');
   }
 
+  /// Stops tracking the user's location with device integrity information.
   static Future<void> stopTrackingVerified() async {
     await _invoke<void>('stopTrackingVerified');
   }
@@ -228,10 +289,12 @@ class Radar {
     await _invoke<void>('stopRangingBeacons');
   }
 
+  /// Returns whether background tracking has been started.
   static Future<bool?> isTracking() async {
     return await _invoke('isTracking');
   }
 
+  /// Returns the current tracking options.
   static Future<RadarTrackingOptions?> getTrackingOptions() async {
     return readObject(
       await _invoke<Object?>('getTrackingOptions'),
@@ -241,6 +304,9 @@ class Radar {
 
   /// Simulates a trip from [origin] to [destination] for testing, tracking
   /// [steps] locations along the route, [interval] seconds apart.
+  ///
+  /// [mode] is the travel mode. [interval] is from 1 to 60 seconds. See the
+  /// [SDK docs](https://radar.com/documentation/sdk/flutter).
   ///
   /// Returns once the simulation starts. Each step is delivered to the
   /// listeners, such as [onLocation] and [onEvents], and to the background
@@ -265,6 +331,12 @@ class Radar {
     );
   }
 
+  /// Starts a trip with [tripOptions].
+  ///
+  /// Pass [trackingOptions] to use them during the trip. See the
+  /// [trip tracking docs](https://radar.com/documentation/trip-tracking).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> startTrip({
     required RadarTripOptions tripOptions,
     RadarTrackingOptions? trackingOptions,
@@ -275,6 +347,11 @@ class Radar {
     }, RadarTripResult.fromMap);
   }
 
+  /// Manually updates the current trip with [options] and [status].
+  ///
+  /// To leave the status unchanged, pass [RadarTripStatus.unknown].
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> updateTrip({
     required RadarTripOptions options,
     required RadarTripStatus status,
@@ -285,6 +362,7 @@ class Radar {
     }, RadarTripResult.fromMap);
   }
 
+  /// Returns the current trip options, or null if no trip is active.
   static Future<RadarTripOptions?> getTripOptions() async {
     return readObject(
       await _invoke<Object?>('getTripOptions'),
@@ -292,20 +370,34 @@ class Radar {
     );
   }
 
+  /// Completes the current trip.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> completeTrip() {
     return _request('completeTrip', null, RadarTripResult.fromMap);
   }
 
+  /// Cancels the current trip.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> cancelTrip() {
     return _request('cancelTrip', null, RadarTripResult.fromMap);
   }
 
+  /// Returns the current trip, including legs for multi-destination trips, or
+  /// null if no trip is active.
+  ///
+  /// Use the legs' IDs when calling [updateTripLeg].
   static Future<RadarTrip?> getTrip() async {
-    return readObject(await _invoke<Object?>('getTrip'), RadarTrip.fromMap);
+    return readObject(await _invoke('getTrip'), RadarTrip.fromMap);
   }
 
-  /// Updates a leg on a multi-destination trip. Omit [tripId] to target the
-  /// current trip.
+  /// Updates the status of the leg with [legId] on a multi-destination trip.
+  ///
+  /// Omit [tripId] to target the current trip. Leg IDs come from
+  /// [RadarTrip.legs].
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> updateTripLeg({
     String? tripId,
     required String legId,
@@ -318,6 +410,10 @@ class Radar {
     }, RadarTripResult.fromMap);
   }
 
+  /// Updates the status of the current leg on the current multi-destination
+  /// trip.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> updateCurrentTripLeg({
     required RadarTripLegStatus status,
   }) {
@@ -326,8 +422,11 @@ class Radar {
     }, RadarTripResult.fromMap);
   }
 
-  /// Reorders legs on a multi-destination trip. Omit [tripId] to target the
-  /// current trip.
+  /// Reorders the legs of a multi-destination trip to match [legIds].
+  ///
+  /// Omit [tripId] to target the current trip.
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarTripResult> reorderTripLegs({
     String? tripId,
     required List<String> legIds,
@@ -339,13 +438,28 @@ class Radar {
   }
 
   /// Gets the context for [location], or for the device's current location
-  /// if omitted.
+  /// if omitted, without sending device or user identifiers to the server.
+  ///
+  /// See the [context docs](https://radar.com/documentation/api#context).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarContextResult> getContext([RadarLocation? location]) {
     return _request('getContext', {
       'location': location?.toMap(),
     }, RadarContextResult.fromMap);
   }
 
+  /// Searches for geofences near a location, sorted by distance.
+  ///
+  /// Searches near [near], or near the device's current location if omitted.
+  /// [radius] is in meters, from 100 to 10000; -1 searches with an unlimited
+  /// radius. [tags] and [metadata] filter the results. [limit] is the max number
+  /// of geofences to return, from 1 to 1000. [includeGeometry] includes geofence
+  /// geometries in the response; leave it false unless you need them, and to
+  /// get more than 100 results it must be false. See the
+  /// [search geofences docs](https://radar.com/documentation/api#search-geofences).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarSearchGeofencesResult> searchGeofences({
     RadarLocation? near,
     int? radius,
@@ -364,6 +478,16 @@ class Radar {
     }, RadarSearchGeofencesResult.fromMap);
   }
 
+  /// Searches for places near a location, sorted by distance.
+  ///
+  /// Searches near [near], or near the device's current location if omitted.
+  /// [radius] is in meters, from 100 to 10000. [limit] is the max number of
+  /// places to return, from 1 to 100. Specify only one of [chains],
+  /// [categories], or [groups]. With [chains], you can also pass
+  /// [chainMetadata] filters. [countryCodes] filters by country. See the
+  /// [search places docs](https://radar.com/documentation/api#search-places).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarSearchPlacesResult> searchPlaces({
     RadarLocation? near,
     int? radius,
@@ -386,6 +510,17 @@ class Radar {
     }, RadarSearchPlacesResult.fromMap);
   }
 
+  /// Autocompletes partial addresses and place names, sorted by relevance.
+  ///
+  /// [query] is the partial address or place name. [near] is an optional
+  /// location for the search; unlike [searchPlaces], omitting it doesn't use the
+  /// device's location. [limit] is the max number of addresses to return, from
+  /// 1 to 100. [country] is an optional 2-letter country code filter, and
+  /// [layers] optionally filters by layer. If [mailable] is true, returns only
+  /// mailable addresses. See the
+  /// [autocomplete docs](https://radar.com/documentation/api#autocomplete).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<List<RadarAddress>> autocomplete({
     required String query,
     RadarLocation? near,
@@ -404,10 +539,22 @@ class Radar {
     }, _addresses);
   }
 
+  /// Geocodes an address [query], converting it to coordinates.
+  ///
+  /// See the [forward geocode docs](https://radar.com/documentation/api#forward-geocode).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<List<RadarAddress>> geocode(String query) {
     return _request('forwardGeocode', {'query': query}, _addresses);
   }
 
+  /// Reverse geocodes a location, converting coordinates to addresses.
+  ///
+  /// Reverse geocodes [location], or the device's current location if omitted.
+  /// [layers] optionally filters by layer. See the
+  /// [reverse geocode docs](https://radar.com/documentation/api#reverse-geocode).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<List<RadarAddress>> reverseGeocode({
     RadarLocation? location,
     List<String>? layers,
@@ -418,10 +565,22 @@ class Radar {
     }, _addresses);
   }
 
+  /// Geocodes the device's current IP address, converting it to a partial
+  /// address.
+  ///
+  /// See the [IP geocode docs](https://radar.com/documentation/api#ip-geocode).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarIpGeocodeResult> ipGeocode() {
     return _request('ipGeocode', null, RadarIpGeocodeResult.fromMap);
   }
 
+  /// Reveals device and network risk signals for this device.
+  ///
+  /// You must configure SSL pinning before calling this method. See the
+  /// [fraud docs](https://radar.com/documentation/fraud).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarRevealRiskToken> revealRisk() {
     return _request(
       'revealRisk',
@@ -433,6 +592,11 @@ class Radar {
 
   /// Gets the distance and duration to [destination] from [origin], or from
   /// the device's current location if [origin] is omitted.
+  ///
+  /// [modes] are the travel modes, and [units] are the distance units. See
+  /// the [distance docs](https://radar.com/documentation/api#distance).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarRoutes> getDistance({
     RadarLocation? origin,
     required RadarLocation destination,
@@ -447,6 +611,13 @@ class Radar {
     }, (map) => _require(readObject(map['routes'], RadarRoutes.fromMap)));
   }
 
+  /// Logs a conversion event named [name], and returns it.
+  ///
+  /// [revenue] is the revenue generated by the conversion, and [metadata] is
+  /// custom data for the conversion. See the
+  /// [custom events docs](https://radar.com/documentation/api#send-a-custom-event).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarEvent> logConversion({
     required String name,
     double? revenue,
@@ -459,20 +630,32 @@ class Radar {
     }, (map) => _require(readObject(map['event'], RadarEvent.fromMap)));
   }
 
-  /// iOS only. Does nothing on other platforms.
+  /// Logs the app terminating.
+  ///
+  /// Call this when the app is about to terminate. iOS only. Does nothing on
+  /// other platforms.
   static Future<void> logTermination() async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
     await _invoke<void>('logTermination');
   }
 
+  /// Logs the app entering the background.
+  ///
+  /// Call this when the app enters the background. On Android, this also flushes
+  /// buffered logs to persistent storage.
   static Future<void> logBackgrounding() async {
     await _invoke<void>('logBackgrounding');
   }
 
+  /// Logs the app resigning active.
+  ///
+  /// Call this when the app is about to become inactive.
   static Future<void> logResigningActive() async {
     await _invoke<void>('logResigningActive');
   }
 
+  /// Sets options for the notifications the SDK shows.
+  ///
   /// Android only. Does nothing on other platforms.
   static Future<void> setNotificationOptions(
     RadarNotificationOptions notificationOptions,
@@ -481,6 +664,13 @@ class Radar {
     await _invoke<void>('setNotificationOptions', notificationOptions.toMap());
   }
 
+  /// Calculates the travel distances and durations between multiple
+  /// [origins] and [destinations], for up to 25 routes.
+  ///
+  /// [mode] is the travel mode, and [units] are the distance units. See the
+  /// [matrix docs](https://radar.com/documentation/api#matrix).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarRouteMatrix> getMatrix({
     required List<RadarLocation> origins,
     required List<RadarLocation> destinations,
@@ -497,7 +687,11 @@ class Radar {
     }, (map) => _require(RadarRouteMatrix.fromWire(map['matrix'])));
   }
 
-  /// Android only. Does nothing on other platforms.
+  /// Sets options for the foreground service notification, used when
+  /// [RadarTrackingOptions.foregroundServiceEnabled] is true.
+  ///
+  /// Android only. Does nothing on other platforms. See the
+  /// [tracking docs](https://radar.com/documentation/sdk/tracking).
   static Future<void> setForegroundServiceOptions(
     RadarForegroundServiceOptions foregroundServiceOptions,
   ) async {
@@ -508,6 +702,15 @@ class Radar {
     );
   }
 
+  /// Tracks the user's location with device integrity information for
+  /// location verification use cases, and returns a verified location token.
+  ///
+  /// If [beacons] is true, ranges beacons. [desiredAccuracy] is the desired
+  /// location accuracy. [reason] and [transactionId] are optional and displayed
+  /// in the dashboard and reports. You must configure SSL pinning before calling
+  /// this method. See the [fraud docs](https://radar.com/documentation/fraud).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarVerifiedLocationToken> trackVerified({
     bool? beacons,
     RadarTrackingOptionsDesiredAccuracy? desiredAccuracy,
@@ -522,22 +725,37 @@ class Radar {
     }, _token);
   }
 
+  /// Returns the user's last verified location token if it's still valid, or
+  /// requests a fresh one if not.
+  ///
+  /// You must configure SSL pinning before calling this method. See the
+  /// [fraud docs](https://radar.com/documentation/fraud).
+  ///
+  /// Throws a [RadarException] if the request fails.
   static Future<RadarVerifiedLocationToken> getVerifiedLocationToken() {
     return _request('getVerifiedLocationToken', null, _token);
   }
 
+  /// Returns the current screen sharing state.
   static Future<bool?> isSharing() async {
     return await _invoke('isSharing');
   }
 
+  /// Clears the last screen sharing state.
   static Future<void> clearSharing() async {
     await _invoke<void>('clearSharing');
   }
 
+  /// Sets an optional [product] name, displayed in the dashboard and reports.
+  ///
+  /// Pass null to clear it.
   static Future<void> setProduct(String? product) async {
     await _invoke<void>('setProduct', {'product': product});
   }
 
+  /// Sets the user's expected country and state for jurisdiction checks.
+  ///
+  /// [countryCode] and [stateCode] are two-letter codes.
   static Future<void> setExpectedJurisdiction({
     String? countryCode,
     String? stateCode,
@@ -554,6 +772,8 @@ class Radar {
     await _invoke<void>('setExpectedAddress', {'address': address});
   }
 
+  /// Returns whether remote tracking options are overriding the local
+  /// tracking options.
   static Future<bool?> isUsingRemoteTrackingOptions() async {
     return await _invoke('isUsingRemoteTrackingOptions');
   }
@@ -605,10 +825,12 @@ class Radar {
     }, RadarValidateAddressResult.fromMap);
   }
 
+  /// Returns the current product name, or null if none is set.
   static Future<String?> getProduct() async {
     return await _invoke('getProduct');
   }
 
+  /// Returns the user's current tags, or null if none are set.
   static Future<List<String>?> getTags() async {
     // The channel decodes lists as List<Object?>, so ask for that and convert;
     // asking for List<String> would fail the cast.
@@ -616,34 +838,52 @@ class Radar {
     return tags == null ? null : readStringList(tags);
   }
 
+  /// Adds [tags] to the user's existing tags.
   static Future<void> addTags(List<String> tags) async {
     await _invoke<void>('addTags', {'tags': tags});
   }
 
+  /// Removes [tags] from the user's existing tags.
   static Future<void> removeTags(List<String> tags) async {
     await _invoke<void>('removeTags', {'tags': tags});
   }
 
+  /// Returns whether the SDK has been initialized.
   static Future<bool?> isInitialized() async {
     return await _invoke('isInitialized');
   }
 
+  /// Returns the version of the native Radar SDK, such as "3.5.1" or
+  /// "3.5.1-beta.2".
   static Future<String?> sdkVersion() async {
     return await _invoke('sdkVersion');
   }
 
+  /// Sets the user's preferred language as a BCP-47 language tag, such as
+  /// `"en"` or `"es-PR"`.
+  ///
+  /// Pass null to clear it.
   static Future<void> setUserLanguage(String? userLanguage) async {
     await _invoke<void>('setUserLanguage', {'userLanguage': userLanguage});
   }
 
+  /// Returns the user's preferred language, or null if none is set.
   static Future<String?> getUserLanguage() async {
     return await _invoke('getUserLanguage');
   }
 
+  /// Sets the user's tags, replacing any existing tags.
   static Future<void> setTags(List<String> tags) async {
     await _invoke<void>('setTags', {'tags': tags});
   }
 
+  /// Accepts the event with [eventId].
+  ///
+  /// Accept events after user check-ins or other forms of verification. Radar
+  /// uses event verifications to improve the accuracy and confidence of future
+  /// events. For place entry events, pass the ID of the verified place as
+  /// [verifiedPlaceId]. See the
+  /// [verify events docs](https://radar.com/documentation/places#verify-events).
   static Future<void> acceptEvent(
     String eventId, {
     String? verifiedPlaceId,
@@ -654,28 +894,43 @@ class Radar {
     });
   }
 
+  /// Rejects the event with [eventId].
+  ///
+  /// Radar uses event verifications to improve the accuracy and confidence of
+  /// future events. See the
+  /// [verify events docs](https://radar.com/documentation/places#verify-events).
   static Future<void> rejectEvent(String eventId) async {
     await _invoke<void>('rejectEvent', {'eventId': eventId});
   }
 
+  /// Sets the device's push notification [token], or clears it if null.
   static Future<void> setPushNotificationToken(String? token) async {
     await _invoke<void>('setPushNotificationToken', {'token': token});
   }
 
+  /// Returns whether verified tracking has been started.
   static Future<bool?> isTrackingVerified() async {
     return await _invoke('isTrackingVerified');
   }
 
+  /// Clears the user's last verified location token.
   static Future<void> clearVerifiedLocationToken() async {
     await _invoke<void>('clearVerifiedLocationToken');
   }
 
+  /// Shows [inAppMessage] in the app.
   static Future<void> showInAppMessage(RadarInAppMessage inAppMessage) async {
     await _invoke<void>('showInAppMessage', {
       'inAppMessage': inAppMessage.toMap(),
     });
   }
 
+  /// Registers [callback] to receive location updates.
+  ///
+  /// Fires when the user's location is updated and synced to the server, with
+  /// the location and the user. Only one location listener can be registered at
+  /// a time; registering another throws a [RadarExistingCallbackException].
+  /// Remove it with [offLocation].
   static void onLocation(void Function(RadarLocationUpdate update) callback) {
     if (_onLocation != null) {
       throw RadarExistingCallbackException();
@@ -683,10 +938,19 @@ class Radar {
     _onLocation = callback;
   }
 
+  /// Removes the listener registered with [onLocation].
   static void offLocation() {
     _onLocation = null;
   }
 
+  /// Registers [callback] to receive client location updates.
+  ///
+  /// Fires when the device's location is updated, but not necessarily synced to
+  /// the server, with the location, whether the device is stopped, and the
+  /// location source. To receive server-synced locations and user state, use
+  /// [onLocation]. Only one client location listener can be registered at a
+  /// time; registering another throws a [RadarExistingCallbackException].
+  /// Remove it with [offClientLocation].
   static void onClientLocation(
     void Function(RadarClientLocationUpdate update) callback,
   ) {
@@ -696,10 +960,16 @@ class Radar {
     _onClientLocation = callback;
   }
 
+  /// Removes the listener registered with [onClientLocation].
   static void offClientLocation() {
     _onClientLocation = null;
   }
 
+  /// Registers [callback] to receive errors.
+  ///
+  /// Fires when a request fails, with its status. Only one error listener can be
+  /// registered at a time; registering another throws a
+  /// [RadarExistingCallbackException]. Remove it with [offError].
   static void onError(void Function(RadarErrorUpdate update) callback) {
     if (_onError != null) {
       throw RadarExistingCallbackException();
@@ -707,10 +977,15 @@ class Radar {
     _onError = callback;
   }
 
+  /// Removes the listener registered with [onError].
   static void offError() {
     _onError = null;
   }
 
+  /// Registers [callback] to receive debug log messages.
+  ///
+  /// Only one log listener can be registered at a time; registering another
+  /// throws a [RadarExistingCallbackException]. Remove it with [offLog].
   static void onLog(void Function(RadarLogUpdate update) callback) {
     if (_onLog != null) {
       throw RadarExistingCallbackException();
@@ -718,10 +993,16 @@ class Radar {
     _onLog = callback;
   }
 
+  /// Removes the listener registered with [onLog].
   static void offLog() {
     _onLog = null;
   }
 
+  /// Registers [callback] to receive events.
+  ///
+  /// Fires when events are received, with the events and the user, if any. Only
+  /// one events listener can be registered at a time; registering another
+  /// throws a [RadarExistingCallbackException]. Remove it with [offEvents].
   static void onEvents(void Function(RadarEventsUpdate update) callback) {
     if (_onEvents != null) {
       throw RadarExistingCallbackException();
@@ -729,10 +1010,18 @@ class Radar {
     _onEvents = callback;
   }
 
+  /// Removes the listener registered with [onEvents].
   static void offEvents() {
     _onEvents = null;
   }
 
+  /// Registers [callback] to be notified when the device's IP address
+  /// changes.
+  ///
+  /// Fires while IP change monitoring is active, at most once per
+  /// [RadarInitializeOptions.ipChangeDebounceInterval]. Only one IP change
+  /// listener can be registered at a time; registering another throws a
+  /// [RadarExistingCallbackException]. Remove it with [offIpChanged].
   static void onIpChanged(void Function(RadarIpChangedUpdate update) callback) {
     if (_onIpChanged != null) {
       throw RadarExistingCallbackException();
@@ -740,10 +1029,17 @@ class Radar {
     _onIpChanged = callback;
   }
 
+  /// Removes the listener registered with [onIpChanged].
   static void offIpChanged() {
     _onIpChanged = null;
   }
 
+  /// Registers [callback] to be notified when the device's screen sharing
+  /// state changes.
+  ///
+  /// Only one sharing listener can be registered at a time; registering another
+  /// throws a [RadarExistingCallbackException]. Remove it with
+  /// [offSharingChanged].
   static void onSharingChanged(
     void Function(RadarSharingChangedUpdate update) callback,
   ) {
@@ -753,10 +1049,17 @@ class Radar {
     _onSharingChanged = callback;
   }
 
+  /// Removes the listener registered with [onSharingChanged].
   static void offSharingChanged() {
     _onSharingChanged = null;
   }
 
+  /// Registers [callback] to receive verified location tokens.
+  ///
+  /// Fires when the user's verified location is updated. Verify the token
+  /// server-side using your secret key. Only one token listener can be
+  /// registered at a time; registering another throws a
+  /// [RadarExistingCallbackException]. Remove it with [offToken].
   static void onToken(void Function(RadarTokenUpdate update) callback) {
     if (_onToken != null) {
       throw RadarExistingCallbackException();
@@ -764,6 +1067,7 @@ class Radar {
     _onToken = callback;
   }
 
+  /// Removes the listener registered with [onToken].
   static void offToken() {
     _onToken = null;
   }
@@ -815,6 +1119,7 @@ class Radar {
   }
 }
 
+/// Options for [Radar.initialize].
 class RadarInitializeOptions {
   /// Android only. Enables fraud detection signals on tracking calls, and
   /// requires the `io.radar:sdk-fraud` dependency. On iOS, fraud activates
@@ -822,7 +1127,16 @@ class RadarInitializeOptions {
   /// ignored there.
   final bool? fraud;
 
+  /// Whether to configure silent push notifications.
+  ///
+  /// On Android, see `RadarFirebaseMessagingService` in the native SDK for
+  /// setup. On iOS, this registers for remote notifications.
   final bool? silentPush;
+
+  /// Whether [Radar.trackVerified] retries against a secondary verified host
+  /// when the primary host returns a non-Radar response.
+  ///
+  /// Omit to use the SDK default of true.
   final bool? trackVerifiedAutoFailover;
 
   /// Request timeout for standard API calls. Clamped natively to 1...300
@@ -833,12 +1147,19 @@ class RadarInitializeOptions {
   /// every detected change; omit to use the SDK default of 10 seconds.
   final Duration? ipChangeDebounceInterval;
 
+  /// Whether to log a conversion automatically when the user opens a
+  /// notification.
+  ///
   /// iOS only.
   final bool? autoLogNotificationConversions;
 
+  /// Whether to open the URL in a notification automatically when the user
+  /// opens it.
+  ///
   /// iOS only.
   final bool? autoHandleNotificationDeepLinks;
 
+  /// Creates a [RadarInitializeOptions].
   const RadarInitializeOptions({
     this.fraud,
     this.silentPush,
@@ -849,6 +1170,7 @@ class RadarInitializeOptions {
     this.autoHandleNotificationDeepLinks,
   });
 
+  /// Converts this to the map the native SDK reads.
   Map<String, dynamic> toMap() => {
     if (fraud != null) 'fraud': fraud,
     if (silentPush != null) 'silentPush': silentPush,
@@ -866,6 +1188,10 @@ class RadarInitializeOptions {
   };
 }
 
+/// Thrown when registering a listener, such as with [Radar.onLocation],
+/// while one of the same kind is already registered.
+///
+/// Remove the existing listener with the matching `off` method first.
 class RadarExistingCallbackException implements Exception {
   @override
   String toString() {

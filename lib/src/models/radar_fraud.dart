@@ -6,7 +6,8 @@ import 'parsing.dart';
 ///
 /// These values should not be trusted unless they came from
 /// [Radar.trackVerified] rather than [Radar.trackOnce]. Each flag is `false`
-/// if Fraud is not enabled.
+/// if Fraud is not enabled. See the
+/// [fraud docs](https://radar.com/documentation/fraud).
 final class RadarFraud {
   const RadarFraud({
     this.passed = false,
