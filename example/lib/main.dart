@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -120,8 +121,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initRadar();
-    _checkKey();
+    unawaited(_initRadar());
+    unawaited(_checkKey());
   }
 
   @override
@@ -133,9 +134,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
-      Radar.logResigningActive();
+      unawaited(Radar.logResigningActive());
     } else if (state == AppLifecycleState.paused) {
-      Radar.logBackgrounding();
+      unawaited(Radar.logBackgrounding());
     }
   }
 

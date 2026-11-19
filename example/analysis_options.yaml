@@ -1,0 +1,3 @@
+# Shares the plugin's lint rules. The example needs its own flutter_lints
+# dev dependency because includes resolve against this package's dependencies.
+include: ../analysis_options.yaml

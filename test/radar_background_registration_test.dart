@@ -80,9 +80,9 @@ void main() {
     test('rejects closures before calling native', () async {
       var capturedValue = 0;
 
-      final handler = (RadarUpdate update) async {
+      Future<void> handler(RadarUpdate update) async {
         capturedValue++;
-      };
+      }
 
       await expectLater(
         Radar.registerBackgroundHandler(handler),
