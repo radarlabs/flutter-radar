@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!--
+        Permit cleartext (HTTP) traffic so this example app can be pointed at a locally hosted
+        dev server (the Local environment in the app's Environment card). The verified hosts below
+        keep strict certificate pinning, so verified traffic stays validated.
+
+        WARNING: this is a convenience for the Radar example app only. Do NOT enable cleartext
+        (`cleartextTrafficPermitted="true"`) in a real app: it lets any HTTP traffic through and
+        weakens your app's network security. Production apps should leave cleartext disabled (the
+        Android default) and use HTTPS.
+    -->
+    <base-config cleartextTrafficPermitted="true"/>
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">api-verified.radar.io</domain>
         <pin-set>
