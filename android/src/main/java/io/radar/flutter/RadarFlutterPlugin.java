@@ -320,6 +320,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "stopTrackingVerified":
                         stopTrackingVerified(call, result);
                         break;
+                    case "startRangingBeacons":
+                        startRangingBeacons(result);
+                        break;
+                    case "stopRangingBeacons":
+                        stopRangingBeacons(result);
+                        break;
                     case "stopTracking":
                         stopTracking(result);
                         break;
@@ -416,6 +422,12 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "validateAddress":
                         validateAddress(call, result);
                         break;
+                    case "validateAddressWithStreet":
+                        validateAddressWithStreet(call, result);
+                        break;
+                    case "validateAddressWithAddressLabel":
+                        validateAddressWithAddressLabel(call, result);
+                        break;
                     case "setProduct":
                         setProduct(call, result);
                         break;
@@ -470,6 +482,9 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "setExpectedJurisdiction":
                         setExpectedJurisdiction(call, result);
                         break;
+                    case "setExpectedAddress":
+                        setExpectedAddress(call, result);
+                        break;
                     case "revealRisk":
                         revealRisk(call, result);
                         break;
@@ -500,7 +515,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             .edit();
 
         editor.putString("x_platform_sdk_type", "Flutter");
-        editor.putString("x_platform_sdk_version", "4.0.0-beta.3");
+        editor.putString("x_platform_sdk_version", "4.0.0-beta.4");
         editor.apply();
 
         Radar.initialize(
@@ -809,6 +824,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     private static void stopTrackingVerified(MethodCall call, Result result) {
         Radar.stopTrackingVerified();
+        result.success(true);
+    }
+
+    private static void startRangingBeacons(Result result) {
+        Radar.startRangingBeacons();
+        result.success(true);
+    }
+
+    private static void stopRangingBeacons(Result result) {
+        Radar.stopRangingBeacons();
         result.success(true);
     }
 
@@ -1250,7 +1275,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         String[] layers = layersList != null ? layersList.toArray(new String[0]) : new String[0];
         Boolean mailable = call.argument("mailable");
 
-        Radar.autocomplete(query, near, layers, limit, country, true, mailable, new Radar.RadarGeocodeCallback() {
+        // `expandUnits` was removed in Radar Android SDK 4.0.0; units always expand.
+        Radar.autocomplete(query, near, layers, limit, country, mailable, new Radar.RadarGeocodeCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress[] addresses) {
                 runOnMainThread(new Runnable() {
@@ -1338,13 +1364,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void ipGeocode(MethodCall call, final Result result) {
         Radar.ipGeocode(new Radar.RadarIpGeocodeCallback() {
-            @SuppressWarnings("deprecation")
-            // Deprecated upstream but still abstract, so Java must implement it.
-            @Override
-            public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy) {
-                onComplete(status, address, proxy, null);
-            }
-
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final boolean proxy, final Throwable throwable) {
                 runOnMainThread(new Runnable() {
@@ -1576,7 +1595,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("status", status.toString());
-                            obj.put("token", token.toJson());
+                            // Nullable since Radar Android SDK 5.0.0: a response
+                            // the SDK cannot parse completes with a null token.
+                            if (token != null) {
+                                obj.put("token", token.toJson());
+                            }
 
                             HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
@@ -1601,7 +1624,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("status", status.toString());
-                            obj.put("token", token.toJson());
+                            // Nullable since Radar Android SDK 5.0.0: a response
+                            // the SDK cannot parse completes with a null token.
+                            if (token != null) {
+                                obj.put("token", token.toJson());
+                            }
 
                             HashMap<String, Object> map = mapForJson(obj);
                             result.success(map);
@@ -1633,13 +1660,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         result.success(true);
     }
 
+    private static void setExpectedAddress(MethodCall call, Result result) {
+        String address = call.argument("address");
+        Radar.setExpectedAddress(address);
+        result.success(true);
+    }
+
     private static void isUsingRemoteTrackingOptions(Result result) {
         Boolean isRemoteTracking = Radar.isUsingRemoteTrackingOptions();
         result.success(isRemoteTracking);
     }
 
-    public static void validateAddress(MethodCall call, final Result result) throws JSONException {
-        Radar.RadarValidateAddressCallback callback = new Radar.RadarValidateAddressCallback() {
+    private static Radar.RadarValidateAddressCallback validateAddressCallback(final Result result) {
+        return new Radar.RadarValidateAddressCallback() {
             @Override
             public void onComplete(final Radar.RadarStatus status, final RadarAddress address, final Radar.RadarAddressVerificationStatus verificationStatus) {
                 runOnMainThread(new Runnable() {
@@ -1664,11 +1697,47 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                 });
             }
         };
+    }
 
+    /** The Radar SDK rejects a blank required field with ERROR_BAD_REQUEST. */
+    private static String requiredString(MethodCall call, String key) {
+        String value = call.argument(key);
+        return value != null ? value : "";
+    }
+
+    @SuppressWarnings("deprecation")
+    // Deprecated in favor of the street and address label methods below, which
+    // the plugin also exposes. Kept so `Radar.validateAddress()` keeps working.
+    public static void validateAddress(MethodCall call, final Result result) throws JSONException {
         HashMap addressMap= call.argument("address");
         JSONObject addressJSON = jsonForMap(addressMap);
         RadarAddress address = RadarAddress.fromJson(addressJSON);
-        Radar.validateAddress(address, callback);
+        Radar.validateAddress(address, validateAddressCallback(result));
+    }
+
+    public static void validateAddressWithStreet(MethodCall call, final Result result) {
+        Radar.validateAddress(
+            requiredString(call, "street"),
+            requiredString(call, "number"),
+            (String)call.argument("unit"),
+            requiredString(call, "city"),
+            requiredString(call, "stateCode"),
+            requiredString(call, "postalCode"),
+            requiredString(call, "countryCode"),
+            validateAddressCallback(result)
+        );
+    }
+
+    public static void validateAddressWithAddressLabel(MethodCall call, final Result result) {
+        Radar.validateAddress(
+            requiredString(call, "addressLabel"),
+            (String)call.argument("unit"),
+            requiredString(call, "city"),
+            requiredString(call, "stateCode"),
+            requiredString(call, "postalCode"),
+            requiredString(call, "countryCode"),
+            validateAddressCallback(result)
+        );
     }
 
     private static void setProduct(MethodCall call, Result result) {

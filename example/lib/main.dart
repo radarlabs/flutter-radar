@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_radar/flutter_radar.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -410,6 +412,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('trackOnce()', () => Radar.trackOnce()),
             ApiAction('trackOnce(location)',
                 () => Radar.trackOnce(location: Map<String, dynamic>.from(_manhattan))),
+            ApiAction('trackOnce() -> user.locationInsights', () async {
+              if (!Platform.isIOS) {
+                return 'iOS only: the Radar Android SDK has no locationInsights.';
+              }
+              return (await Radar.trackOnce())?['user']?['locationInsights'];
+            }),
             ApiAction("getLocation('high')", () => Radar.getLocation('high')),
             ApiAction("startTracking('responsive')", () async {
               await Radar.startTracking('responsive');
@@ -467,6 +475,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('trackVerified()', () => Radar.trackVerified()),
             ApiAction('trackVerified(beacons)',
                 () => Radar.trackVerified(beacons: true, reason: 'qa')),
+            ApiAction('trackVerified() -> token.format',
+                () async => (await Radar.trackVerified())?['token']?['format']),
+            ApiAction('startRangingBeacons()', () async {
+              await Radar.startRangingBeacons();
+              return 'ranging';
+            }),
+            ApiAction('stopRangingBeacons()', () async {
+              await Radar.stopRangingBeacons();
+              return 'stopped';
+            }),
             ApiAction('startTrackingVerified()', () async {
               await Radar.startTrackingVerified(30, false);
               return 'started';
@@ -483,6 +501,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return 'cleared';
             }),
             ApiAction('revealRisk()', () => Radar.revealRisk()),
+            ApiAction('revealRisk() -> revealRisk.format',
+                () async => (await Radar.revealRisk())?['revealRisk']?['format']),
             ApiAction('isSharing()', () => Radar.isSharing()),
             ApiAction('clearSharing()', () async {
               await Radar.clearSharing();
@@ -497,6 +517,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               await Radar.setExpectedJurisdiction();
               return 'cleared';
             }),
+            ApiAction('setExpectedAddress(841 Broadway)', () async {
+              await Radar.setExpectedAddress(
+                  '841 Broadway, New York, NY 10003');
+              return '841 Broadway, New York, NY 10003';
+            }),
+            ApiAction('setExpectedAddress(clear)', () async {
+              await Radar.setExpectedAddress(null);
+              return 'cleared';
+            }),
+            ApiAction('trackOnce() -> user.expectedAddress',
+                () async => (await Radar.trackOnce())?['user']?['expectedAddress']),
           ],
         ),
         ApiSection(
@@ -632,6 +663,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   'street': 'BROADWAY',
                   'number': '841',
                 })),
+            ApiAction('validateAddressWithStreet()',
+                () => Radar.validateAddressWithStreet(
+                      street: 'BROADWAY',
+                      number: '841',
+                      city: 'NEW YORK',
+                      stateCode: 'NY',
+                      postalCode: '10003',
+                      countryCode: 'US',
+                    )),
+            ApiAction('validateAddressWithAddressLabel()',
+                () => Radar.validateAddressWithAddressLabel(
+                      addressLabel: '841 BROADWAY',
+                      city: 'NEW YORK',
+                      stateCode: 'NY',
+                      postalCode: '10003',
+                      countryCode: 'US',
+                    )),
           ],
         ),
         ApiSection(
