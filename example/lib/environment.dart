@@ -113,7 +113,7 @@ class EnvironmentSettings {
   /// so the SDK uses its built-in hosts. Call before `Radar.initialize`.
   Future<void> applyHosts() {
     final env = environment;
-    return _setHosts(
+    return setRadarHosts(
       host: env == RadarEnvironment.production ? null : host(env),
       verifiedHost:
           env == RadarEnvironment.production ? null : verifiedHost(env),
@@ -139,8 +139,8 @@ class EnvironmentSettings {
 ///
 /// Unlike the legacy `SharedPreferences` API, `SharedPreferencesAsync` doesn't
 /// prefix keys with `flutter.`, so these land exactly where the SDKs look.
-/// A null host removes the override.
-Future<void> _setHosts({String? host, String? verifiedHost}) async {
+/// A null or empty host removes the override. The e2e suite calls this too.
+Future<void> setRadarHosts({String? host, String? verifiedHost}) async {
   final SharedPreferencesAsync prefs;
   final String hostKey;
   final String verifiedHostKey;
