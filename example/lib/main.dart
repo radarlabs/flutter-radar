@@ -5,7 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'api_section.dart';
 import 'console.dart';
 import 'environment.dart';
-import 'environment_card.dart';
+import 'settings_page.dart';
 
 const Map<String, double> _manhattan = {
   'latitude': 40.783826,
@@ -269,6 +269,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             icon: const Icon(Icons.refresh),
             onPressed: _refreshPermissions,
           ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => SettingsPage.open(
+              context,
+              settings: widget.settings,
+              keyCheck: _keyCheck,
+            ),
+          ),
         ],
       ),
       body: Column(
@@ -279,10 +288,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             child: ListView(
               padding: const EdgeInsets.only(top: 8, bottom: 16),
               children: [
-                EnvironmentCard(
-                  settings: widget.settings,
-                  keyCheck: _keyCheck,
-                ),
                 for (int i = 0; i < sections.length; i++)
                   ApiSectionCard(
                     section: sections[i],

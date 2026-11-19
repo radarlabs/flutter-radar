@@ -1,5 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_radar_example/environment.dart';
-import 'package:flutter_radar_example/environment_card.dart';
+import 'package:flutter_radar_example/settings_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -109,5 +110,53 @@ void main() {
     expect(keyPrefix('prj_live_pk_9f8e7d'), 'prj_live_pk_9f8e…');
     expect(keyPrefix(''), 'no key');
     expect(keyPrefix('abc'), 'abc');
+  });
+
+  testWidgets('settings opens over the home screen and Done closes it', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = await EnvironmentSettings.load();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder:
+              (context) => Scaffold(
+                body: TextButton(
+                  onPressed:
+                      () => SettingsPage.open(
+                        context,
+                        settings: settings,
+                        keyCheck: const KeyCheck.notChecked(),
+                      ),
+                  child: const Text('open'),
+                ),
+              ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Environment'), findsOneWidget);
+    expect(find.text('Apply & quit'), findsOneWidget);
+    // No key typed yet, so Apply is disabled.
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Apply & quit'),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    await tester.tap(find.text('Local'));
+    await tester.pump();
+    expect(find.text('Local URL'), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsNothing);
   });
 }
