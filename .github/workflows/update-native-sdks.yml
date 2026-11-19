@@ -22,7 +22,8 @@ permissions:
 jobs:
   update-native-sdks:
     # macOS so the example app's iOS build can check the Objective-C bridge.
-    runs-on: macos-15
+    # The iOS SDK is built with Xcode 26, and macOS 15's Xcode can't import it.
+    runs-on: macos-26
     timeout-minutes: 120
 
     steps:
@@ -37,6 +38,13 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.14.1
+
+      - name: Select Xcode
+        run: |
+          # Matches react-native-radar's workflow. RadarSDK 4.0.0 needs the
+          # iOS 26 SDK (it imports _LocationEssentials).
+          sudo xcode-select -switch /Applications/Xcode_26.6.app
+          xcodebuild -version
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -376,7 +384,7 @@ jobs:
             section is the whole plan. The pull request already includes build and setup steps; do
             not repeat them.
           claude_args: |
-            --max-turns 150
+            --max-turns 250
             --add-dir ${{ runner.temp }}/radar-native-sdk-sync
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git -C:*),Bash(git diff:*),Bash(git grep:*),Bash(git log:*),Bash(git show:*),Bash(git status:*),Bash(rg:*),Bash(ls:*),Bash(flutter analyze:*),Bash(flutter test:*),Bash(dart format:*)"
 
