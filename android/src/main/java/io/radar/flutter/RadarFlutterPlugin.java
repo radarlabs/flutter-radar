@@ -422,11 +422,11 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "validateAddress":
                         validateAddress(call, result);
                         break;
-                    case "validateAddressWithStreet":
-                        validateAddressWithStreet(call, result);
+                    case "validateStreetAddress":
+                        validateStreetAddress(call, result);
                         break;
-                    case "validateAddressWithAddressLabel":
-                        validateAddressWithAddressLabel(call, result);
+                    case "validateAddressLabel":
+                        validateAddressLabel(call, result);
                         break;
                     case "setProduct":
                         setProduct(call, result);
@@ -1715,7 +1715,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Radar.validateAddress(address, validateAddressCallback(result));
     }
 
-    public static void validateAddressWithStreet(MethodCall call, final Result result) {
+    public static void validateStreetAddress(MethodCall call, final Result result) {
         Radar.validateAddress(
             requiredString(call, "street"),
             requiredString(call, "number"),
@@ -1728,7 +1728,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         );
     }
 
-    public static void validateAddressWithAddressLabel(MethodCall call, final Result result) {
+    public static void validateAddressLabel(MethodCall call, final Result result) {
         Radar.validateAddress(
             requiredString(call, "addressLabel"),
             (String)call.argument("unit"),

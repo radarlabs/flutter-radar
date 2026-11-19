@@ -715,8 +715,8 @@ class Radar {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
 
-  /// Deprecated natively in favor of [validateAddressWithStreet] and
-  /// [validateAddressWithAddressLabel]. Sends the street and number when both
+  /// Deprecated natively in favor of [validateStreetAddress] and
+  /// [validateAddressLabel]. Sends the street and number when both
   /// are set, and the address label otherwise.
   static Future<Map?> validateAddress(Map address) async {
     try {
@@ -732,7 +732,7 @@ class Radar {
   /// Validates an address from its street and number. Every field except
   /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
   /// sending a request.
-  static Future<Map?> validateAddressWithStreet({
+  static Future<Map?> validateStreetAddress({
     required String street,
     required String number,
     String? unit,
@@ -742,7 +742,7 @@ class Radar {
     required String countryCode,
   }) async {
     try {
-      return await _channel.invokeMethod('validateAddressWithStreet', {
+      return await _channel.invokeMethod('validateStreetAddress', {
         'street': street,
         'number': number,
         'unit': unit,
@@ -760,7 +760,7 @@ class Radar {
   /// Validates an address from a single-line address label. Every field except
   /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
   /// sending a request.
-  static Future<Map?> validateAddressWithAddressLabel({
+  static Future<Map?> validateAddressLabel({
     required String addressLabel,
     String? unit,
     required String city,
@@ -769,7 +769,7 @@ class Radar {
     required String countryCode,
   }) async {
     try {
-      return await _channel.invokeMethod('validateAddressWithAddressLabel', {
+      return await _channel.invokeMethod('validateAddressLabel', {
         'addressLabel': addressLabel,
         'unit': unit,
         'city': city,

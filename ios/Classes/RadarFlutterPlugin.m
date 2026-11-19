@@ -277,10 +277,10 @@ RadarFlutterSharedEventCoordinator(void) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
     } else if ([@"validateAddress" isEqualToString:call.method]) {
         [self validateAddress:call withResult:result];
-    } else if ([@"validateAddressWithStreet" isEqualToString:call.method]) {
-        [self validateAddressWithStreet:call withResult:result];
-    } else if ([@"validateAddressWithAddressLabel" isEqualToString:call.method]) {
-        [self validateAddressWithAddressLabel:call withResult:result];
+    } else if ([@"validateStreetAddress" isEqualToString:call.method]) {
+        [self validateStreetAddress:call withResult:result];
+    } else if ([@"validateAddressLabel" isEqualToString:call.method]) {
+        [self validateAddressLabel:call withResult:result];
     } else if ([@"setProduct" isEqualToString:call.method]) {
         [self setProduct:call withResult:result];
     } else if ([@"getProduct" isEqualToString:call.method]) {
@@ -1385,7 +1385,7 @@ RadarFlutterSharedEventCoordinator(void) {
 #pragma clang diagnostic pop
 }
 
-- (void)validateAddressWithStreet:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)validateStreetAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
     [Radar validateAddressWithStreet:[self stringFromValue:argsDict[@"street"]] ?: @""
@@ -1398,7 +1398,7 @@ RadarFlutterSharedEventCoordinator(void) {
                    completionHandler:[self validateAddressCompletionHandler:result]];
 }
 
-- (void)validateAddressWithAddressLabel:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)validateAddressLabel:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *argsDict = call.arguments;
 
     [Radar validateAddressWithAddressLabel:[self stringFromValue:argsDict[@"addressLabel"]] ?: @""

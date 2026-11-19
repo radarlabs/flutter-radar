@@ -3,14 +3,14 @@
 - Updates the Radar iOS SDK from `3.38.0` to `4.0.0`.
 - Updates the Radar Android SDK from `3.36.1` to `5.0.0`.
 - Raises the minimum Android API level from `21` to `23`, which the Radar Android SDK `5.0.0` requires.
-- Adds `Radar.validateAddressWithStreet()` and `Radar.validateAddressWithAddressLabel()`. `Radar.validateAddress()` still works, and is deprecated in both native SDKs.
+- Adds `Radar.validateStreetAddress()` and `Radar.validateAddressLabel()`. `Radar.validateAddress()` still works, and is deprecated in both native SDKs.
 - Adds `Radar.startRangingBeacons()` and `Radar.stopRangingBeacons()`.
 - Adds `Radar.setExpectedAddress()`, returned as `user.expectedAddress` on track responses.
 - Returns `format` on `trackVerified()`, `getVerifiedLocationToken()`, and `revealRisk()` responses, and `locationInsights` on `user` on iOS.
 - Adds the `user.entered_home`, `user.exited_home`, `user.entered_work`, `user.exited_work`, `user.started_traveling`, `user.stopped_traveling`, `user.started_commuting`, and `user.stopped_commuting` events on iOS.
 - Updates `Radar.autocomplete()` and `Radar.ipGeocode()` on Android for the APIs the Radar Android SDK `4.0.0` removed.
 - Returns a response without a `token` instead of an error when the Radar Android SDK cannot parse a verified location token.
-- Declares `io.radar.sdk.RadarForegroundService` in the Example app manifest, which the Radar Android SDK `4.0.0` no longer declares.
+- **Breaking (Android):** the Radar Android SDK `4.0.0` no longer declares `io.radar.sdk.RadarForegroundService`. Apps that use `Radar.startTracking('continuous')`, set `foregroundServiceEnabled`, or enable the foreground service in remote tracking options must declare the service and the `FOREGROUND_SERVICE_LOCATION` permission in their own manifest. Without them, the SDK logs an error and tracks without a foreground service. See [MIGRATION.MD](MIGRATION.MD).
 
 # 4.0.0-beta.3
 

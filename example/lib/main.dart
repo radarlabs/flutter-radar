@@ -663,8 +663,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   'street': 'BROADWAY',
                   'number': '841',
                 })),
-            ApiAction('validateAddressWithStreet()',
-                () => Radar.validateAddressWithStreet(
+            ApiAction('validateStreetAddress()',
+                () => Radar.validateStreetAddress(
                       street: 'BROADWAY',
                       number: '841',
                       city: 'NEW YORK',
@@ -672,8 +672,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       postalCode: '10003',
                       countryCode: 'US',
                     )),
-            ApiAction('validateAddressWithAddressLabel()',
-                () => Radar.validateAddressWithAddressLabel(
+            ApiAction('validateAddressLabel()',
+                () => Radar.validateAddressLabel(
                       addressLabel: '841 BROADWAY',
                       city: 'NEW YORK',
                       stateCode: 'NY',

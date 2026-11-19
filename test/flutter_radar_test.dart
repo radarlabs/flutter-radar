@@ -57,7 +57,7 @@ void main() {
     });
   });
 
-  group('Radar.validateAddressWithStreet', () {
+  group('Radar.validateStreetAddress', () {
     test('sends every field, with a null unit when omitted', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
@@ -65,7 +65,7 @@ void main() {
         return {'status': 'SUCCESS', 'verificationStatus': 'verified'};
       });
 
-      final result = await Radar.validateAddressWithStreet(
+      final result = await Radar.validateStreetAddress(
         street: 'BROADWAY',
         number: '841',
         city: 'NEW YORK',
@@ -74,7 +74,7 @@ void main() {
         countryCode: 'US',
       );
 
-      expect(receivedCall?.method, 'validateAddressWithStreet');
+      expect(receivedCall?.method, 'validateStreetAddress');
       expect(receivedCall?.arguments, {
         'street': 'BROADWAY',
         'number': '841',
@@ -93,7 +93,7 @@ void main() {
         throw PlatformException(code: 'ERROR_BAD_REQUEST');
       });
 
-      final result = await Radar.validateAddressWithStreet(
+      final result = await Radar.validateStreetAddress(
         street: '',
         number: '841',
         city: 'NEW YORK',
@@ -106,7 +106,7 @@ void main() {
     });
   });
 
-  group('Radar.validateAddressWithAddressLabel', () {
+  group('Radar.validateAddressLabel', () {
     test('sends the label and the remaining fields', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
@@ -114,7 +114,7 @@ void main() {
         return {'status': 'SUCCESS', 'verificationStatus': 'verified'};
       });
 
-      await Radar.validateAddressWithAddressLabel(
+      await Radar.validateAddressLabel(
         addressLabel: '841 BROADWAY',
         unit: '2',
         city: 'NEW YORK',
@@ -123,7 +123,7 @@ void main() {
         countryCode: 'US',
       );
 
-      expect(receivedCall?.method, 'validateAddressWithAddressLabel');
+      expect(receivedCall?.method, 'validateAddressLabel');
       expect(receivedCall?.arguments, {
         'addressLabel': '841 BROADWAY',
         'unit': '2',
