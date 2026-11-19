@@ -1,0 +1,139 @@
+import 'package:flutter_radar/flutter_radar.dart';
+
+/// Turns a Radar result, update, or model into a JSON-friendly summary for the
+/// console. Covers the fields worth eyeballing while testing, not every field.
+Object? describe(Object? value) => switch (value) {
+  null || String() || num() || bool() => value,
+  Enum() => value.name,
+  DateTime() => value.toIso8601String(),
+  Map() => value,
+  Iterable() => [for (final item in value) describe(item)],
+  RadarLocation() => {
+    'latitude': value.latitude,
+    'longitude': value.longitude,
+    'accuracy': value.accuracy,
+  },
+  RadarCoordinate() => [value.latitude, value.longitude],
+  RadarUser() => {
+    'id': value.id,
+    'userId': value.userId,
+    'location': describe(value.location),
+    'stopped': value.stopped,
+    'source': describe(value.source),
+    'geofences': [for (final g in value.geofences) g.description],
+    'place': value.place?.name,
+    'country': value.country?.code,
+    'state': value.state?.code,
+    'trip': value.trip?.externalId,
+  },
+  RadarEvent() => {
+    'id': value.id,
+    'type': describe(value.type),
+    'geofence': value.geofence?.description,
+    'place': value.place?.name,
+    'trip': value.trip?.externalId,
+    'createdAt': describe(value.createdAt),
+  },
+  RadarGeofence() => {
+    'id': value.id,
+    'description': value.description,
+    'tag': value.tag,
+    'externalId': value.externalId,
+  },
+  RadarPlace() => {
+    'id': value.id,
+    'name': value.name,
+    'chain': value.chain?.slug,
+  },
+  RadarAddress() => {
+    'formattedAddress': value.formattedAddress,
+    'coordinate': describe(value.coordinate),
+    'layer': value.layer,
+  },
+  RadarContext() => {
+    'geofences': [for (final g in value.geofences) g.description],
+    'place': value.place?.name,
+    'country': value.country?.code,
+    'state': value.state?.code,
+  },
+  RadarTrip() => {
+    'id': value.id,
+    'externalId': value.externalId,
+    'status': describe(value.status),
+    'legs': describe(value.legs),
+  },
+  RadarTripLeg() => {
+    'id': value.id,
+    'status': describe(value.status),
+    'destinationType': describe(value.destinationType),
+  },
+  RadarTripOptions() => {
+    'externalId': value.externalId,
+    'mode': describe(value.mode),
+    'legs': describe(value.legs),
+  },
+  RadarTrackingOptions() => value.toString(),
+  RadarRoute() => {
+    'distance': value.distance?.text,
+    'duration': value.duration?.text,
+  },
+  RadarRoutes() => {
+    'geodesic': describe(value.geodesic),
+    'foot': describe(value.foot),
+    'bike': describe(value.bike),
+    'car': describe(value.car),
+    'truck': describe(value.truck),
+    'motorbike': describe(value.motorbike),
+  },
+  RadarRouteMatrix() => describe(value.rows),
+  RadarVerifiedLocationToken() => {
+    'passed': value.passed,
+    'expiresIn': value.expiresIn,
+    'failureReasons': value.failureReasons,
+    'user': describe(value.user),
+  },
+  RadarRevealRiskToken() => {'id': value.id, 'level': describe(value.risk?.level)},
+  RadarLocationResult() => {
+    'location': describe(value.location),
+    'stopped': value.stopped,
+  },
+  RadarTrackResult() => {
+    'location': describe(value.location),
+    'events': describe(value.events),
+    'user': describe(value.user),
+  },
+  RadarTripResult() => {
+    'trip': describe(value.trip),
+    'events': describe(value.events),
+  },
+  RadarContextResult() => {'context': describe(value.context)},
+  RadarSearchGeofencesResult() => {'geofences': describe(value.geofences)},
+  RadarSearchPlacesResult() => {'places': describe(value.places)},
+  RadarIpGeocodeResult() => {
+    'address': describe(value.address),
+    'proxy': value.proxy,
+  },
+  RadarValidateAddressResult() => {
+    'address': describe(value.address),
+    'verificationStatus': describe(value.verificationStatus),
+  },
+  RadarLocationUpdate() => {
+    'location': describe(value.location),
+    'user': describe(value.user),
+  },
+  RadarClientLocationUpdate() => {
+    'location': describe(value.location),
+    'stopped': value.stopped,
+    'source': describe(value.source),
+  },
+  RadarEventsUpdate() => {
+    'events': describe(value.events),
+    'user': describe(value.user),
+  },
+  RadarErrorUpdate() => {'status': describe(value.status)},
+  RadarLogUpdate() => value.message,
+  RadarTokenUpdate() => describe(value.token),
+  RadarIpChangedUpdate() => 'IP address changed',
+  RadarSharingChangedUpdate() => {'sharing': value.sharing},
+  _ => value.toString(),
+};
