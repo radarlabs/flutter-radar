@@ -39,7 +39,7 @@ jobs:
       # on the pinned latest version only.
       - name: Check formatting
         if: matrix.flutter_name == 'latest'
-        run: dart format --output=none --set-exit-if-changed lib test example/lib example/test
+        run: dart format --output=none --set-exit-if-changed lib test example/lib example/integration_test
       # Must run before the Android build, which rewrites gradle.properties via
       # Flutter's Gradle migration and would fail pub's clean-git-state check.
       - run: dart pub publish --dry-run

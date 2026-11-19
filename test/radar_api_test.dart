@@ -587,37 +587,40 @@ void main() {
       expect(token.user?.userId, 'user-1');
     });
 
-    test('validateStreetAddress sends the street fields, without a null unit', () async {
-      response = {
-        'status': 'SUCCESS',
-        'address': addressMap,
-        'verificationStatus': 'VERIFIED',
-      };
+    test(
+      'validateStreetAddress sends the street fields, without a null unit',
+      () async {
+        response = {
+          'status': 'SUCCESS',
+          'address': addressMap,
+          'verificationStatus': 'VERIFIED',
+        };
 
-      final result = await Radar.validateStreetAddress(
-        street: 'Jay St',
-        number: '20',
-        city: 'Brooklyn',
-        stateCode: 'NY',
-        postalCode: '11201',
-        countryCode: 'US',
-      );
+        final result = await Radar.validateStreetAddress(
+          street: 'Jay St',
+          number: '20',
+          city: 'Brooklyn',
+          stateCode: 'NY',
+          postalCode: '11201',
+          countryCode: 'US',
+        );
 
-      expect(lastCall().method, 'validateStreetAddress');
-      expect(lastCall().arguments, {
-        'street': 'Jay St',
-        'number': '20',
-        'city': 'Brooklyn',
-        'stateCode': 'NY',
-        'postalCode': '11201',
-        'countryCode': 'US',
-      });
-      expect(result.address.number, '20');
-      expect(
-        result.verificationStatus,
-        RadarAddressVerificationStatus.verified,
-      );
-    });
+        expect(lastCall().method, 'validateStreetAddress');
+        expect(lastCall().arguments, {
+          'street': 'Jay St',
+          'number': '20',
+          'city': 'Brooklyn',
+          'stateCode': 'NY',
+          'postalCode': '11201',
+          'countryCode': 'US',
+        });
+        expect(result.address.number, '20');
+        expect(
+          result.verificationStatus,
+          RadarAddressVerificationStatus.verified,
+        );
+      },
+    );
 
     test('validateAddressLabel sends the label fields', () async {
       response = {
