@@ -46,3 +46,6 @@ GeneratedPluginRegistrant.swift
 
 # AI semantic search index
 .ai-index/
+
+# e2e config with a publishable key (see example/.env.e2e.example)
+.env.e2e
