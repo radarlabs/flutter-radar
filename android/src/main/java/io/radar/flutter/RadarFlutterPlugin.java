@@ -419,9 +419,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "getVerifiedLocationToken":
                         getVerifiedLocationToken(result);
                         break;
-                    case "validateAddress":
-                        validateAddress(call, result);
-                        break;
                     case "validateStreetAddress":
                         validateStreetAddress(call, result);
                         break;
@@ -1703,16 +1700,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     private static String requiredString(MethodCall call, String key) {
         String value = call.argument(key);
         return value != null ? value : "";
-    }
-
-    @SuppressWarnings("deprecation")
-    // Deprecated in favor of the street and address label methods below, which
-    // the plugin also exposes. Kept so `Radar.validateAddress()` keeps working.
-    public static void validateAddress(MethodCall call, final Result result) throws JSONException {
-        HashMap addressMap= call.argument("address");
-        JSONObject addressJSON = jsonForMap(addressMap);
-        RadarAddress address = RadarAddress.fromJson(addressJSON);
-        Radar.validateAddress(address, validateAddressCallback(result));
     }
 
     public static void validateStreetAddress(MethodCall call, final Result result) {

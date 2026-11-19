@@ -715,20 +715,6 @@ class Radar {
     return await _channel.invokeMethod('isUsingRemoteTrackingOptions');
   }
 
-  /// Deprecated natively in favor of [validateStreetAddress] and
-  /// [validateAddressLabel]. Sends the street and number when both
-  /// are set, and the address label otherwise.
-  static Future<Map?> validateAddress(Map address) async {
-    try {
-      return await _channel.invokeMethod('validateAddress', {
-        'address': address,
-      });
-    } on PlatformException catch (e) {
-      print(e);
-      return {'error': e.code};
-    }
-  }
-
   /// Validates an address from its street and number. Every field except
   /// [unit] is required; an empty one returns `ERROR_BAD_REQUEST` without
   /// sending a request.

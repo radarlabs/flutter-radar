@@ -655,14 +655,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   mode: 'car',
                   units: 'imperial',
                 )),
-            ApiAction('validateAddress()', () => Radar.validateAddress({
-                  'city': 'NEW YORK',
-                  'stateCode': 'NY',
-                  'postalCode': '10003',
-                  'countryCode': 'US',
-                  'street': 'BROADWAY',
-                  'number': '841',
-                })),
             ApiAction('validateStreetAddress()',
                 () => Radar.validateStreetAddress(
                       street: 'BROADWAY',

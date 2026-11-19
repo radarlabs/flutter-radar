@@ -3,7 +3,8 @@
 - Updates the Radar iOS SDK from `3.38.0` to `4.0.0`.
 - Updates the Radar Android SDK from `3.36.1` to `5.0.0`.
 - Raises the minimum Android API level from `21` to `23`, which the Radar Android SDK `5.0.0` requires.
-- Adds `Radar.validateStreetAddress()` and `Radar.validateAddressLabel()`. `Radar.validateAddress()` still works, and is deprecated in both native SDKs.
+- Adds `Radar.validateStreetAddress()` and `Radar.validateAddressLabel()`.
+- **Breaking:** removes `Radar.validateAddress()`, which both native SDKs deprecated. Use `Radar.validateStreetAddress()` or `Radar.validateAddressLabel()`. See [MIGRATION.MD](MIGRATION.MD).
 - Adds `Radar.startRangingBeacons()` and `Radar.stopRangingBeacons()`.
 - Adds `Radar.setExpectedAddress()`, returned as `user.expectedAddress` on track responses.
 - Returns `format` on `trackVerified()`, `getVerifiedLocationToken()`, and `revealRisk()` responses, and `locationInsights` on `user` on iOS.

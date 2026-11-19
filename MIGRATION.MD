@@ -2,6 +2,30 @@
 
 ## 4.0.0-beta.3 to 4.0.0-beta.4
 
+`Radar.validateAddress()` has been removed, because both native SDKs deprecated it. Call `Radar.validateStreetAddress()` when you have a street and number, or `Radar.validateAddressLabel()` when you have a single-line address. Every argument except `unit` is required. Both return the same response as before.
+
+```dart
+// 4.0.0-beta.4
+var resp = await Radar.validateStreetAddress(
+    street: 'BROADWAY',
+    number: '841',
+    city: 'NEW YORK',
+    stateCode: 'NY',
+    postalCode: '10003',
+    countryCode: 'US');
+```
+
+```dart
+// 4.0.0-beta.3
+var resp = await Radar.validateAddress({
+    'street': 'BROADWAY',
+    'number': '841',
+    'city': 'NEW YORK',
+    'stateCode': 'NY',
+    'postalCode': '10003',
+    'countryCode': 'US'});
+```
+
 The Radar Android SDK moves to `5.0.0`, which brings these changes from its `4.0.0` release:
 
 - The SDK no longer declares `RadarForegroundService` in its manifest, so apps that only use geofencing don't ship a location foreground service. If you call `Radar.startTracking('continuous')`, set `foregroundServiceEnabled: true` in `Radar.startTrackingCustom()`, or enable the foreground service in remote tracking options, declare the service and the `FOREGROUND_SERVICE_LOCATION` permission in `android/app/src/main/AndroidManifest.xml`. If the service is not declared, the SDK logs an error and tracks without a foreground service, and Android may throttle background location.

@@ -275,8 +275,6 @@ RadarFlutterSharedEventCoordinator(void) {
         [self getVerifiedLocationToken:result];
     } else if ([@"isUsingRemoteTrackingOptions" isEqualToString:call.method]) {
         [self isUsingRemoteTrackingOptions:call withResult:result];    
-    } else if ([@"validateAddress" isEqualToString:call.method]) {
-        [self validateAddress:call withResult:result];
     } else if ([@"validateStreetAddress" isEqualToString:call.method]) {
         [self validateStreetAddress:call withResult:result];
     } else if ([@"validateAddressLabel" isEqualToString:call.method]) {
@@ -1370,19 +1368,6 @@ RadarFlutterSharedEventCoordinator(void) {
         [dict setObject:[Radar stringForVerificationStatus:verificationStatus] forKey:@"verificationStatus"];
         result(dict);
     };
-}
-
-- (void)validateAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-  NSDictionary *argsDict = call.arguments;
-
-  NSDictionary *addressDict = argsDict[@"address"];
-  RadarAddress *address = [RadarAddress addressFromObject:addressDict];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  // Deprecated in favor of the street and address label methods below, which
-  // the plugin also exposes. Kept so `Radar.validateAddress()` keeps working.
-  [Radar validateAddress:address completionHandler:[self validateAddressCompletionHandler:result]];
-#pragma clang diagnostic pop
 }
 
 - (void)validateStreetAddress:(FlutterMethodCall *)call withResult:(FlutterResult)result {
