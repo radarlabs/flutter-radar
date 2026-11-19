@@ -77,6 +77,14 @@ void main() {
   };
 
   group('requests', () {
+    test('getTags converts the decoded list', () async {
+      response = ['a', 'b'];
+      expect(await Radar.getTags(), ['a', 'b']);
+
+      response = null;
+      expect(await Radar.getTags(), isNull);
+    });
+
     test('getLocation', () async {
       response = {
         'status': 'SUCCESS',

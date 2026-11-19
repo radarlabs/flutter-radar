@@ -610,7 +610,10 @@ class Radar {
   }
 
   static Future<List<String>?> getTags() async {
-    return await _invoke('getTags');
+    // The channel decodes lists as List<Object?>, so ask for that and convert;
+    // asking for List<String> would fail the cast.
+    final tags = await _invoke<List<Object?>>('getTags');
+    return tags == null ? null : readStringList(tags);
   }
 
   static Future<void> addTags(List<String> tags) async {
