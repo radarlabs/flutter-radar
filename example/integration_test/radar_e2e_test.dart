@@ -369,15 +369,15 @@ void main() {
         expect(result!['event'], isA<Map>());
       });
 
-      test('validateAddress', () async {
-        final result = await Radar.validateAddress({
-          'city': 'NEW YORK',
-          'stateCode': 'NY',
-          'postalCode': '10003',
-          'countryCode': 'US',
-          'street': 'BROADWAY',
-          'number': '841',
-        });
+      test('validateStreetAddress', () async {
+        final result = await Radar.validateStreetAddress(
+          street: 'BROADWAY',
+          number: '841',
+          city: 'NEW YORK',
+          stateCode: 'NY',
+          postalCode: '10003',
+          countryCode: 'US',
+        );
         expect(result, isNotNull);
         expect(result, isNot(contains('error')), reason: '$result');
         // Address validation is a paid feature, so a plan error also counts
