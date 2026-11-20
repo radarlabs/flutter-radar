@@ -20,17 +20,22 @@ The handler must be a top-level or static function annotated with `@pragma('vm:e
 
 ```dart
 @pragma('vm:entry-point')
-Future<void> radarBackgroundHandler(RadarBackgroundEvent event) async {
-  switch (event.type) {
-    case RadarBackgroundEventType.location:
-    case RadarBackgroundEventType.clientLocation:
-    case RadarBackgroundEventType.events:
-    case RadarBackgroundEventType.error:
-    case RadarBackgroundEventType.log:
-    case RadarBackgroundEventType.token:
-    case RadarBackgroundEventType.ipChanged:
-    case RadarBackgroundEventType.sharingChanged:
-      print('Radar background event: ${event.type.name} ${event.payload}');
+Future<void> radarBackgroundHandler(RadarUpdate update) async {
+  switch (update) {
+    case RadarEventsUpdate(:final events, :final user):
+      for (final event in events) {
+        print('Radar event: ${event.type} for ${user?.userId}');
+      }
+    case RadarLocationUpdate(:final location):
+      print('Radar location: $location');
+    case RadarErrorUpdate(:final status):
+      print('Radar error: $status');
+    case RadarClientLocationUpdate() ||
+        RadarLogUpdate() ||
+        RadarTokenUpdate() ||
+        RadarIpChangedUpdate() ||
+        RadarSharingChangedUpdate():
+      break;
   }
 }
 

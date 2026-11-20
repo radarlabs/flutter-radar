@@ -41,7 +41,7 @@ class ConsoleController extends ChangeNotifier {
   void log(String label, Object? result, {ConsoleStatus? status}) {
     _add(ConsoleEntry(
       label: label,
-      status: status ?? (looksLikeError(result) ? ConsoleStatus.error : ConsoleStatus.success),
+      status: status ?? ConsoleStatus.success,
       body: prettyValue(result),
     ));
   }
@@ -77,15 +77,6 @@ class ConsoleController extends ChangeNotifier {
     }
     notifyListeners();
   }
-}
-
-/// The plugin reports failures as a `status` string or an `error` key rather
-/// than by throwing, so success can't be inferred from the call completing.
-bool looksLikeError(Object? result) {
-  if (result is! Map) return false;
-  if (result['error'] != null) return true;
-  final status = result['status'];
-  return status is String && status != 'SUCCESS';
 }
 
 String prettyValue(Object? value) {
