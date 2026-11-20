@@ -4,9 +4,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'api_section.dart';
 import 'console.dart';
-
-const String publishableKey =
-    'prj_test_pk_0000000000000000000000000000000000000000';
+import 'environment.dart';
+import 'settings_page.dart';
 
 const Map<String, double> _manhattan = {
   'latitude': 40.783826,
@@ -18,7 +17,13 @@ const Map<String, double> _brooklyn = {
   'longitude': -73.986700,
 };
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // The hosts must be written before Radar.initialize.
+  final settings = await EnvironmentSettings.load();
+  await settings.applyHosts();
+  runApp(MyApp(settings: settings));
+}
 
 void _onLocation(Map res) => console.logEvent('onLocation', res);
 
@@ -43,7 +48,9 @@ void _onSharingChanged(bool sharing) =>
     console.logEvent('onSharingChanged', {'sharing': sharing});
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.settings});
+
+  final EnvironmentSettings settings;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +61,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF3B5BFF),
       ),
-      home: const HomePage(),
+      home: HomePage(settings: settings),
     );
   }
 }
@@ -68,7 +75,9 @@ class _ListenerDef {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.settings});
+
+  final EnvironmentSettings settings;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -76,6 +85,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _permissionStatus = 'UNKNOWN';
+  KeyCheck _keyCheck = const KeyCheck.notChecked();
   String? _tripId;
   List<String> _legIds = [];
 
@@ -101,6 +111,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initRadar();
+    _checkKey();
   }
 
   @override
@@ -118,9 +129,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _checkKey() async {
+    final settings = widget.settings;
+    if (!settings.hasKey) return;
+    final result = await KeyCheck.check(settings.resolvedPublishableKey);
+    if (!mounted) return;
+    setState(() => _keyCheck = result);
+    if (result.mismatches(settings.environment)) {
+      console.logError(
+        'environment',
+        'The key is ${result.summary}, but the app is running '
+            '${settings.environment.label}.',
+      );
+    }
+  }
+
   Future<void> _initRadar() async {
+    final settings = widget.settings;
+    final env = settings.environment;
+    final host = settings.host(env);
+    console.log(
+      'environment',
+      '${env.label} · ${host.isEmpty ? 'no Local URL' : host} · '
+          '${keyPrefix(settings.resolvedPublishableKey)}',
+    );
     await Radar.initialize(
-      publishableKey,
+      settings.resolvedPublishableKey,
       options: RadarInitializeOptions(
         fraud: true,
         trackVerifiedAutoFailover: true,
@@ -235,10 +269,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             icon: const Icon(Icons.refresh),
             onPressed: _refreshPermissions,
           ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => SettingsPage.open(
+              context,
+              settings: widget.settings,
+              keyCheck: _keyCheck,
+            ),
+          ),
         ],
       ),
       body: Column(
         children: [
+          EnvironmentBadge(settings: widget.settings, keyCheck: _keyCheck),
           _statusBar(context),
           Expanded(
             child: ListView(
@@ -263,6 +307,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget _statusBar(BuildContext context) {
     final theme = Theme.of(context);
     final chips = <String>[
+      'env: ${widget.settings.environment.label}',
       'permissions: $_permissionStatus',
       if (_tripId != null) 'trip: ${_tripId!.substring(0, 8)}…',
       if (_legIds.isNotEmpty) 'legs: ${_legIds.length}',

@@ -25,6 +25,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.5
   permission_handler: ^12.0.0
+  shared_preferences: ^2.5.3
+  # Named directly for the platform options that write the Radar SDK's own
+  # storage (lib/environment.dart). 2.4.0 added the Android file name option.
+  shared_preferences_android: ^2.4.0
+  shared_preferences_foundation: ^2.5.0
 
 dev_dependencies:
   flutter_test:
