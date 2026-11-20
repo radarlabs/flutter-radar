@@ -762,9 +762,15 @@ void main() {
 
     group('mock tracking', () {
       test('mockTracking delivers mocked locations', () async {
+        // Wait for a mocked location: a track the SDK started earlier, such
+        // as the device-location track iOS sends on startTrip, can still
+        // arrive first.
         final received = Completer<RadarLocationUpdate>();
         Radar.onLocation((update) {
-          if (!received.isCompleted) received.complete(update);
+          if (!received.isCompleted &&
+              update.user?.source == RadarLocationSource.mockLocation) {
+            received.complete(update);
+          }
         });
         addTearDown(Radar.offLocation);
 
