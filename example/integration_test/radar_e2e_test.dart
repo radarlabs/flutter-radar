@@ -368,42 +368,25 @@ void main() {
         );
       });
 
-      test(
-        'searchGeofences with only near, radius and limit',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge throws NullPointerException for '
-                    'omitted tags (ArrayList.toArray) and includeGeometry '
-                    '(Boolean unboxing).'
-                : null,
-        () async {
-          await Radar.searchGeofences(near: _nyc, radius: 1000, limit: 10);
-        },
-      );
+      test('searchGeofences with only near, radius and limit', () async {
+        await Radar.searchGeofences(near: _nyc, radius: 1000, limit: 10);
+      });
 
       test('getContext', () async {
         final result = await Radar.getContext(_nyc);
         expect(result.location.latitude, closeTo(_nyc.latitude, 1e-4));
       });
 
-      test(
-        'getDistance returns a route for each requested mode',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge ignores modes (loops over an '
-                    'empty array), so the API returns ERROR_BAD_REQUEST.'
-                : null,
-        () async {
-          final routes = await Radar.getDistance(
-            origin: _nyc,
-            destination: _brooklyn,
-            modes: {RadarRouteMode.car, RadarRouteMode.foot},
-            units: RadarRouteUnits.imperial,
-          );
-          expect(routes.car, isNotNull);
-          expect(routes.foot, isNotNull);
-        },
-      );
+      test('getDistance returns a route for each requested mode', () async {
+        final routes = await Radar.getDistance(
+          origin: _nyc,
+          destination: _brooklyn,
+          modes: {RadarRouteMode.car, RadarRouteMode.foot},
+          units: RadarRouteUnits.imperial,
+        );
+        expect(routes.car, isNotNull);
+        expect(routes.foot, isNotNull);
+      });
 
       test('getMatrix', () async {
         final matrix = await Radar.getMatrix(
