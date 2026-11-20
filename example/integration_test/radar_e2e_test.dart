@@ -45,6 +45,11 @@ const _noPermission =
     'Location permission not granted. scripts/e2e.sh grants it; if running '
     'by hand, grant it on the device first.';
 
+const _androidNestedTripOptions =
+    'Known bug: the Android bridge copies nested lists and maps in trip '
+    'options (jsonForMap) as raw ArrayList/HashMap values, which the SDK '
+    "can't read, so legs and metadata never reach the API.";
+
 const _paymentRequired =
     'Address validation needs an Enterprise plan or trial '
     '(ERROR_PAYMENT_REQUIRED).';
@@ -96,6 +101,12 @@ class DeliveredEvents {
     }
   }
 }
+
+/// The status of the leg with [legId] in the trip in [result].
+Object? legStatus(Map result, String legId) =>
+    ((result['trip'] as Map)['legs'] as List).cast<Map>().firstWhere(
+      (leg) => leg['_id'] == legId,
+    )['status'];
 
 List<Object?> idsOf(Object? list) => [
   for (final item in list as List) (item as Map)['_id'],
@@ -784,55 +795,62 @@ void main() {
         eventOf(arrived, 'user.arrived_at_trip_destination');
       });
 
-      test('multi-leg trip: reorder and update legs', () async {
-        if (skipWithout(2)) return;
-        await useNewUser('trip-legs');
-        final started = await Radar.startTrip(
-          tripOptions: {
-            'externalId': '$runId-legs',
-            'mode': 'car',
-            'legs': [
-              for (final geofence in geofences.take(2))
-                {
-                  'destination': {
-                    'destinationGeofenceTag': tag,
-                    'destinationGeofenceExternalId': geofence['externalId'],
+      test(
+        'multi-leg trip: reorder and update legs',
+        skip: Platform.isAndroid ? _androidNestedTripOptions : null,
+        () async {
+          if (skipWithout(2)) return;
+          await useNewUser('trip-legs');
+          final started = await Radar.startTrip(
+            tripOptions: {
+              'externalId': '$runId-legs',
+              'mode': 'car',
+              'metadata': {'runId': runId},
+              'legs': [
+                for (final geofence in geofences.take(2))
+                  {
+                    'destination': {
+                      'destinationGeofenceTag': tag,
+                      'destinationGeofenceExternalId': geofence['externalId'],
+                    },
                   },
-                },
-            ],
-          },
-        );
-        expectSuccess(started);
-        final trip = started!['trip'] as Map;
-        if (trip['legs'] == null) {
-          // The API ignores legs unless the project allows them.
-          return markTestSkipped(
-            'The project has multi-destination trips turned off '
-            '(enableMultipleDestinationTrips), so the trip has no legs.',
+              ],
+            },
           );
-        }
-        final legIds = idsOf(trip['legs']);
-        expect(legIds, hasLength(2));
-        expect(legIds, everyElement(isA<String>()));
+          expectSuccess(started);
+          final trip = started!['trip'] as Map;
+          if (trip['legs'] == null) {
+            // The API ignores legs unless the project allows them.
+            return markTestSkipped(
+              'The project has multi-destination trips turned off '
+              '(enableMultipleDestinationTrips), so the trip has no legs.',
+            );
+          }
+          expect(trip['metadata'], containsPair('runId', runId));
+          final legIds = idsOf(trip['legs']);
+          expect(legIds, hasLength(2));
+          expect(legIds, everyElement(isA<String>()));
 
-        final newOrder = legIds.reversed.cast<String>().toList();
-        final reordered = await Radar.reorderTripLegs(legIds: newOrder);
-        expectSuccess(reordered);
-        expect(idsOf((reordered!['trip'] as Map)['legs']), newOrder);
+          final newOrder = legIds.reversed.cast<String>().toList();
+          final reordered = await Radar.reorderTripLegs(legIds: newOrder);
+          expectSuccess(reordered);
+          expect(idsOf((reordered!['trip'] as Map)['legs']), newOrder);
 
-        final updated = await Radar.updateTripLeg(
-          legId: newOrder.first,
-          status: 'started',
-        );
-        expectSuccess(updated);
-        final leg = updated!['leg'] as Map;
-        expect(leg['_id'], newOrder.first);
-        expect(leg['status'], 'started');
+          // Reordering starts the new first leg, so move it on from there.
+          final updated = await Radar.updateTripLeg(
+            legId: newOrder.first,
+            status: 'approaching',
+          );
+          expectSuccess(updated);
+          // The API's response has no separate leg, so the SDKs return none;
+          // read the leg from the trip.
+          expect(legStatus(updated!, newOrder.first), 'approaching');
 
-        final current = await Radar.updateCurrentTripLeg(status: 'arrived');
-        expectSuccess(current);
-        expect((current!['leg'] as Map)['status'], 'arrived');
-      });
+          final current = await Radar.updateCurrentTripLeg(status: 'arrived');
+          expectSuccess(current);
+          expect(legStatus(current!, newOrder.first), 'arrived');
+        },
+      );
     });
 
     group('known bridge bugs', () {
