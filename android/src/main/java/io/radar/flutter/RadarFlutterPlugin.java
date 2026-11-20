@@ -1870,18 +1870,36 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         return location;
     }
 
-    private static JSONObject jsonForMap(HashMap map) throws JSONException {
+    private static JSONObject jsonForMap(Map map) throws JSONException {
         JSONObject obj = new JSONObject();
         try {
             for (Object key : map.keySet()) {
                 String keyStr = String.valueOf(key);
                 Object value = map.get(keyStr);
-                obj.put(keyStr, value);
+                obj.put(keyStr, jsonForValue(value));
             }
         } catch (Exception e) {
             Log.e(TAG, e.toString());
         }
         return obj;
+    }
+
+    // Converts nested maps and lists from the channel to JSONObject and
+    // JSONArray. The SDK's fromJson parsers read nested values with
+    // optJSONObject/optJSONArray, which return null for a raw HashMap or
+    // ArrayList, so trip legs and metadata were dropped.
+    private static Object jsonForValue(Object value) throws JSONException {
+        if (value instanceof Map) {
+            return jsonForMap((Map) value);
+        }
+        if (value instanceof List) {
+            JSONArray array = new JSONArray();
+            for (Object item : (List) value) {
+                array.put(item == null ? JSONObject.NULL : jsonForValue(item));
+            }
+            return array;
+        }
+        return value;
     }
 
     private static HashMap<String, Object> mapForJson(JSONObject obj) {
