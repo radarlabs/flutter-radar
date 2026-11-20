@@ -14,8 +14,9 @@
 // - The codec decodes every map as `Map<Object?, Object?>` and every list as
 //   `List<Object?>`, though map keys are always strings.
 // - The platforms don't agree on whether an absent value is omitted or
-//   `null`, and Android models that read JSON with `optString` re-serialize a
-//   JSON null as the string "null".
+//   `null`. Android models that read JSON with `optString` also store a JSON
+//   null as the string "null" and a missing key as "", and re-serialize both,
+//   so string readers treat "null" and "" as missing.
 // - Any of this can change in a native SDK release without a plugin change.
 //
 // So every reader returns null or an empty collection when a value is missing
@@ -26,13 +27,13 @@
 //
 // To remove this leniency in the future:
 //
-// - Audit the native serializers and record payload fixtures from both 
-//   platforms during e2e runs and parse them in unit tests to catch drift 
+// - Audit the native serializers and record payload fixtures from both
+//   platforms during e2e runs and parse them in unit tests to catch drift
 //   in CI. Fixtures are not comprehensive. They show what one run produced,
 //   not everything a payload can contain, so they should be used alongside
 //   an audit.
-// - OR serialize each model in the plugin's native code from its typed 
-//   properties, by hand or with Pigeon (https://pub.dev/packages/pigeon), 
+// - OR serialize each model in the plugin's native code from its typed
+//   properties, by hand or with Pigeon (https://pub.dev/packages/pigeon),
 //   so the plugin defines the wire types rather than the native sdk.
 
 /// A map decoded by the standard message codec.
@@ -46,7 +47,7 @@ abstract interface class RadarWireEnum {
 ChannelMap? readMap(Object? value) => value is Map ? value.cast() : null;
 
 String? readString(Object? value) =>
-    value is String && value != 'null' ? value : null;
+    value is String && value.isNotEmpty && value != 'null' ? value : null;
 
 double? readDouble(Object? value) => switch (value) {
   num() => value.toDouble(),

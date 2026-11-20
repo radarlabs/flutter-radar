@@ -103,9 +103,14 @@ void main() {
       expect(a.resultId, 'res_1');
     });
 
-    test('Android "null" strings and empty maps', () {
-      final a = RadarAddress.fromMap({'city': 'null', 'confidence': 'none'});
+    test('Android "null" and empty strings, and empty maps', () {
+      final a = RadarAddress.fromMap({
+        'city': 'null',
+        'unit': '',
+        'confidence': 'none',
+      });
       expect(a.city, isNull);
+      expect(a.unit, isNull);
       expect(a.coordinate, isNull);
       expect(a.confidence, RadarAddressConfidence.none);
       expect(RadarAddress.fromMap({}).categories, isEmpty);
