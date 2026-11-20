@@ -26,17 +26,14 @@
 //
 // To remove this leniency in the future:
 //
-// - Audit the native serializers. A field serialized from a typed property
-//   has a fixed type, so its fallbacks can go. A field passed through from
-//   server JSON still needs `num` handling.
-// - Record payload fixtures from both platforms during e2e runs and parse them
-//   in unit tests to catch drift in CI. Fixtures show what one run produced,
-//   not everything a payload can contain, so they confirm an audit rather than
-//   replace it.
-// - To remove most of it, serialize each model in the plugin's native code
-//   from its typed properties, by hand or with Pigeon, so the plugin defines
-//   the wire types. That means maintaining a field-by-field mapping for every
-//   model on both platforms.
+// - Audit the native serializers and record payload fixtures from both 
+//   platforms during e2e runs and parse them in unit tests to catch drift 
+//   in CI. Fixtures are not comprehensive. They show what one run produced,
+//   not everything a payload can contain, so they should be used alongside
+//   an audit.
+// - OR serialize each model in the plugin's native code from its typed 
+//   properties, by hand or with Pigeon (https://pub.dev/packages/pigeon), 
+//   so the plugin defines the wire types rather than the native sdk.
 
 /// A map decoded by the standard message codec.
 typedef ChannelMap = Map<Object?, Object?>;
