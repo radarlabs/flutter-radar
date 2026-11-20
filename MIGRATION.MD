@@ -1,5 +1,52 @@
 # Migration guides
 
+## 4.0.0-beta.3 to 4.0.0-beta.4
+
+`Radar.validateAddress()` has been removed, because both native SDKs deprecated it. Call `Radar.validateStreetAddress()` when you have a street and number, or `Radar.validateAddressLabel()` when you have a single-line address. Every argument except `unit` is required. Both return the same response as before.
+
+```dart
+// 4.0.0-beta.4
+var resp = await Radar.validateStreetAddress(
+    street: 'BROADWAY',
+    number: '841',
+    city: 'NEW YORK',
+    stateCode: 'NY',
+    postalCode: '10003',
+    countryCode: 'US');
+```
+
+```dart
+// 4.0.0-beta.3
+var resp = await Radar.validateAddress({
+    'street': 'BROADWAY',
+    'number': '841',
+    'city': 'NEW YORK',
+    'stateCode': 'NY',
+    'postalCode': '10003',
+    'countryCode': 'US'});
+```
+
+The Radar Android SDK moves to `5.0.0`, which brings these changes from its `4.0.0` release:
+
+- The SDK no longer declares `RadarForegroundService` in its manifest, so apps that only use geofencing don't ship a location foreground service. If you call `Radar.startTracking('continuous')`, set `foregroundServiceEnabled: true` in `Radar.startTrackingCustom()`, or enable the foreground service in remote tracking options, declare the service and the `FOREGROUND_SERVICE_LOCATION` permission in `android/app/src/main/AndroidManifest.xml`. If the service is not declared, the SDK logs an error and tracks without a foreground service, and Android may throttle background location.
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <application>
+        <service
+            android:name="io.radar.sdk.RadarForegroundService"
+            android:foregroundServiceType="location"
+            tools:targetApi="26" />
+    </application>
+</manifest>
+```
+
+- The minimum Android API level is now 23. Apps with a lower `minSdkVersion` must raise it to 23.
+
+On both platforms, event maps now omit `location` and `actualCreatedAt` when those values are absent. Conversion events can have no location. Check these fields for null before accessing nested values, for example `event['location']?['latitude']`, and handle a missing `actualCreatedAt` instead of assuming it is always present.
+
 ## 3.1.x to 3.2.0
 - `Radar.setAdIdEnabled()` has been removed.
 - Custom events have been renamed to conversions.
