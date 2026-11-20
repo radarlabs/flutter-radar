@@ -3,8 +3,25 @@
 ## End-to-end tests
 
 `integration_test/radar_e2e_test.dart` runs the real plugin, native SDKs and
-Radar API on a simulator or emulator. It mainly covers `trackOnce` and
-`trackVerified`, plus the other methods that work with only a publishable key.
+Radar API on a simulator or emulator. It covers most of the API that works
+with a publishable key:
+
+- local state, such as the user fields, product and language
+- tracking with an explicit or a device location, including starting and
+  stopping tracking with preset and custom options
+- the `onLocation`, `onClientLocation` and `onLog` callbacks
+- geocoding, search, context, routing, conversions and address validation
+- trips
+- the platform-specific methods, such as the app lifecycle logs, which only
+  check that each call completes
+- with geofences in the project: geofence entry and exit events and
+  `onEvents`, accepting and rejecting events, and trips to geofence
+  destinations, including multi-leg trips
+
+The `trackVerified` tests also run when verified tracking is enabled, and the
+geofence tests when the project has geofences tagged `e2e-test` (see Setup).
+Methods that need extra hardware or project setup, such as beacons, aren't
+covered.
 
 ### Setup
 
@@ -16,7 +33,15 @@ Radar API on a simulator or emulator. It mainly covers `trackOnce` and
    project needs verified tracking enabled, and the hosts must be production:
    the bundled fraud SDK can't yet override its payload encryption key for
    other servers.
-3. Boot an iOS simulator or Android emulator.
+3. To run the geofence tests, create two circle geofences tagged `e2e-test`,
+   with distinct `externalId`s, whose centers are within 10 km of the test
+   location (40.7342, -73.9911). Keep them a few hundred meters from that
+   location and from each other, so the tests can track outside and inside
+   each one. To use a different tag, set `RADAR_E2E_GEOFENCE_TAG`. Without the
+   geofences, these tests are skipped. The multi-leg trip test also needs
+   multi-destination trips enabled for the project; without that, the API
+   ignores the legs and the test is skipped.
+4. Boot an iOS simulator or Android emulator.
 
 ### Running
 

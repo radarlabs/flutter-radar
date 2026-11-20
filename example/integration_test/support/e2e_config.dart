@@ -5,6 +5,11 @@ class E2EConfig {
   static const host = String.fromEnvironment('RADAR_HOST');
   static const verifiedHost = String.fromEnvironment('RADAR_VERIFIED_HOST');
   static const verifiedEnabled = bool.fromEnvironment('RADAR_E2E_VERIFIED');
+  static const _geofenceTag = String.fromEnvironment('RADAR_E2E_GEOFENCE_TAG');
+
+  /// The tag of the geofences the geofence tests use.
+  static String get geofenceTag =>
+      _geofenceTag.isEmpty ? 'e2e-test' : _geofenceTag;
 
   static const _productionHost = 'https://api.radar.io';
   static const _productionVerifiedHost = 'https://api-verified.radar.io';
