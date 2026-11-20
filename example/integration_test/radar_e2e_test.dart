@@ -425,24 +425,16 @@ void main() {
         expect((completed!['trip'] as Map)['status'], 'completed');
       });
 
-      test(
-        'getTrip returns the active trip',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge throws JSONException (Forbidden '
-                    'numeric value: NaN) converting the active trip to JSON.'
-                : null,
-        () async {
-          final externalId = '$runId-get';
-          expectSuccess(
-            await Radar.startTrip(tripOptions: {'externalId': externalId}),
-          );
-          final trip = await Radar.getTrip();
-          expect(trip, isNotNull);
-          expect(trip, isNot(contains('error')), reason: '$trip');
-          expect(trip!['externalId'], externalId);
-        },
-      );
+      test('getTrip returns the active trip', () async {
+        final externalId = '$runId-get';
+        expectSuccess(
+          await Radar.startTrip(tripOptions: {'externalId': externalId}),
+        );
+        final trip = await Radar.getTrip();
+        expect(trip, isNotNull);
+        expect(trip, isNot(contains('error')), reason: '$trip');
+        expect(trip!['externalId'], externalId);
+      });
 
       test('start, cancel', () async {
         final externalId = '$runId-cancel';
