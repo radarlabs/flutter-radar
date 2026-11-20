@@ -1,8 +1,9 @@
 // End-to-end tests: the real plugin, native SDKs and Radar API, on a simulator
 // or emulator. Run with scripts/e2e.sh; see example/README.md.
 //
-// Assertions check meaning and shape (status, the user we set, coordinates we
-// sent), not exact server content, so any fairly standard project passes.
+// Assertions check meaning and shape (the user we set, coordinates we sent),
+// not exact server content, so any fairly standard project passes. Requests
+// throw RadarException on a failure status, so a call that returns succeeded.
 
 import 'dart:async';
 import 'dart:io' show Platform;
@@ -15,40 +16,31 @@ import 'package:integration_test/integration_test.dart';
 import 'support/e2e_config.dart';
 
 // The point scripts/e2e.sh sets as the simulated device location.
-const _nyc = <String, dynamic>{
-  'latitude': 40.7342,
-  'longitude': -73.9911,
-  'accuracy': 10.0,
-};
+const _nyc = RadarLocation(
+  latitude: 40.7342,
+  longitude: -73.9911,
+  accuracy: 10,
+);
 // Kilometers from the test location and the geofences, so tracking here puts
 // the user outside them.
-const _brooklyn = <String, double>{
-  'latitude': 40.7039,
-  'longitude': -73.9867,
-  'accuracy': 10.0,
-};
+const _brooklyn = RadarLocation(
+  latitude: 40.7039,
+  longitude: -73.9867,
+  accuracy: 10,
+);
+const _jfk = RadarLocation(latitude: 40.64189, longitude: -73.78779);
 
 const _callbackTimeout = Duration(seconds: 15);
 
-void expectSuccess(Map? result) {
-  expect(result, isNotNull, reason: 'native returned null');
-  expect(result, isNot(contains('error')), reason: '$result');
-  expect(result!['status'], 'SUCCESS', reason: '$result');
-}
-
 Future<bool> hasLocationPermission() async {
   final status = await Radar.getPermissionsStatus();
-  return status != null && status.startsWith('GRANTED');
+  return status == RadarPermissionsStatus.grantedForeground ||
+      status == RadarPermissionsStatus.grantedBackground;
 }
 
 const _noPermission =
     'Location permission not granted. scripts/e2e.sh grants it; if running '
     'by hand, grant it on the device first.';
-
-const _androidNestedTripOptions =
-    'Known bug: the Android bridge copies nested lists and maps in trip '
-    'options (jsonForMap) as raw ArrayList/HashMap values, which the SDK '
-    "can't read, so legs and metadata never reach the API.";
 
 const _paymentRequired =
     'Address validation needs an Enterprise plan or trial '
@@ -57,60 +49,40 @@ const _paymentRequired =
 /// Fails instead of hanging when a bridge never replies.
 Future<T> replied<T>(Future<T> call) => call.timeout(_callbackTimeout);
 
-List<String> eventTypes(Map result) => [
-  for (final event in result['events'] as List)
-    (event as Map)['type'] as String,
-];
-
 /// The event of [type] in [result], failing the test if there isn't one.
-Map eventOf(Map result, String type) {
-  expect(eventTypes(result), contains(type), reason: '$result');
-  return (result['events'] as List).cast<Map>().firstWhere(
-    (event) => event['type'] == type,
-  );
+RadarEvent eventOf(RadarTrackResult result, RadarEventType type) {
+  expect(result.events.map((e) => e.type), contains(type));
+  return result.events.firstWhere((event) => event.type == type);
 }
 
 /// Collects every event delivered to [Radar.onEvents], from any track.
 class DeliveredEvents {
   DeliveredEvents() {
-    Radar.onEvents((result) {
-      _events.addAll((result['events'] as List).cast<Map>());
-    });
+    Radar.onEvents((update) => _events.addAll(update.events));
     addTearDown(Radar.offEvents);
   }
 
-  final _events = <Map>[];
+  final _events = <RadarEvent>[];
 
   /// Waits for an event of [type] for the geofence with [geofenceId].
-  Future<Map> waitFor(String type, Object? geofenceId) async {
+  Future<RadarEvent> waitFor(RadarEventType type, String geofenceId) async {
     final deadline = DateTime.now().add(_callbackTimeout);
     while (true) {
       for (final event in _events) {
-        final geofence = event['geofence'] as Map?;
-        if (event['type'] == type && geofence?['_id'] == geofenceId) {
+        if (event.type == type && event.geofence?.id == geofenceId) {
           return event;
         }
       }
       if (DateTime.now().isAfter(deadline)) {
         fail(
-          'No $type event for geofence $geofenceId was delivered to '
-          'onEvents. Delivered: ${_events.map((e) => e['type']).toList()}',
+          'No ${type.name} event for geofence $geofenceId was delivered '
+          'to onEvents. Delivered: ${_events.map((e) => e.type).toList()}',
         );
       }
       await Future<void>.delayed(const Duration(milliseconds: 200));
     }
   }
 }
-
-/// The status of the leg with [legId] in the trip in [result].
-Object? legStatus(Map result, String legId) =>
-    ((result['trip'] as Map)['legs'] as List).cast<Map>().firstWhere(
-      (leg) => leg['_id'] == legId,
-    )['status'];
-
-List<Object?> idsOf(Object? list) => [
-  for (final item in list as List) (item as Map)['_id'],
-];
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -128,7 +100,7 @@ void main() {
         verifiedHost: E2EConfig.verifiedHost,
       );
       await Radar.initialize(E2EConfig.publishableKey);
-      await Radar.setLogLevel('debug');
+      await Radar.setLogLevel(RadarLogLevel.debug);
       await Radar.setAnonymousTrackingEnabled(false);
       await Radar.setUserId(runId);
       await Radar.setDescription(description);
@@ -153,20 +125,14 @@ void main() {
         expect(await Radar.getMetadata(), metadata);
       });
 
-      test(
-        'tags round-trip',
-        skip:
-            'Known bug: getTags casts the List<Object?> from the channel to '
-            'List<String>?, so it always throws.',
-        () async {
-          await Radar.setTags(['e2e', 'flutter']);
-          expect(await Radar.getTags(), unorderedEquals(['e2e', 'flutter']));
-          await Radar.addTags(['extra']);
-          expect(await Radar.getTags(), contains('extra'));
-          await Radar.removeTags(['extra']);
-          expect(await Radar.getTags(), isNot(contains('extra')));
-        },
-      );
+      test('tags round-trip', () async {
+        await Radar.setTags(['e2e', 'flutter']);
+        expect(await Radar.getTags(), unorderedEquals(['e2e', 'flutter']));
+        await Radar.addTags(['extra']);
+        expect(await Radar.getTags(), contains('extra'));
+        await Radar.removeTags(['extra']);
+        expect(await Radar.getTags(), isNot(contains('extra')));
+      });
 
       test('product and language round-trip', () async {
         await Radar.setProduct('flutter-e2e');
@@ -187,104 +153,97 @@ void main() {
     group('trackOnce with an explicit location', () {
       test('returns the location and the user we set', () async {
         final result = await Radar.trackOnce(location: _nyc);
-        expectSuccess(result);
 
-        final location = result!['location'] as Map;
         // The SDKs return the location they were given, unchanged.
-        expect(location['latitude'], _nyc['latitude']);
-        expect(location['longitude'], _nyc['longitude']);
-
-        final user = result['user'] as Map;
-        expect(user['userId'], runId);
-        expect(user['description'], description);
-        expect(result['events'], isA<List>());
+        expect(result.location.latitude, _nyc.latitude);
+        expect(result.location.longitude, _nyc.longitude);
+        expect(result.user?.userId, runId);
+        expect(result.user?.description, description);
       });
 
       test(
         'returns the user metadata we set',
         skip:
             Platform.isIOS
-                ? 'Known native iOS SDK bug: RadarAPIClient replaces user.metadata '
-                    'in the track response with its locationMetadata '
-                    '(radar-sdk-ios #439), so custom metadata never reaches the '
-                    'app.'
+                ? 'Known native iOS SDK bug (FENCE-3218): RadarAPIClient replaces '
+                    'user.metadata in the track response with its '
+                    'locationMetadata, so custom metadata never reaches the app.'
                 : null,
         () async {
           final result = await Radar.trackOnce(location: _nyc);
-          expectSuccess(result);
-          final user = result!['user'] as Map;
-          expect(user['metadata'], containsPair('runId', runId));
+          expect(result.user?.metadata, containsPair('runId', runId));
         },
       );
 
       test('delivers onLocation to Dart', () async {
-        final received = Completer<Map>();
-        Radar.onLocation((event) {
-          if (!received.isCompleted) received.complete(event);
+        final received = Completer<RadarLocationUpdate>();
+        Radar.onLocation((update) {
+          if (!received.isCompleted) received.complete(update);
         });
         addTearDown(Radar.offLocation);
 
-        expectSuccess(await Radar.trackOnce(location: _nyc));
+        await Radar.trackOnce(location: _nyc);
 
-        final event = await received.future.timeout(_callbackTimeout);
-        expect((event['user'] as Map)['userId'], runId);
-        expect(event['location'], isA<Map>());
+        final update = await received.future.timeout(_callbackTimeout);
+        expect(update.user?.userId, runId);
+        expect(update.location, isNotNull);
       });
 
       test('delivers onLog to Dart at debug level', () async {
-        final received = Completer<Map>();
-        Radar.onLog((event) {
-          if (!received.isCompleted) received.complete(event);
+        final received = Completer<RadarLogUpdate>();
+        Radar.onLog((update) {
+          if (!received.isCompleted) received.complete(update);
         });
         addTearDown(Radar.offLog);
 
-        expectSuccess(await Radar.trackOnce(location: _nyc));
+        await Radar.trackOnce(location: _nyc);
 
-        final event = await received.future.timeout(_callbackTimeout);
-        expect(event['message'], isA<String>());
+        final update = await received.future.timeout(_callbackTimeout);
+        expect(update.message, isNotEmpty);
       });
     });
 
     group('device location', () {
       test('getLocation', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        final result = await Radar.getLocation('high');
-        expectSuccess(result);
-        final location = result!['location'] as Map;
-        expect(location['latitude'], isA<num>());
-        expect(location['longitude'], isA<num>());
+        }
+        final result = await Radar.getLocation(
+          RadarTrackingOptionsDesiredAccuracy.high,
+        );
+        expect(result.location.latitude, closeTo(_nyc.latitude, 0.1));
+        expect(result.location.longitude, closeTo(_nyc.longitude, 0.1));
       });
 
       test('trackOnce without a location delivers onClientLocation', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        final received = Completer<Map>();
-        Radar.onClientLocation((event) {
-          if (!received.isCompleted) received.complete(event);
+        }
+        final received = Completer<RadarClientLocationUpdate>();
+        Radar.onClientLocation((update) {
+          if (!received.isCompleted) received.complete(update);
         });
         addTearDown(Radar.offClientLocation);
 
         final result = await Radar.trackOnce();
-        expectSuccess(result);
-        expect((result!['user'] as Map)['userId'], runId);
+        expect(result.user?.userId, runId);
 
-        final event = await received.future.timeout(_callbackTimeout);
-        expect(event['location'], isA<Map>());
+        final update = await received.future.timeout(_callbackTimeout);
+        expect(update.location, isNotNull);
       });
 
       test('reverseGeocode without a location', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        final result = await Radar.reverseGeocode();
-        expectSuccess(result);
-        expect(result!['addresses'], isNotEmpty);
+        }
+        expect(await Radar.reverseGeocode(), isNotEmpty);
       });
 
       test('startTracking, isTracking, stopTracking', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        await Radar.startTracking('responsive');
+        }
+        await Radar.startTracking(RadarTrackingPreset.responsive);
         expect(await Radar.isTracking(), isTrue);
         expect(await Radar.getTrackingOptions(), isNotNull);
         await Radar.stopTracking();
@@ -292,23 +251,24 @@ void main() {
       });
 
       test('startTrackingCustom and isUsingRemoteTrackingOptions', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        // Start from the SDK's own options so every field is valid on both
-        // platforms, and change one to check that the options reach native.
-        await Radar.startTracking('responsive');
-        final options = Map<String, dynamic>.from(
-          (await Radar.getTrackingOptions())!,
+        }
+        // Change one field from a preset to check that the options reach
+        // native.
+        const interval = Duration(seconds: 170);
+        await replied(
+          Radar.startTrackingCustom(
+            RadarTrackingOptions.responsive.copyWith(
+              desiredStoppedUpdateInterval: interval,
+            ),
+          ),
         );
-        await Radar.stopTracking();
-        options['desiredStoppedUpdateInterval'] = 170;
-
-        await replied(Radar.startTrackingCustom(options));
         expect(await Radar.isTracking(), isTrue);
         expect(await Radar.isUsingRemoteTrackingOptions(), isA<bool>());
         expect(
-          (await Radar.getTrackingOptions())!['desiredStoppedUpdateInterval'],
-          170,
+          (await Radar.getTrackingOptions())?.desiredStoppedUpdateInterval,
+          interval,
         );
         await Radar.stopTracking();
         expect(await Radar.isTracking(), isFalse);
@@ -317,41 +277,36 @@ void main() {
 
     group('trackVerified', skip: E2EConfig.verifiedSkipReason, () {
       test('returns a token for the user and delivers onToken', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        final received = Completer<Map>();
-        Radar.onToken((event) {
-          if (!received.isCompleted) received.complete(event);
+        }
+        final received = Completer<RadarTokenUpdate>();
+        Radar.onToken((update) {
+          if (!received.isCompleted) received.complete(update);
         });
         addTearDown(Radar.offToken);
 
-        final result = await Radar.trackVerified(
+        final token = await Radar.trackVerified(
           reason: 'e2e',
           transactionId: runId,
         );
-        expectSuccess(result);
 
-        final token = result!['token'] as Map;
-        expect(
-          token['token'],
-          isA<String>().having((t) => t, 'token', isNotEmpty),
-        );
+        expect(token.token, isNotEmpty);
         // Simulators and emulators fail attestation, so passed is usually
-        // false here. Only its presence is checked.
-        expect(token['passed'], isA<bool>());
-        expect(token['expiresAt'], isNotNull);
-        expect((token['user'] as Map)['userId'], runId);
+        // false here; the typed field being parsed is what's checked.
+        expect(token.expiresAt, isNotNull);
+        expect(token.user?.userId, runId);
 
-        final event = await received.future.timeout(_callbackTimeout);
-        expect(event['token'], isA<Map>());
+        final update = await received.future.timeout(_callbackTimeout);
+        expect(update.token?.token, isNotEmpty);
       });
 
       test('getVerifiedLocationToken returns a token', () async {
-        if (!await hasLocationPermission())
+        if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
-        final result = await Radar.getVerifiedLocationToken();
-        expectSuccess(result);
-        expect((result!['token'] as Map)['token'], isNotEmpty);
+        }
+        final token = await Radar.getVerifiedLocationToken();
+        expect(token.token, isNotEmpty);
       });
 
       test('clearVerifiedLocationToken and isTrackingVerified', () async {
@@ -362,50 +317,43 @@ void main() {
 
     group('network APIs', () {
       test('geocode', () async {
-        final result = await Radar.geocode('20 Jay St, Brooklyn, NY');
-        expectSuccess(result);
-        final addresses = result!['addresses'] as List;
+        final addresses = await Radar.geocode('20 Jay St, Brooklyn, NY');
         expect(addresses, isNotEmpty);
-        expect((addresses.first as Map)['latitude'], isA<num>());
+        expect(addresses.first.coordinate, isNotNull);
       });
 
       test('reverseGeocode with a location', () async {
-        final result = await Radar.reverseGeocode(location: _nyc);
-        expectSuccess(result);
-        expect(result!['addresses'], isNotEmpty);
+        expect(await Radar.reverseGeocode(location: _nyc), isNotEmpty);
       });
 
       test('ipGeocode', () async {
         final result = await Radar.ipGeocode();
-        expectSuccess(result);
-        expect(result!['address'], isA<Map>());
+        expect(result.address.countryCode, isNotNull);
       });
 
       test('autocomplete', () async {
-        final result = await Radar.autocomplete(
+        final addresses = await Radar.autocomplete(
           query: '20 Jay St',
           near: _nyc,
           limit: 5,
         );
-        expectSuccess(result);
-        expect(result!['addresses'], isNotEmpty);
+        expect(addresses, isNotEmpty);
       });
 
       test('searchPlaces', () async {
-        final result = await Radar.searchPlaces(
+        // Completing without a RadarException is the check; a project's
+        // place data varies.
+        await Radar.searchPlaces(
           near: _nyc,
           radius: 1000,
           chains: ['starbucks'],
           limit: 5,
         );
-        expectSuccess(result);
-        expect(result!['places'], isA<List>());
       });
 
-      test('searchGeofences', () async {
-        // Passes every optional argument: omitting them is a known bug
-        // (see 'known bridge bugs').
-        final result = await Radar.searchGeofences(
+      test('searchGeofences with every argument', () async {
+        // The project may have no geofences nearby, so an empty list is fine.
+        await Radar.searchGeofences(
           near: _nyc,
           radius: 1000,
           limit: 10,
@@ -413,15 +361,24 @@ void main() {
           metadata: {},
           includeGeometry: false,
         );
-        expectSuccess(result);
-        // The project may have no geofences nearby, so empty is fine.
-        expect(result!['geofences'], isA<List>());
       });
+
+      test(
+        'searchGeofences with only near, radius and limit',
+        skip:
+            Platform.isAndroid
+                ? 'Known bug: the Android bridge throws NullPointerException for '
+                    'omitted tags (ArrayList.toArray) and includeGeometry '
+                    '(Boolean unboxing).'
+                : null,
+        () async {
+          await Radar.searchGeofences(near: _nyc, radius: 1000, limit: 10);
+        },
+      );
 
       test('getContext', () async {
         final result = await Radar.getContext(_nyc);
-        expectSuccess(result);
-        expect(result!['context'], isA<Map>());
+        expect(result.location.latitude, closeTo(_nyc.latitude, 1e-4));
       });
 
       test(
@@ -432,195 +389,163 @@ void main() {
                     'empty array), so the API returns ERROR_BAD_REQUEST.'
                 : null,
         () async {
-          final result = await Radar.getDistance(
-            origin: {'latitude': 40.7342, 'longitude': -73.9911},
+          final routes = await Radar.getDistance(
+            origin: _nyc,
             destination: _brooklyn,
-            modes: ['car', 'foot'],
-            units: 'imperial',
+            modes: {RadarRouteMode.car, RadarRouteMode.foot},
+            units: RadarRouteUnits.imperial,
           );
-          expectSuccess(result);
-          final routes = result!['routes'] as Map;
-          expect(routes, contains('car'));
-          expect(routes, contains('foot'));
+          expect(routes.car, isNotNull);
+          expect(routes.foot, isNotNull);
         },
       );
 
       test('getMatrix', () async {
-        final result = await Radar.getMatrix(
-          origins: [
-            {'latitude': 40.7342, 'longitude': -73.9911},
-            _brooklyn,
-          ],
-          destinations: [
-            {'latitude': 40.64189, 'longitude': -73.78779},
-          ],
-          mode: 'car',
-          units: 'imperial',
+        final matrix = await Radar.getMatrix(
+          origins: [_nyc, _brooklyn],
+          destinations: [_jfk],
+          mode: RadarRouteMode.car,
+          units: RadarRouteUnits.imperial,
         );
-        expectSuccess(result);
-        expect(result!['matrix'], isNotNull);
+        expect(matrix.rows, hasLength(2));
       });
 
       test('logConversion', () async {
-        final result = await Radar.logConversion(
+        final event = await Radar.logConversion(
           name: 'flutter_e2e',
           revenue: 1.5,
           metadata: {'runId': runId},
         );
-        expectSuccess(result);
-        expect(result!['event'], isA<Map>());
+        expect(event.id, isNotEmpty);
       });
 
       test('validateStreetAddress', () async {
-        final result = await Radar.validateStreetAddress(
-          street: 'BROADWAY',
-          number: '841',
-          city: 'NEW YORK',
-          stateCode: 'NY',
-          postalCode: '10003',
-          countryCode: 'US',
-        );
-        if (result?['status'] == 'ERROR_PAYMENT_REQUIRED') {
-          return markTestSkipped(_paymentRequired);
+        try {
+          final result = await Radar.validateStreetAddress(
+            street: 'BROADWAY',
+            number: '841',
+            city: 'NEW YORK',
+            stateCode: 'NY',
+            postalCode: '10003',
+            countryCode: 'US',
+          );
+          expect(result.address.countryCode, 'US');
+        } on RadarException catch (e) {
+          if (e.status != RadarStatus.errorPaymentRequired) rethrow;
+          markTestSkipped(_paymentRequired);
         }
-        expectSuccess(result);
-        expect(result!['address'], isA<Map>());
       });
 
       test('validateAddressLabel', () async {
-        final result = await Radar.validateAddressLabel(
-          addressLabel: '841 BROADWAY',
-          city: 'NEW YORK',
-          stateCode: 'NY',
-          postalCode: '10003',
-          countryCode: 'US',
-        );
-        if (result?['status'] == 'ERROR_PAYMENT_REQUIRED') {
-          return markTestSkipped(_paymentRequired);
+        try {
+          final result = await Radar.validateAddressLabel(
+            addressLabel: '841 BROADWAY',
+            city: 'NEW YORK',
+            stateCode: 'NY',
+            postalCode: '10003',
+            countryCode: 'US',
+          );
+          expect(result.address.countryCode, 'US');
+        } on RadarException catch (e) {
+          if (e.status != RadarStatus.errorPaymentRequired) rethrow;
+          markTestSkipped(_paymentRequired);
         }
-        expectSuccess(result);
-        expect(result!['address'], isA<Map>());
       });
     });
 
     // Methods that do little or nothing on one platform, or have no observable
-    // result. Each test checks only that the call completes.
+    // result. Each test checks only that the call completes. On the other
+    // platform, the platform-only methods return without calling native.
     group('platform-specific methods complete', () {
       test('logBackgrounding and logResigningActive', () async {
         await replied(Radar.logBackgrounding());
         await replied(Radar.logResigningActive());
       });
 
-      test(
-        'logTermination',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge never replies to '
-                    'logTermination (an iOS-only method), so the Future never '
-                    'completes.'
-                : null,
-        () async {
-          await replied(Radar.logTermination());
-        },
-      );
+      test('logTermination', () async {
+        await replied(Radar.logTermination());
+      });
 
       test('setPushNotificationToken', () async {
         await replied(Radar.setPushNotificationToken('flutter-e2e-token'));
         await replied(Radar.setPushNotificationToken(null));
       });
 
-      test(
-        'setNotificationOptions',
-        skip:
-            Platform.isIOS
-                ? 'Known bug: the iOS bridge never replies to '
-                    'setNotificationOptions (an Android-only method), so the '
-                    'Future never completes.'
-                : null,
-        () async {
-          await replied(
-            Radar.setNotificationOptions({
-              'iconString': 'ic_launcher',
-              'iconColor': '#000000',
-            }),
-          );
-        },
-      );
+      test('setNotificationOptions', () async {
+        await replied(
+          Radar.setNotificationOptions(
+            const RadarNotificationOptions(
+              iconString: 'ic_launcher',
+              iconColor: '#000000',
+            ),
+          ),
+        );
+      });
 
-      test(
-        'setForegroundServiceOptions',
-        skip:
-            Platform.isIOS
-                ? 'Known bug: the iOS bridge never replies to '
-                    'setForegroundServiceOptions (an Android-only method), so '
-                    'the Future never completes.'
-                : null,
-        () async {
-          await replied(
-            Radar.setForegroundServiceOptions({
-              'title': 'flutter_radar e2e',
-              'text': 'Tracking for the e2e suite',
-              'updatesOnly': true,
-            }),
-          );
-        },
-      );
+      test('setForegroundServiceOptions', () async {
+        await replied(
+          Radar.setForegroundServiceOptions(
+            const RadarForegroundServiceOptions(
+              title: 'flutter_radar e2e',
+              text: 'Tracking for the e2e suite',
+              updatesOnly: true,
+            ),
+          ),
+        );
+      });
     });
 
     group('trips', () {
       tearDown(() async {
         // Leave no active trip behind if an assertion failed midway. With no
-        // active trip this returns an error status, which is fine.
-        await Radar.cancelTrip();
+        // active trip this throws, which is fine.
+        try {
+          await Radar.cancelTrip();
+        } on RadarException {
+          // No active trip.
+        }
         await Radar.stopTracking();
       });
 
       test('start, update, complete', () async {
         final externalId = '$runId-complete';
         final started = await Radar.startTrip(
-          tripOptions: {
-            'externalId': externalId,
-            'mode': 'car',
-            'metadata': {'runId': runId},
-          },
+          tripOptions: RadarTripOptions(
+            externalId: externalId,
+            metadata: {'runId': runId},
+          ),
         );
-        expectSuccess(started);
-        expect((started!['trip'] as Map)['externalId'], externalId);
-        expect((await Radar.getTripOptions())!['externalId'], externalId);
+        expect(started.trip.externalId, externalId);
+        expect((await Radar.getTripOptions())?.externalId, externalId);
 
-        final updated = await Radar.updateTrip(
-          options: {
-            'externalId': externalId,
-            'metadata': {'runId': runId, 'updated': true},
-          },
-          status: 'approaching',
+        await Radar.updateTrip(
+          options: RadarTripOptions(
+            externalId: externalId,
+            metadata: {'runId': runId, 'updated': true},
+          ),
+          status: RadarTripStatus.approaching,
         );
-        expectSuccess(updated);
 
         final completed = await Radar.completeTrip();
-        expectSuccess(completed);
-        expect((completed!['trip'] as Map)['status'], 'completed');
+        expect(completed.trip.status, RadarTripStatus.completed);
       });
 
       test('getTrip returns the active trip', () async {
         final externalId = '$runId-get';
-        expectSuccess(
-          await Radar.startTrip(tripOptions: {'externalId': externalId}),
+        await Radar.startTrip(
+          tripOptions: RadarTripOptions(externalId: externalId),
         );
         final trip = await Radar.getTrip();
-        expect(trip, isNotNull);
-        expect(trip, isNot(contains('error')), reason: '$trip');
-        expect(trip!['externalId'], externalId);
+        expect(trip?.externalId, externalId);
       });
 
       test('start, cancel', () async {
         final externalId = '$runId-cancel';
-        expectSuccess(
-          await Radar.startTrip(tripOptions: {'externalId': externalId}),
+        await Radar.startTrip(
+          tripOptions: RadarTripOptions(externalId: externalId),
         );
         final canceled = await Radar.cancelTrip();
-        expectSuccess(canceled);
-        expect((canceled!['trip'] as Map)['status'], 'canceled');
+        expect(canceled.trip.status, RadarTripStatus.canceled);
       });
     });
 
@@ -629,7 +554,7 @@ void main() {
     // user, so entries and exits from earlier runs or tests don't interfere.
     group('geofences', () {
       final tag = E2EConfig.geofenceTag;
-      var geofences = <Map>[];
+      var geofences = <RadarGeofence>[];
 
       setUpAll(() async {
         final result = await Radar.searchGeofences(
@@ -640,15 +565,16 @@ void main() {
           metadata: {},
           includeGeometry: false,
         );
-        expectSuccess(result);
-        geofences =
-            (result!['geofences'] as List).cast<Map>().toList()..sort(
-              (a, b) => '${a['externalId']}'.compareTo('${b['externalId']}'),
-            );
+        geofences = [...result.geofences]
+          ..sort((a, b) => '${a.externalId}'.compareTo('${b.externalId}'));
       });
 
       tearDown(() async {
-        await Radar.cancelTrip();
+        try {
+          await Radar.cancelTrip();
+        } on RadarException {
+          // No active trip.
+        }
         await Radar.setUserId(runId);
       });
 
@@ -664,21 +590,20 @@ void main() {
         return true;
       }
 
-      Map<String, dynamic> centerOf(Map geofence) {
-        final coordinates =
-            (geofence['geometryCenter'] as Map)['coordinates'] as List;
-        return {
-          'latitude': coordinates[1],
-          'longitude': coordinates[0],
-          'accuracy': 10.0,
-        };
+      RadarLocation centerOf(RadarGeofence geofence) {
+        final center = geofence.geometry!.center;
+        return RadarLocation(
+          latitude: center.latitude,
+          longitude: center.longitude,
+          accuracy: 10,
+        );
       }
 
       Future<void> useNewUser(String name) => Radar.setUserId('$runId-$name');
 
       test('searchGeofences filters by tag and metadata', () async {
         if (skipWithout(1)) return;
-        expect(geofences.map((g) => g['tag']), everyElement(tag));
+        expect(geofences.map((g) => g.tag), everyElement(tag));
 
         // An unused tag or metadata value finds nothing, which shows the
         // filters reach the API.
@@ -690,8 +615,7 @@ void main() {
           metadata: {},
           includeGeometry: false,
         );
-        expectSuccess(otherTag);
-        expect(otherTag!['geofences'], isEmpty);
+        expect(otherTag.geofences, isEmpty);
 
         final otherMetadata = await Radar.searchGeofences(
           near: _nyc,
@@ -701,17 +625,15 @@ void main() {
           metadata: {'flutterE2E': 'unused'},
           includeGeometry: false,
         );
-        expectSuccess(otherMetadata);
-        expect(otherMetadata!['geofences'], isEmpty);
+        expect(otherMetadata.geofences, isEmpty);
       });
 
       test('getContext includes the geofence', () async {
         if (skipWithout(1)) return;
         final result = await Radar.getContext(centerOf(geofences.first));
-        expectSuccess(result);
         expect(
-          idsOf((result!['context'] as Map)['geofences']),
-          contains(geofences.first['_id']),
+          result.context.geofences.map((g) => g.id),
+          contains(geofences.first.id),
         );
       });
 
@@ -721,29 +643,25 @@ void main() {
         await useNewUser('enter-exit');
         final delivered = DeliveredEvents();
 
-        expectSuccess(await Radar.trackOnce(location: _brooklyn));
+        await Radar.trackOnce(location: _brooklyn);
 
         final entered = await Radar.trackOnce(location: centerOf(geofence));
-        expectSuccess(entered);
-        expect(
-          idsOf((entered!['user'] as Map)['geofences']),
-          contains(geofence['_id']),
-        );
-        final entry = eventOf(entered, 'user.entered_geofence');
-        expect((entry['geofence'] as Map)['_id'], geofence['_id']);
+        expect(entered.user?.geofences.map((g) => g.id), contains(geofence.id));
+        final entry = eventOf(entered, RadarEventType.userEnteredGeofence);
+        expect(entry.geofence?.id, geofence.id);
         final deliveredEntry = await delivered.waitFor(
-          'user.entered_geofence',
-          geofence['_id'],
+          RadarEventType.userEnteredGeofence,
+          geofence.id,
         );
-        expect(deliveredEntry['_id'], entry['_id']);
+        expect(deliveredEntry.id, entry.id);
 
-        expectSuccess(await Radar.trackOnce(location: _brooklyn));
+        await Radar.trackOnce(location: _brooklyn);
         // On Android, startTrip, completeTrip and cancelTrip each start a
         // device-location trackOnce, which can resolve seconds later. If one
         // lands after the entry, its track (from the device location, also
         // outside) reports the exit before ours does, so look for the exit in
         // everything delivered to onEvents rather than in our track's result.
-        await delivered.waitFor('user.exited_geofence', geofence['_id']);
+        await delivered.waitFor(RadarEventType.userExitedGeofence, geofence.id);
       });
 
       test('acceptEvent and rejectEvent', () async {
@@ -751,144 +669,116 @@ void main() {
         final geofence = geofences.first;
         await useNewUser('verify');
         final delivered = DeliveredEvents();
-        expectSuccess(await Radar.trackOnce(location: _brooklyn));
-        expectSuccess(await Radar.trackOnce(location: centerOf(geofence)));
-        expectSuccess(await Radar.trackOnce(location: _brooklyn));
+        await Radar.trackOnce(location: _brooklyn);
+        await Radar.trackOnce(location: centerOf(geofence));
+        await Radar.trackOnce(location: _brooklyn);
         final entry = await delivered.waitFor(
-          'user.entered_geofence',
-          geofence['_id'],
+          RadarEventType.userEnteredGeofence,
+          geofence.id,
         );
         final exit = await delivered.waitFor(
-          'user.exited_geofence',
-          geofence['_id'],
+          RadarEventType.userExitedGeofence,
+          geofence.id,
         );
 
         // The native SDKs send these without a callback, so this checks only
         // that the bridge passes them on and replies.
-        await replied(Radar.acceptEvent(entry['_id'] as String));
-        await replied(Radar.rejectEvent(exit['_id'] as String));
+        await replied(Radar.acceptEvent(entry.id));
+        await replied(Radar.rejectEvent(exit.id));
       });
 
       test('trip to a geofence destination', () async {
         if (skipWithout(1)) return;
         final geofence = geofences.first;
         await useNewUser('trip-destination');
-        expectSuccess(await Radar.trackOnce(location: _brooklyn));
+        await Radar.trackOnce(location: _brooklyn);
 
         final started = await Radar.startTrip(
-          tripOptions: {
-            'externalId': '$runId-destination',
-            'destinationGeofenceTag': tag,
-            'destinationGeofenceExternalId': geofence['externalId'],
-            'mode': 'car',
-          },
+          tripOptions: RadarTripOptions(
+            externalId: '$runId-destination',
+            destinationGeofenceTag: tag,
+            destinationGeofenceExternalId: geofence.externalId,
+            mode: RadarRouteMode.car,
+          ),
         );
-        expectSuccess(started);
-        final trip = started!['trip'] as Map;
-        expect(trip['destinationGeofenceTag'], tag);
-        expect(trip['destinationGeofenceExternalId'], geofence['externalId']);
+        expect(started.trip.destinationGeofenceTag, tag);
+        expect(started.trip.destinationGeofenceExternalId, geofence.externalId);
 
         final arrived = await Radar.trackOnce(location: centerOf(geofence));
-        expectSuccess(arrived);
-        // ignore: avoid_print
-        print('trip arrival events: ${eventTypes(arrived!)}');
-        eventOf(arrived, 'user.arrived_at_trip_destination');
+        eventOf(arrived, RadarEventType.userArrivedAtTripDestination);
       });
 
-      test(
-        'multi-leg trip: reorder and update legs',
-        skip: Platform.isAndroid ? _androidNestedTripOptions : null,
-        () async {
-          if (skipWithout(2)) return;
-          await useNewUser('trip-legs');
-          final started = await Radar.startTrip(
-            tripOptions: {
-              'externalId': '$runId-legs',
-              'mode': 'car',
-              'metadata': {'runId': runId},
-              'legs': [
-                for (final geofence in geofences.take(2))
-                  {
-                    'destination': {
-                      'destinationGeofenceTag': tag,
-                      'destinationGeofenceExternalId': geofence['externalId'],
-                    },
-                  },
-              ],
-            },
+      test('multi-leg trip: reorder and update legs', () async {
+        if (skipWithout(2)) return;
+        await useNewUser('trip-legs');
+        final started = await Radar.startTrip(
+          tripOptions: RadarTripOptions(
+            externalId: '$runId-legs',
+            mode: RadarRouteMode.car,
+            legs: [
+              for (final geofence in geofences.take(2))
+                RadarTripLeg(
+                  destinationGeofenceTag: tag,
+                  destinationGeofenceExternalId: geofence.externalId,
+                ),
+            ],
+          ),
+        );
+        if (started.trip.legs.isEmpty) {
+          // The API ignores legs unless the project allows them.
+          return markTestSkipped(
+            'The project has multi-destination trips turned off '
+            '(enableMultipleDestinationTrips), so the trip has no legs.',
           );
-          expectSuccess(started);
-          final trip = started!['trip'] as Map;
-          if (trip['legs'] == null) {
-            // The API ignores legs unless the project allows them.
-            return markTestSkipped(
-              'The project has multi-destination trips turned off '
-              '(enableMultipleDestinationTrips), so the trip has no legs.',
-            );
-          }
-          expect(trip['metadata'], containsPair('runId', runId));
-          final legIds = idsOf(trip['legs']);
-          expect(legIds, hasLength(2));
-          expect(legIds, everyElement(isA<String>()));
+        }
+        final legIds = [for (final leg in started.trip.legs) leg.id!];
+        expect(legIds, hasLength(2));
 
-          final newOrder = legIds.reversed.cast<String>().toList();
-          final reordered = await Radar.reorderTripLegs(legIds: newOrder);
-          expectSuccess(reordered);
-          expect(idsOf((reordered!['trip'] as Map)['legs']), newOrder);
+        final newOrder = legIds.reversed.toList();
+        final reordered = await Radar.reorderTripLegs(legIds: newOrder);
+        expect(reordered.trip.legs.map((leg) => leg.id), newOrder);
 
-          // Reordering starts the new first leg, so move it on from there.
-          final updated = await Radar.updateTripLeg(
-            legId: newOrder.first,
-            status: 'approaching',
-          );
-          expectSuccess(updated);
-          // The API's response has no separate leg, so the SDKs return none;
-          // read the leg from the trip.
-          expect(legStatus(updated!, newOrder.first), 'approaching');
+        RadarTripLegStatus? statusOf(RadarTrip trip, String legId) =>
+            trip.legs.firstWhere((leg) => leg.id == legId).status;
 
-          final current = await Radar.updateCurrentTripLeg(status: 'arrived');
-          expectSuccess(current);
-          expect(legStatus(current!, newOrder.first), 'arrived');
-        },
-      );
+        final updated = await Radar.updateTripLeg(
+          legId: newOrder.first,
+          status: RadarTripLegStatus.started,
+        );
+        expect(
+          statusOf(updated.trip, newOrder.first),
+          RadarTripLegStatus.started,
+        );
+
+        final current = await Radar.updateCurrentTripLeg(
+          status: RadarTripLegStatus.arrived,
+        );
+        expect(
+          current.trip.legs.map((leg) => leg.status),
+          contains(RadarTripLegStatus.arrived),
+        );
+      });
     });
 
-    group('known bridge bugs', () {
-      test(
-        'searchGeofences with only near, radius and limit',
-        skip:
-            Platform.isIOS
-                ? 'Known bug: the iOS bridge passes NSNull for omitted tags and '
-                    'metadata, and the SDK crashes the app.'
-                : 'Known bug: the Android bridge throws NullPointerException for '
-                    'omitted tags (ArrayList.toArray) and includeGeometry '
-                    '(Boolean unboxing).',
-        () async {
-          final result = await Radar.searchGeofences(
-            near: _nyc,
-            radius: 1000,
-            limit: 10,
-          );
-          expectSuccess(result);
-        },
-      );
+    group('mock tracking', () {
+      test('mockTracking delivers mocked locations', () async {
+        final received = Completer<RadarLocationUpdate>();
+        Radar.onLocation((update) {
+          if (!received.isCompleted) received.complete(update);
+        });
+        addTearDown(Radar.offLocation);
 
-      test(
-        'mockTracking completes',
-        skip:
-            'Known bug: neither native bridge replies to mockTracking, so '
-            'the Future never completes.',
-        () async {
-          final result = await Radar.mockTracking(
-            origin: {'latitude': 40.7342, 'longitude': -73.9911},
-            destination: _brooklyn,
-            mode: 'car',
-            steps: 2,
-            interval: 1,
-          );
-          expectSuccess(result);
-        },
-      );
+        await Radar.mockTracking(
+          origin: _nyc,
+          destination: _brooklyn,
+          mode: RadarRouteMode.car,
+          steps: 2,
+          interval: 1,
+        );
+
+        final update = await received.future.timeout(_callbackTimeout);
+        expect(update.user?.userId, runId);
+      });
     });
   });
 }
