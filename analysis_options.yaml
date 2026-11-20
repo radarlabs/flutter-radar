@@ -1,0 +1,26 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+  language:
+    # The public API is typed; these keep `dynamic` from the method channel
+    # from leaking back in unnoticed.
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Most Radar methods return a Future that throws on failure, so a
+    # forgotten await means an unhandled error. (discarded_futures would also
+    # cover non-async functions, but older analyzers in the supported range
+    # report false positives on closures that return a Future.)
+    - unawaited_futures
+    - avoid_dynamic_calls
+    - always_declare_return_types
+    - type_annotate_public_apis
+    - directives_ordering
+    - prefer_single_quotes
