@@ -23,8 +23,6 @@ final class RadarInAppMessage {
   /// Custom data attached to the message. Values must be JSON-encodable.
   final Map<String, Object?> metadata;
 
-  /// Parses an in-app message. Returns null if [map] is null or is missing a
-  /// valid title or body, which both native SDKs require.
   @internal
   static RadarInAppMessage? fromMap(ChannelMap? map) {
     if (map == null) return null;

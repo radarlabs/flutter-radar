@@ -15,8 +15,15 @@ final class RadarChain {
 
   /// The unique ID of the chain, such as `starbucks`.
   final String slug;
+
+  /// The name of the chain. For a full list of chains, see
+  /// https://radar.com/documentation/places/chains.
   final String name;
+
+  /// The external ID of the chain.
   final String? externalId;
+
+  /// The optional set of custom key-value pairs for the chain.
   final Map<String, Object?>? metadata;
 
   @internal
@@ -42,15 +49,31 @@ final class RadarPlace {
     this.geometryRadius,
   });
 
+  /// The Radar ID of the place.
   final String id;
+
+  /// The name of the place.
   final String name;
+
+  /// The categories of the place. For a full list of categories, see
+  /// https://radar.com/documentation/places/categories.
   final List<String> categories;
+
+  /// The chain of the place. Null for places without a chain. For a full list
+  /// of chains, see https://radar.com/documentation/places/chains.
   final RadarChain? chain;
+
+  /// The location of the place.
   final RadarCoordinate? location;
 
   /// The place group, for places that are part of a group.
   final String? group;
+
+  /// The metadata for the place, if part of a group. For details of metadata
+  /// fields, see https://radar.com/documentation/places/groups.
   final Map<String, Object?>? metadata;
+
+  /// The address of the place.
   final RadarAddress? address;
 
   /// The radius of the place's geometry in meters. Android only.

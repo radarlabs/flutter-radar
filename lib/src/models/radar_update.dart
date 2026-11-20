@@ -29,8 +29,6 @@ import 'radar_verified_location_token.dart';
 sealed class RadarUpdate {
   const RadarUpdate();
 
-  /// Parses an update from the method name and payload the native side sends.
-  /// Returns null for an unknown method.
   @internal
   static RadarUpdate? fromMethodCall(String method, ChannelMap payload) =>
       switch (method) {
@@ -51,7 +49,10 @@ sealed class RadarUpdate {
 final class RadarLocationUpdate extends RadarUpdate {
   const RadarLocationUpdate({required this.location, this.user});
 
+  /// The location that was sent.
   final RadarLocation? location;
+
+  /// The current user.
   final RadarUser? user;
 
   @internal
@@ -70,10 +71,13 @@ final class RadarClientLocationUpdate extends RadarUpdate {
     required this.source,
   });
 
+  /// The device's location.
   final RadarLocation? location;
 
   /// Whether the device is stopped.
   final bool stopped;
+
+  /// The source of the location.
   final RadarLocationSource source;
 
   @internal
@@ -89,7 +93,10 @@ final class RadarClientLocationUpdate extends RadarUpdate {
 final class RadarEventsUpdate extends RadarUpdate {
   const RadarEventsUpdate({required this.events, this.user});
 
+  /// The events received.
   final List<RadarEvent> events;
+
+  /// The user, if any.
   final RadarUser? user;
 
   @internal
@@ -103,6 +110,7 @@ final class RadarEventsUpdate extends RadarUpdate {
 final class RadarErrorUpdate extends RadarUpdate {
   const RadarErrorUpdate({required this.status});
 
+  /// The status of the failed request.
   final RadarStatus status;
 
   @internal
@@ -114,6 +122,7 @@ final class RadarErrorUpdate extends RadarUpdate {
 final class RadarLogUpdate extends RadarUpdate {
   const RadarLogUpdate({required this.message});
 
+  /// The log message.
   final String message;
 
   @internal
@@ -125,6 +134,8 @@ final class RadarLogUpdate extends RadarUpdate {
 final class RadarTokenUpdate extends RadarUpdate {
   const RadarTokenUpdate({required this.token});
 
+  /// The new verified location token. Verify it server-side with your secret
+  /// key.
   final RadarVerifiedLocationToken? token;
 
   @internal
@@ -133,16 +144,18 @@ final class RadarTokenUpdate extends RadarUpdate {
   );
 }
 
-/// The device's IP address changed. Delivered to [Radar.onIpChanged].
+/// The device's IP address changed while IP change monitoring is active.
+/// Delivered to [Radar.onIpChanged].
 final class RadarIpChangedUpdate extends RadarUpdate {
   const RadarIpChangedUpdate();
 }
 
-/// Location sharing started or stopped. Delivered to
+/// The device's screen sharing state changed. Delivered to
 /// [Radar.onSharingChanged].
 final class RadarSharingChangedUpdate extends RadarUpdate {
   const RadarSharingChangedUpdate({required this.sharing});
 
+  /// Whether the device is screen sharing.
   final bool sharing;
 
   @internal
