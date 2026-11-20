@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Iterator;
 
@@ -393,7 +394,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                         logConversion(call, result);
                         break;
                     case "logTermination":
-                        // do nothing
+                        // iOS only; reply so the call completes.
+                        result.success(true);
                         break;
                     case "logBackgrounding":
                         logBackgrounding(result);
@@ -820,24 +822,45 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Location origin = locationForMap(originMap);
         HashMap destinationMap = (HashMap)call.argument("destination");
         Location destination = locationForMap(destinationMap);
-        String modeStr = call.argument("mode");
-        Radar.RadarRouteMode mode = Radar.RadarRouteMode.CAR;
-        if (modeStr.equals("FOOT") || modeStr.equals("foot")) {
-            mode = Radar.RadarRouteMode.FOOT;
-        } else if (modeStr.equals("BIKE") || modeStr.equals("bike")) {
-            mode = Radar.RadarRouteMode.BIKE;
-        } else if (modeStr.equals("CAR") || modeStr.equals("car")) {
+        Radar.RadarRouteMode mode = routeModeForString(call.argument("mode"));
+        if (mode == null) {
             mode = Radar.RadarRouteMode.CAR;
         }
-        int steps = call.hasArgument("steps") ? (int)call.argument("steps") : 10;
-        int interval = call.hasArgument("interval") ? (int)call.argument("interval") : 1;
+        Integer stepsArg = call.argument("steps");
+        int steps = stepsArg != null ? stepsArg : 10;
+        Integer intervalArg = call.argument("interval");
+        int interval = intervalArg != null ? intervalArg : 1;
 
+        // The callback runs once per mocked step, so it can't reply; reply
+        // once the mock has started instead.
         Radar.mockTracking(origin, destination, mode, steps, interval, new Radar.RadarTrackCallback() {
             @Override
             public void onComplete(Radar.RadarStatus status, Location location, RadarEvent[] events, RadarUser user) {
-                
             }
         });
+        result.success(true);
+    }
+
+    /** Parses a route mode wire value ("foot", "car", ...), or returns null. */
+    @Nullable
+    private static Radar.RadarRouteMode routeModeForString(@Nullable String modeStr) {
+        if (modeStr == null) {
+            return null;
+        }
+        switch (modeStr.toLowerCase(Locale.US)) {
+            case "foot":
+                return Radar.RadarRouteMode.FOOT;
+            case "bike":
+                return Radar.RadarRouteMode.BIKE;
+            case "car":
+                return Radar.RadarRouteMode.CAR;
+            case "truck":
+                return Radar.RadarRouteMode.TRUCK;
+            case "motorbike":
+                return Radar.RadarRouteMode.MOTORBIKE;
+            default:
+                return null;
+        }
     }
 
     private static void stopTracking(Result result) {
@@ -949,8 +972,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
 
     public static void getTripOptions(Result result) {
         RadarTripOptions tripOptions = Radar.getTripOptions();
-        HashMap<String,Object> map = mapForJson(tripOptions.toJson());
-        result.success(map);
+        result.success(tripOptions != null ? mapForJson(tripOptions.toJson()) : null);
     }
 
     public static void completeTrip(Result result) {
@@ -1177,13 +1199,16 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             HashMap nearMap = (HashMap)call.argument("near");
             near = locationForMap(nearMap);
         }
-        int radius = call.hasArgument("radius") ? (int)call.argument("radius") : 1000;
+        Integer radiusArg = call.argument("radius");
+        int radius = radiusArg != null ? radiusArg : 1000;
         ArrayList<String> tagsList = call.argument("tags");
-        String[] tags = tagsList.toArray(new String[0]);
+        String[] tags = tagsList != null ? tagsList.toArray(new String[0]) : null;
         HashMap metadataMap = (HashMap)call.argument("metadata");
-        JSONObject metadata = jsonForMap(metadataMap);
-        int limit = call.hasArgument("limit") ? (int)call.argument("limit") : 10;
-        boolean includeGeometry = call.hasArgument("includeGeometry") ? call.argument("includeGeometry") : false;
+        JSONObject metadata = metadataMap != null ? jsonForMap(metadataMap) : null;
+        Integer limitArg = call.argument("limit");
+        int limit = limitArg != null ? limitArg : 10;
+        Boolean includeGeometryArg = call.argument("includeGeometry");
+        boolean includeGeometry = includeGeometryArg != null && includeGeometryArg;
 
         if (near != null) {
             Radar.searchGeofences(near, radius, tags, metadata, limit, includeGeometry, callback);
@@ -1425,20 +1450,19 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         Location destination = locationForMap(destinationMap);
         EnumSet<Radar.RadarRouteMode> modes = EnumSet.noneOf(Radar.RadarRouteMode.class);
         ArrayList<String> modesList = call.argument("modes");
-        String[] modesArr = (String[])(new String[0]);
-        for (String modeStr : modesArr) {
-            if (modeStr.equals("FOOT") || modeStr.equals("foot")) {
-                modes.add(Radar.RadarRouteMode.FOOT);
-            }
-            if (modeStr.equals("BIKE") || modeStr.equals("bike")) {
-                modes.add(Radar.RadarRouteMode.BIKE);
-            }
-            if (modeStr.equals("CAR") || modeStr.equals("car")) {
-                modes.add(Radar.RadarRouteMode.CAR);
+        if (modesList != null) {
+            for (String modeStr : modesList) {
+                Radar.RadarRouteMode mode = routeModeForString(modeStr);
+                if (mode != null) {
+                    modes.add(mode);
+                }
             }
         }
+        if (modes.isEmpty()) {
+            modes.add(Radar.RadarRouteMode.CAR);
+        }
         String unitsStr = call.argument("units");
-        Radar.RadarRouteUnits units = unitsStr.equals("METRIC") || unitsStr.equals("metric") ? Radar.RadarRouteUnits.METRIC : Radar.RadarRouteUnits.IMPERIAL;
+        Radar.RadarRouteUnits units = unitsStr != null && unitsStr.equalsIgnoreCase("metric") ? Radar.RadarRouteUnits.METRIC : Radar.RadarRouteUnits.IMPERIAL;
 
         if (origin != null) {
             Radar.getDistance(origin, destination, modes, units, callback);

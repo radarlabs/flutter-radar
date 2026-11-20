@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_radar/flutter_radar.dart';
@@ -528,13 +526,7 @@ void main() {
       expect(matrix.routeBetween(1, 0), isNull);
     });
 
-    test('mockTracking returns without waiting for native', () async {
-      // Neither bridge replies to mockTracking.
-      messenger.setMockMethodCallHandler(channel, (call) {
-        calls.add(call);
-        return Completer<Object?>().future;
-      });
-
+    test('mockTracking sends the route', () async {
       await Radar.mockTracking(
         origin: location,
         destination: location,

@@ -315,20 +315,16 @@ class Radar {
     int? steps,
     Duration? interval,
   }) async {
-    // Neither native bridge replies to this call, so awaiting it would never
-    // complete.
-    unawaited(
-      _invoke<void>('mockTracking', {
-        'origin': origin.toMap(),
-        'destination': destination.toMap(),
-        'mode': mode?.wireValue,
-        'steps': steps,
-        'interval': switch (interval) {
-          final value? => wholeSeconds(value, 'interval'),
-          null => null,
-        },
-      }),
-    );
+    await _invoke<void>('mockTracking', {
+      'origin': origin.toMap(),
+      'destination': destination.toMap(),
+      'mode': mode?.wireValue,
+      'steps': steps,
+      'interval': switch (interval) {
+        final value? => wholeSeconds(value, 'interval'),
+        null => null,
+      },
+    });
   }
 
   /// Starts a trip with [tripOptions].
