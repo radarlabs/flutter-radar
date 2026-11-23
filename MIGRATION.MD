@@ -58,6 +58,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `getPermissionsStatus()` returns a `String?` | returns a `RadarPermissionsStatus` |
 | `desiredAccuracy: 'high'` / `getLocation('high')` | `RadarTrackingOptionsDesiredAccuracy.high` |
 | `mode: 'car'`, `modes: ['car']`, `units: 'imperial'` | `RadarRouteMode.car`, `{RadarRouteMode.car}`, `RadarRouteUnits.imperial` |
+| Durations as numbers of seconds or minutes, such as `startTrackingVerified(30, false)`, `mockTracking(interval: 1)`, or `'desiredSyncInterval': 20` | `Duration`s: `startTrackingVerified(Duration(seconds: 30), false)`, `mockTracking(interval: Duration(seconds: 1))`, `desiredSyncInterval: Duration(seconds: 20)`. ETAs and other durations Radar returns are `Duration`s too. |
 | `getTrackingOptions()`, `getTripOptions()`, `getTrip()` return a `Map?` | return `RadarTrackingOptions?`, `RadarTripOptions?`, `RadarTrip?` |
 
 **Address validation.** `validateStreetAddress` and `validateAddressLabel` return a `RadarValidateAddressResult` with the address and its verification status.

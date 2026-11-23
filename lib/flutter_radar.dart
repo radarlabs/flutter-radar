@@ -201,9 +201,12 @@ class Radar {
     await _invoke<void>('startTrackingCustom', options.toMap());
   }
 
-  static Future<void> startTrackingVerified(int interval, bool beacons) async {
+  static Future<void> startTrackingVerified(
+    Duration interval,
+    bool beacons,
+  ) async {
     await _invoke<void>('startTrackingVerified', {
-      'interval': interval,
+      'interval': wholeSeconds(interval, 'interval'),
       'beacons': beacons,
     });
   }
@@ -240,7 +243,8 @@ class Radar {
   }
 
   /// Simulates a trip from [origin] to [destination] for testing, tracking
-  /// [steps] locations along the route, [interval] seconds apart.
+  /// [steps] locations along the route, [interval] apart. [interval] is sent
+  /// in whole seconds, from 1 to 60.
   ///
   /// Returns once the simulation starts. Each step is delivered to the
   /// listeners, such as [onLocation] and [onEvents], and to the background
@@ -250,7 +254,7 @@ class Radar {
     required RadarLocation destination,
     RadarRouteMode? mode,
     int? steps,
-    int? interval,
+    Duration? interval,
   }) async {
     // Neither native bridge replies to this call, so awaiting it would never
     // complete.
@@ -260,7 +264,10 @@ class Radar {
         'destination': destination.toMap(),
         'mode': mode?.wireValue,
         'steps': steps,
-        'interval': interval,
+        'interval': switch (interval) {
+          final value? => wholeSeconds(value, 'interval'),
+          null => null,
+        },
       }),
     );
   }

@@ -491,7 +491,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   destination: _brooklyn,
                   mode: RadarRouteMode.car,
                   steps: 3,
-                  interval: 3,
+                  interval: const Duration(seconds: 3),
                 )),
             ApiAction('setForegroundServiceOptions()', () async {
               await Radar.setForegroundServiceOptions(
@@ -526,7 +526,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return 'stopped';
             }),
             ApiAction('startTrackingVerified()', () async {
-              await Radar.startTrackingVerified(30, false);
+              await Radar.startTrackingVerified(
+                  const Duration(seconds: 30), false);
               return 'started';
             }),
             ApiAction('stopTrackingVerified()', () async {

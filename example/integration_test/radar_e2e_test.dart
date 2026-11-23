@@ -792,7 +792,7 @@ void main() {
           destination: _brooklyn,
           mode: RadarRouteMode.car,
           steps: 2,
-          interval: 1,
+          interval: const Duration(seconds: 1),
         );
 
         final update = await received.future.timeout(_callbackTimeout);

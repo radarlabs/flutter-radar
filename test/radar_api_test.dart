@@ -537,7 +537,7 @@ void main() {
         destination: location,
         mode: RadarRouteMode.foot,
         steps: 3,
-        interval: 1,
+        interval: const Duration(seconds: 1),
       );
 
       expect(lastCall().arguments, {
