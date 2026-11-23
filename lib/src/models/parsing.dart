@@ -85,24 +85,39 @@ DateTime? readDate(Object? value) => switch (value) {
 /// The largest number of milliseconds from the epoch that [DateTime] allows.
 const _maxEpochMilliseconds = 8640000000000000;
 
-List<String> readStringList(Object? value) =>
-    value is List ? value.whereType<String>().toList() : const [];
+// The list and map readers return unmodifiable collections, so a parsed model
+// can't be changed through them, the same as one built with `const` defaults.
 
-List<T> readList<T>(Object? value, T Function(ChannelMap map) fromMap) =>
+List<String> readStringList(Object? value) =>
+    value is List ? List.unmodifiable(value.whereType<String>()) : const [];
+
+/// Parses each map in [value] with [fromMap], skipping items that aren't maps
+/// and items [fromMap] rejects by returning null.
+List<T> readList<T extends Object>(
+  Object? value,
+  T? Function(ChannelMap map) fromMap,
+) =>
     value is List
-        ? [
-          for (final item in value)
-            if (item is Map) fromMap(item.cast()),
-        ]
+        ? List.unmodifiable(
+          value
+              .whereType<Map<Object?, Object?>>()
+              .map((item) => fromMap(item.cast()))
+              .nonNulls,
+        )
         : const [];
 
-T? readObject<T>(Object? value, T Function(ChannelMap map) fromMap) {
+T? readObject<T extends Object>(
+  Object? value,
+  T? Function(ChannelMap map) fromMap,
+) {
   final map = readMap(value);
   return map == null ? null : fromMap(map);
 }
 
 Map<String, Object?>? readJson(Object? value) =>
-    value is Map ? value.map((k, v) => MapEntry(k.toString(), v)) : null;
+    value is Map
+        ? Map.unmodifiable(value.map((k, v) => MapEntry(k.toString(), v)))
+        : null;
 
 /// Matches [value] against each enum value's [RadarWireEnum.wireValue],
 /// ignoring case, and returns [fallback] if nothing matches.

@@ -35,7 +35,7 @@ final class RadarPlace {
     required this.name,
     this.categories = const [],
     this.chain,
-    this.location,
+    required this.location,
     this.group,
     this.metadata,
     this.address,
@@ -46,7 +46,7 @@ final class RadarPlace {
   final String name;
   final List<String> categories;
   final RadarChain? chain;
-  final RadarCoordinate? location;
+  final RadarCoordinate location;
 
   /// The place group, for places that are part of a group.
   final String? group;
@@ -56,16 +56,21 @@ final class RadarPlace {
   /// The radius of the place's geometry in meters. Android only.
   final double? geometryRadius;
 
+  /// Returns null if [map] has no location. Both native SDKs always send one.
   @internal
-  factory RadarPlace.fromMap(ChannelMap map) => RadarPlace(
-    id: readString(map['_id']) ?? '',
-    name: readString(map['name']) ?? '',
-    categories: readStringList(map['categories']),
-    chain: readObject(map['chain'], RadarChain.fromMap),
-    location: RadarCoordinate.fromMap(readMap(map['location'])),
-    group: readString(map['group']),
-    metadata: readJson(map['metadata']),
-    address: readObject(map['address'], RadarAddress.fromMap),
-    geometryRadius: readDouble(map['geometryRadius']),
-  );
+  static RadarPlace? fromMap(ChannelMap map) {
+    final location = RadarCoordinate.fromMap(readMap(map['location']));
+    if (location == null) return null;
+    return RadarPlace(
+      id: readString(map['_id']) ?? '',
+      name: readString(map['name']) ?? '',
+      categories: readStringList(map['categories']),
+      chain: readObject(map['chain'], RadarChain.fromMap),
+      location: location,
+      group: readString(map['group']),
+      metadata: readJson(map['metadata']),
+      address: readObject(map['address'], RadarAddress.fromMap),
+      geometryRadius: readDouble(map['geometryRadius']),
+    );
+  }
 }

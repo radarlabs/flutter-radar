@@ -60,6 +60,8 @@ final class RadarCoordinate {
 /// A device location.
 ///
 /// Locations from the native SDKs fill in every field the platform reports.
+/// iOS reports an invalid accuracy, speed, or course as a negative number;
+/// those fields are null instead.
 /// When you pass a location to Radar, such as to [Radar.trackOnce], only
 /// [latitude], [longitude], and [accuracy] are sent.
 final class RadarLocation {
@@ -109,13 +111,13 @@ final class RadarLocation {
     return RadarLocation(
       latitude: latitude,
       longitude: longitude,
-      accuracy: readDouble(map['accuracy']),
+      accuracy: _readNonNegative(map['accuracy']),
       altitude: readDouble(map['altitude']),
-      verticalAccuracy: readDouble(map['verticalAccuracy']),
-      speed: readDouble(map['speed']),
-      speedAccuracy: readDouble(map['speedAccuracy']),
-      course: readDouble(map['course']),
-      courseAccuracy: readDouble(map['courseAccuracy']),
+      verticalAccuracy: _readNonNegative(map['verticalAccuracy']),
+      speed: _readNonNegative(map['speed']),
+      speedAccuracy: _readNonNegative(map['speedAccuracy']),
+      course: _readNonNegative(map['course']),
+      courseAccuracy: _readNonNegative(map['courseAccuracy']),
       mocked: readBool(map['mocked']),
     );
   }
@@ -130,4 +132,11 @@ final class RadarLocation {
   @override
   String toString() =>
       'RadarLocation($latitude, $longitude, accuracy: $accuracy)';
+}
+
+/// CoreLocation uses a negative value for an invalid accuracy, speed, or
+/// course.
+double? _readNonNegative(Object? value) {
+  final result = readDouble(value);
+  return result != null && result >= 0 ? result : null;
 }

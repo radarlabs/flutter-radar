@@ -245,7 +245,11 @@ void main() {
       );
       final r = RadarRegion.fromMap({});
       expect(r.id, '');
-      expect(r.allowed, isNull);
+      expect(r.allowed, isFalse);
+      expect(r.passed, isFalse);
+      expect(r.inExclusionZone, isFalse);
+      expect(r.inBufferZone, isFalse);
+      expect(r.expected, isFalse);
     });
   });
 
@@ -319,10 +323,24 @@ void main() {
     });
 
     test('isochrone type and missing coordinates', () {
-      final g = RadarGeofence.fromMap({'type': 'isochrone'});
+      final g = RadarGeofence.fromMap({
+        'type': 'isochrone',
+        'geometryCenter': {
+          'type': 'Point',
+          'coordinates': [-73.99, 40.73],
+        },
+      });
       final geometry = g.geometry as RadarPolygonGeometry;
       expect(geometry.coordinates, isEmpty);
-      expect(geometry.center, const RadarCoordinate(latitude: 0, longitude: 0));
+      expect(
+        geometry.center,
+        const RadarCoordinate(latitude: 40.73, longitude: -73.99),
+      );
+    });
+
+    test('a geometry without a center is null', () {
+      expect(RadarGeofence.fromMap({'type': 'Circle'}).geometry, isNull);
+      expect(RadarGeofence.fromMap({'type': 'Polygon'}).geometry, isNull);
     });
 
     test('empty and garbage maps', () {
@@ -333,7 +351,10 @@ void main() {
         'type': 'Polygon',
         'coordinates': 'x',
         'geometry': 3,
-        'geometryCenter': [1, 2],
+        'geometryCenter': {
+          'type': 'Point',
+          'coordinates': [1, 2],
+        },
         'geometryRadius': 'big',
         'operatingHours': {
           'monday': 'closed',
@@ -354,25 +375,26 @@ void main() {
 
   group('RadarPlace', () {
     test('parses a full map', () {
-      final p = RadarPlace.fromMap({
-        '_id': 'p1',
-        'name': 'Starbucks',
-        'categories': ['food-beverage', 'coffee-shop'],
-        'chain': {
-          'slug': 'starbucks',
-          'name': 'Starbucks',
-          'externalId': 'sb',
-          'metadata': {'x': true},
-        },
-        'location': {
-          'type': 'Point',
-          'coordinates': [-73.99, 40.73],
-        },
-        'group': 'g',
-        'metadata': {'m': 1},
-        'address': _addressMap,
-        'geometryRadius': 30.0,
-      });
+      final p =
+          RadarPlace.fromMap({
+            '_id': 'p1',
+            'name': 'Starbucks',
+            'categories': ['food-beverage', 'coffee-shop'],
+            'chain': {
+              'slug': 'starbucks',
+              'name': 'Starbucks',
+              'externalId': 'sb',
+              'metadata': {'x': true},
+            },
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.99, 40.73],
+            },
+            'group': 'g',
+            'metadata': {'m': 1},
+            'address': _addressMap,
+            'geometryRadius': 30.0,
+          })!;
       expect(p.id, 'p1');
       expect(p.name, 'Starbucks');
       expect(p.categories, ['food-beverage', 'coffee-shop']);
@@ -390,17 +412,23 @@ void main() {
       expect(p.geometryRadius, 30);
     });
 
-    test('empty and garbage maps', () {
-      final p = RadarPlace.fromMap({});
-      expect(p.id, '');
-      expect(p.categories, isEmpty);
-      expect(p.location, isNull);
-      final junk = RadarPlace.fromMap({
-        'chain': 'x',
-        'location': 'y',
-        'address': 1,
-        'categories': [1, 'a'],
-      });
+    test('a place without a location is dropped', () {
+      expect(RadarPlace.fromMap({}), isNull);
+      expect(RadarPlace.fromMap({'_id': 'p1', 'location': 'y'}), isNull);
+    });
+
+    test('garbage fields', () {
+      final junk =
+          RadarPlace.fromMap({
+            'chain': 'x',
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.99, 40.73],
+            },
+            'address': 1,
+            'categories': [1, 'a'],
+          })!;
+      expect(junk.id, '');
       expect(junk.chain, isNull);
       expect(junk.address, isNull);
       expect(junk.categories, ['a']);
@@ -460,6 +488,8 @@ void main() {
       expect(b.minor, '2');
       expect(b.type, RadarBeaconType.iBeacon);
       final empty = RadarBeacon.fromMap({});
+      expect(empty.id, isNull);
+      expect(empty.description, isNull);
       expect(empty.uuid, '');
       expect(empty.location, isNull);
       expect(
@@ -469,11 +499,93 @@ void main() {
     });
   });
 
+  group('RadarBeacon equality', () {
+    test('compares uuid, major, and minor like the native SDKs', () {
+      const a = RadarBeacon(id: 'b1', uuid: 'u', major: '1', minor: '2');
+      const sameIdentity = RadarBeacon(
+        id: 'b2',
+        description: 'other',
+        uuid: 'u',
+        major: '1',
+        minor: '2',
+        rssi: -40,
+      );
+      expect(a, sameIdentity);
+      expect(a.hashCode, sameIdentity.hashCode);
+      expect(a, isNot(const RadarBeacon(uuid: 'u', major: '1', minor: '3')));
+    });
+  });
+
+  group('RadarLocation', () {
+    test('negative accuracy, speed, and course become null', () {
+      final location =
+          RadarLocation.fromMap({
+            'latitude': 40.7,
+            'longitude': -73.9,
+            'accuracy': -1,
+            'altitude': -10.5,
+            'verticalAccuracy': -1,
+            'speed': -1,
+            'speedAccuracy': -1,
+            'course': -1,
+            'courseAccuracy': -1,
+          })!;
+      expect(location.accuracy, isNull);
+      expect(location.verticalAccuracy, isNull);
+      expect(location.speed, isNull);
+      expect(location.speedAccuracy, isNull);
+      expect(location.course, isNull);
+      expect(location.courseAccuracy, isNull);
+      expect(location.altitude, -10.5);
+    });
+
+    test('zero is kept', () {
+      final location =
+          RadarLocation.fromMap({
+            'latitude': 0,
+            'longitude': 0,
+            'accuracy': 0,
+            'speed': 0,
+            'course': 0,
+          })!;
+      expect(location.accuracy, 0);
+      expect(location.speed, 0);
+      expect(location.course, 0);
+    });
+  });
+
+  group('parsed collections', () {
+    test('are unmodifiable', () {
+      final place =
+          RadarPlace.fromMap({
+            'categories': ['a'],
+            'metadata': {'m': 1},
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.99, 40.73],
+            },
+          })!;
+      expect(() => place.categories.add('b'), throwsUnsupportedError);
+      expect(() => place.metadata!['n'] = 2, throwsUnsupportedError);
+      final context = RadarContext.fromMap({
+        'geofences': [_circleGeofenceMap],
+      });
+      expect(() => context.geofences.clear(), throwsUnsupportedError);
+    });
+  });
+
   group('RadarContext', () {
     test('parses a full map', () {
       final c = RadarContext.fromMap({
         'geofences': [_circleGeofenceMap, 'junk'],
-        'place': {'_id': 'p1', 'name': 'Starbucks'},
+        'place': {
+          '_id': 'p1',
+          'name': 'Starbucks',
+          'location': {
+            'type': 'Point',
+            'coordinates': [-73.99, 40.73],
+          },
+        },
         'country': {'_id': 'c', 'code': 'US', 'type': 'country'},
         'state': {'_id': 's', 'code': 'NY', 'type': 'state'},
         'dma': {'_id': 'd', 'code': '501', 'type': 'dma'},

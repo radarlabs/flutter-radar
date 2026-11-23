@@ -18,8 +18,7 @@ enum RadarStatus implements RadarWireEnum {
   errorPlugin('ERROR_PLUGIN'),
   errorRateLimit('ERROR_RATE_LIMIT'),
   errorServer('ERROR_SERVER'),
-  errorUnknown('ERROR_UNKNOWN'),
-  notAvailable('NOT_AVAILABLE');
+  errorUnknown('ERROR_UNKNOWN');
 
   const RadarStatus(this.wireValue);
 

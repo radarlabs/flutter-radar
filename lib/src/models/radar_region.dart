@@ -10,12 +10,12 @@ final class RadarRegion {
     required this.code,
     required this.type,
     this.flag,
-    this.allowed,
-    this.passed,
-    this.inExclusionZone,
-    this.inBufferZone,
+    this.allowed = false,
+    this.passed = false,
+    this.inExclusionZone = false,
+    this.inBufferZone = false,
     this.distanceToBorder,
-    this.expected,
+    this.expected = false,
   });
 
   final String id;
@@ -31,18 +31,18 @@ final class RadarRegion {
   final String? flag;
 
   /// Whether the region is allowed by the project's fraud settings.
-  final bool? allowed;
+  final bool allowed;
 
   /// Whether the region passed all fraud jurisdiction checks.
-  final bool? passed;
-  final bool? inExclusionZone;
-  final bool? inBufferZone;
+  final bool passed;
+  final bool inExclusionZone;
+  final bool inBufferZone;
 
   /// Distance to the region's border in meters.
   final double? distanceToBorder;
 
   /// Whether the user was expected to be in this region.
-  final bool? expected;
+  final bool expected;
 
   @internal
   factory RadarRegion.fromMap(ChannelMap map) {
@@ -53,12 +53,12 @@ final class RadarRegion {
       code: readString(map['code']) ?? '',
       type: readString(map['type']) ?? '',
       flag: readString(map['flag']),
-      allowed: readBool(map['allowed']),
-      passed: readBool(map['passed']),
-      inExclusionZone: readBool(map['inExclusionZone']),
-      inBufferZone: readBool(map['inBufferZone']),
+      allowed: readBool(map['allowed']) ?? false,
+      passed: readBool(map['passed']) ?? false,
+      inExclusionZone: readBool(map['inExclusionZone']) ?? false,
+      inBufferZone: readBool(map['inBufferZone']) ?? false,
       distanceToBorder: distance == null || distance.isNaN ? null : distance,
-      expected: readBool(map['expected']),
+      expected: readBool(map['expected']) ?? false,
     );
   }
 }

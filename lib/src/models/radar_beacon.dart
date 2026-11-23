@@ -23,8 +23,8 @@ enum RadarBeaconType implements RadarWireEnum {
 /// A Bluetooth beacon.
 final class RadarBeacon {
   const RadarBeacon({
-    required this.id,
-    required this.description,
+    this.id,
+    this.description,
     this.tag,
     this.externalId,
     required this.uuid,
@@ -36,8 +36,13 @@ final class RadarBeacon {
     this.type = RadarBeaconType.iBeacon,
   });
 
-  final String id;
-  final String description;
+  /// The Radar ID of the beacon. Null for a ranged beacon that doesn't match a
+  /// beacon in the project.
+  final String? id;
+
+  /// The description of the beacon. Null for a ranged beacon that doesn't
+  /// match a beacon in the project.
+  final String? description;
   final String? tag;
   final String? externalId;
 
@@ -58,8 +63,8 @@ final class RadarBeacon {
 
   @internal
   factory RadarBeacon.fromMap(ChannelMap map) => RadarBeacon(
-    id: readString(map['_id']) ?? '',
-    description: readString(map['description']) ?? '',
+    id: readString(map['_id']),
+    description: readString(map['description']),
     tag: readString(map['tag']),
     externalId: readString(map['externalId']),
     uuid: _readId(map['uuid']) ?? _readId(map['uid']) ?? '',
@@ -70,6 +75,18 @@ final class RadarBeacon {
     rssi: readInt(map['rssi']),
     type: RadarBeaconType.fromWire(map['type']),
   );
+
+  /// Beacons are equal when their [uuid], [major], and [minor] match, like in
+  /// both native SDKs.
+  @override
+  bool operator ==(Object other) =>
+      other is RadarBeacon &&
+      other.uuid == uuid &&
+      other.major == major &&
+      other.minor == minor;
+
+  @override
+  int get hashCode => Object.hash(uuid, major, minor);
 }
 
 /// Major and minor are strings on both platforms, but accept numbers too.

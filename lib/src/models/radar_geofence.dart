@@ -95,9 +95,8 @@ Map<String, List<List<String>>>? _readOperatingHours(Object? value) {
 // lowercase types (`circle`, `polygon`, `isochrone`) are accepted too.
 RadarGeofenceGeometry? _readGeometry(ChannelMap map) {
   final type = readString(map['type'])?.toLowerCase();
-  final center =
-      RadarCoordinate.fromMap(readMap(map['geometryCenter'])) ??
-      const RadarCoordinate(latitude: 0, longitude: 0);
+  final center = RadarCoordinate.fromMap(readMap(map['geometryCenter']));
+  if (center == null) return null;
   final radius = readDouble(map['geometryRadius']) ?? 0;
   switch (type) {
     case 'circle':
@@ -122,8 +121,8 @@ List<RadarCoordinate> _readRing(Object? value) {
   final first = value.first;
   final ring =
       first is List && first.isNotEmpty && first.first is List ? first : value;
-  return [
+  return List.unmodifiable([
     for (final point in ring)
       if (RadarCoordinate.fromLngLat(point) case final coordinate?) coordinate,
-  ];
+  ]);
 }
