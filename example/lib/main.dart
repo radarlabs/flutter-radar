@@ -463,7 +463,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return (await Radar.trackOnce()).user?.locationInsights;
             }),
             ApiAction('getLocation(high)', () => Radar.getLocation(
-                RadarTrackingOptionsDesiredAccuracy.high)),
+                desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high)),
             for (final preset in RadarTrackingPreset.values)
               ApiAction('startTracking(${preset.name})', () async {
                 await Radar.startTracking(preset);

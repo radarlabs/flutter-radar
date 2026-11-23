@@ -557,7 +557,7 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSDictionary *argsDict = call.arguments;
 
-    NSString *accuracy = argsDict[@"accuracy"];
+    NSString *accuracy = argsDict[@"desiredAccuracy"];
     NSLog(@"accuracy: %@", accuracy);
     if (!accuracy || ![accuracy isKindOfClass:[NSString class]]) {
         [Radar getLocationWithCompletionHandler:completionHandler];

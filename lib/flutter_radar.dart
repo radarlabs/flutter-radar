@@ -173,11 +173,11 @@ class Radar {
     await _invoke<void>('setAnonymousTrackingEnabled', {'enabled': enabled});
   }
 
-  static Future<RadarLocationResult> getLocation([
-    RadarTrackingOptionsDesiredAccuracy? accuracy,
-  ]) {
+  static Future<RadarLocationResult> getLocation({
+    RadarTrackingOptionsDesiredAccuracy? desiredAccuracy,
+  }) {
     return _request('getLocation', {
-      'accuracy': accuracy?.wireValue,
+      'desiredAccuracy': desiredAccuracy?.wireValue,
     }, RadarLocationResult.fromMap);
   }
 

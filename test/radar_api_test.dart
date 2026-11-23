@@ -93,11 +93,11 @@ void main() {
       };
 
       final result = await Radar.getLocation(
-        RadarTrackingOptionsDesiredAccuracy.high,
+        desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high,
       );
 
       expect(lastCall().method, 'getLocation');
-      expect(lastCall().arguments, {'accuracy': 'high'});
+      expect(lastCall().arguments, {'desiredAccuracy': 'high'});
       expect(result.location.latitude, 40.70390);
       expect(result.stopped, isTrue);
     });

@@ -214,7 +214,7 @@ void main() {
           return markTestSkipped(_noPermission);
         }
         final result = await Radar.getLocation(
-          RadarTrackingOptionsDesiredAccuracy.high,
+          desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high,
         );
         expect(result.location.latitude, closeTo(_nyc.latitude, 0.1));
         expect(result.location.longitude, closeTo(_nyc.longitude, 0.1));

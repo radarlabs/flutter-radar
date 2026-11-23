@@ -716,7 +716,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         };
 
-        String accuracy = call.argument("accuracy");
+        String accuracy = call.argument("desiredAccuracy");
         if (accuracy == null) {
             Radar.getLocation(callback);
         } else if (accuracy.equals("high")) {
