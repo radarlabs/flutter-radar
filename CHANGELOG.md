@@ -10,6 +10,7 @@
 - Fixes `Radar.getDistance()` ignoring `modes` on Android, and the `truck` and `motorbike` modes being dropped by `Radar.getDistance()` and `Radar.mockTracking()`.
 - Fixes `Radar.mockTracking()` never completing. It now completes once the simulation starts.
 - Fixes `Radar.getTripOptions()` failing on Android when there are no trip options.
+- Fixes `Radar.getLocation()` ignoring the `none` accuracy on Android and using the SDK default instead.
 
 # 4.0.0-beta.4
 

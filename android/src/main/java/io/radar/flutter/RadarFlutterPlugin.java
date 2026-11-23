@@ -715,7 +715,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         };
 
-        String accuracy = call.argument("desiredAccuracy");
+        Object accuracyValue = call.argument("desiredAccuracy");
+        String accuracy = accuracyValue instanceof String ? ((String) accuracyValue).toLowerCase() : null;
         if (accuracy == null) {
             Radar.getLocation(callback);
         } else if (accuracy.equals("high")) {
@@ -724,6 +725,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             Radar.getLocation(RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.MEDIUM, callback);
         } else if (accuracy.equals("low")) {
             Radar.getLocation(RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.LOW, callback);
+        } else if (accuracy.equals("none")) {
+            Radar.getLocation(RadarTrackingOptions.RadarTrackingOptionsDesiredAccuracy.NONE, callback);
         } else {
             Radar.getLocation(callback);
         }
