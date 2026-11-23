@@ -134,6 +134,31 @@ void main() {
       expect(a.metadata, isNull);
     });
 
+    test('missing and out-of-range coordinates', () {
+      // iOS sends its invalid coordinate when the server sent none.
+      expect(
+        RadarAddress.fromMap({'latitude': -180, 'longitude': -180}).coordinate,
+        isNull,
+      );
+      expect(
+        RadarAddress.fromMap({
+          'latitude': double.nan,
+          'longitude': double.infinity,
+        }).coordinate,
+        isNull,
+      );
+      // Android sends (0, 0) when the server sent none, but it's also a real
+      // location, so it's kept.
+      expect(
+        RadarAddress.fromMap({'latitude': 0, 'longitude': 0}).coordinate,
+        const RadarCoordinate(latitude: 0, longitude: 0),
+      );
+      expect(
+        RadarAddress.fromMap({'latitude': 90, 'longitude': -180}).coordinate,
+        const RadarCoordinate(latitude: 90, longitude: -180),
+      );
+    });
+
     test('confidence fallback', () {
       expect(
         RadarAddressConfidence.fromWire('INTERPOLATED'),
@@ -494,6 +519,11 @@ void main() {
             'stateAllowed': true,
             'countryAllowed': false,
             'connectionType': 'wifi',
+            'timeZone': {
+              'id': 'America/New_York',
+              'name': 'Eastern Standard Time',
+              'code': 'EST',
+            },
             'categories': ['residential'],
           },
           'privacy': {'vpn': true, 'proxy': false, 'service': 'NordVPN'},
@@ -522,6 +552,8 @@ void main() {
       expect(ip.stateAllowed, isTrue);
       expect(ip.countryAllowed, isFalse);
       expect(ip.connectionType, 'wifi');
+      expect(ip.timeZone?.id, 'America/New_York');
+      expect(ip.timeZone?.code, 'EST');
       expect(ip.categories, ['residential']);
       expect(t.network?.privacy?.vpn, isTrue);
       expect(t.network?.privacy?.service, 'NordVPN');
@@ -547,7 +579,7 @@ void main() {
     });
 
     test('IP coordinate from GeoJSON geometry', () {
-      final ip = RadarRevealRiskTokenIpAddress.fromMap({
+      final ip = RadarRevealRiskTokenNetworkIpAddress.fromMap({
         'geometry': {
           'type': 'Point',
           'coordinates': [-74.0, 40.7],
@@ -574,6 +606,28 @@ void main() {
       expect(junk.risk?.reasons, isEmpty);
       expect(junk.network, isNull);
       expect(junk.expiresIn, isNull);
+    });
+
+    test('non-finite and out-of-range numbers do not throw', () {
+      final t = RadarRevealRiskToken.fromMap({
+        'expiresIn': double.nan,
+        'expiresAt': 9223372036854775807,
+        'network': {
+          'ipAddress': {'distance': double.infinity, 'timeZone': 'EST'},
+        },
+      });
+      expect(t.expiresIn, isNull);
+      expect(t.expiresAt, isNull);
+      expect(t.network?.ipAddress?.distance, isNull);
+      expect(t.network?.ipAddress?.timeZone, isNull);
+      expect(
+        RadarRevealRiskToken.fromMap({
+          'expiresIn': double.negativeInfinity,
+          'expiresAt': double.infinity,
+        }).expiresAt,
+        isNull,
+      );
+      expect(RadarRevealRiskToken.fromMap({'expiresIn': 600.0}).expiresIn, 600);
     });
   });
 }

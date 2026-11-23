@@ -168,13 +168,8 @@ final class RadarAddress {
 
   @internal
   factory RadarAddress.fromMap(ChannelMap map) {
-    final latitude = readDouble(map['latitude']);
-    final longitude = readDouble(map['longitude']);
     return RadarAddress(
-      coordinate:
-          latitude != null && longitude != null
-              ? RadarCoordinate(latitude: latitude, longitude: longitude)
-              : null,
+      coordinate: _readCoordinate(map['latitude'], map['longitude']),
       formattedAddress: readString(map['formattedAddress']),
       country: readString(map['country']),
       countryCode: readString(map['countryCode']),
@@ -203,4 +198,19 @@ final class RadarAddress {
       resultId: readString(map['resultId']),
     );
   }
+}
+
+/// Returns the address's coordinate, or null if it's missing or out of range.
+///
+/// The native SDKs always send a coordinate for an address, even when the
+/// server sent none: iOS sends (-180, -180), its invalid coordinate, and
+/// Android sends (0, 0) (FENCE-3224). The range check drops the iOS value.
+/// (0, 0) is kept, because it's also a real location.
+RadarCoordinate? _readCoordinate(Object? latitude, Object? longitude) {
+  final lat = readDouble(latitude);
+  final lng = readDouble(longitude);
+  if (lat == null || lng == null || lat.abs() > 90 || lng.abs() > 180) {
+    return null;
+  }
+  return RadarCoordinate(latitude: lat, longitude: lng);
 }

@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'parsing.dart';
+import 'radar_address.dart';
 import 'radar_location.dart';
 
 /// The risk level of a reveal risk check.
@@ -121,28 +122,28 @@ final class RadarRevealRiskTokenRisk {
 final class RadarRevealRiskTokenNetwork {
   const RadarRevealRiskTokenNetwork({this.ipAddress, this.privacy, this.asn});
 
-  final RadarRevealRiskTokenIpAddress? ipAddress;
-  final RadarRevealRiskTokenPrivacy? privacy;
-  final RadarRevealRiskTokenAsn? asn;
+  final RadarRevealRiskTokenNetworkIpAddress? ipAddress;
+  final RadarRevealRiskTokenNetworkPrivacy? privacy;
+  final RadarRevealRiskTokenNetworkAsn? asn;
 
   @internal
   factory RadarRevealRiskTokenNetwork.fromMap(ChannelMap map) =>
       RadarRevealRiskTokenNetwork(
         ipAddress: readObject(
           map['ipAddress'],
-          RadarRevealRiskTokenIpAddress.fromMap,
+          RadarRevealRiskTokenNetworkIpAddress.fromMap,
         ),
         privacy: readObject(
           map['privacy'],
-          RadarRevealRiskTokenPrivacy.fromMap,
+          RadarRevealRiskTokenNetworkPrivacy.fromMap,
         ),
-        asn: readObject(map['asn'], RadarRevealRiskTokenAsn.fromMap),
+        asn: readObject(map['asn'], RadarRevealRiskTokenNetworkAsn.fromMap),
       );
 }
 
 /// The IP address and its geolocation for a reveal risk check.
-final class RadarRevealRiskTokenIpAddress {
-  const RadarRevealRiskTokenIpAddress({
+final class RadarRevealRiskTokenNetworkIpAddress {
+  const RadarRevealRiskTokenNetworkIpAddress({
     this.ip,
     this.coordinate,
     this.formattedAddress,
@@ -170,6 +171,7 @@ final class RadarRevealRiskTokenIpAddress {
     this.stateAllowed,
     this.countryAllowed,
     this.connectionType,
+    this.timeZone,
     this.categories = const [],
     this.chainSlug,
     this.ssid,
@@ -208,16 +210,19 @@ final class RadarRevealRiskTokenIpAddress {
 
   /// The connection type, such as `wifi` or `cellular`.
   final String? connectionType;
+
+  /// The time zone of the IP geolocation.
+  final RadarTimeZone? timeZone;
   final List<String> categories;
   final String? chainSlug;
   final String? ssid;
   final String? bssid;
 
   @internal
-  factory RadarRevealRiskTokenIpAddress.fromMap(ChannelMap map) {
+  factory RadarRevealRiskTokenNetworkIpAddress.fromMap(ChannelMap map) {
     final latitude = readDouble(map['latitude']);
     final longitude = readDouble(map['longitude']);
-    return RadarRevealRiskTokenIpAddress(
+    return RadarRevealRiskTokenNetworkIpAddress(
       ip: readString(map['ip']),
       coordinate:
           latitude != null && longitude != null
@@ -248,6 +253,7 @@ final class RadarRevealRiskTokenIpAddress {
       stateAllowed: readBool(map['stateAllowed']),
       countryAllowed: readBool(map['countryAllowed']),
       connectionType: readString(map['connectionType']),
+      timeZone: readObject(map['timeZone'], RadarTimeZone.fromMap),
       categories: readStringList(map['categories']),
       chainSlug: readString(map['chainSlug']),
       ssid: readString(map['ssid']),
@@ -257,8 +263,8 @@ final class RadarRevealRiskTokenIpAddress {
 }
 
 /// IP privacy signals for a reveal risk check.
-final class RadarRevealRiskTokenPrivacy {
-  const RadarRevealRiskTokenPrivacy({
+final class RadarRevealRiskTokenNetworkPrivacy {
+  const RadarRevealRiskTokenNetworkPrivacy({
     this.vpn,
     this.proxy,
     this.tor,
@@ -279,8 +285,8 @@ final class RadarRevealRiskTokenPrivacy {
   final String? service;
 
   @internal
-  factory RadarRevealRiskTokenPrivacy.fromMap(ChannelMap map) =>
-      RadarRevealRiskTokenPrivacy(
+  factory RadarRevealRiskTokenNetworkPrivacy.fromMap(ChannelMap map) =>
+      RadarRevealRiskTokenNetworkPrivacy(
         vpn: readBool(map['vpn']),
         proxy: readBool(map['proxy']),
         tor: readBool(map['tor']),
@@ -292,8 +298,8 @@ final class RadarRevealRiskTokenPrivacy {
 }
 
 /// The autonomous system (ASN) of the IP for a reveal risk check.
-final class RadarRevealRiskTokenAsn {
-  const RadarRevealRiskTokenAsn({
+final class RadarRevealRiskTokenNetworkAsn {
+  const RadarRevealRiskTokenNetworkAsn({
     this.asn,
     this.name,
     this.domain,
@@ -314,8 +320,8 @@ final class RadarRevealRiskTokenAsn {
   final String? network;
 
   @internal
-  factory RadarRevealRiskTokenAsn.fromMap(ChannelMap map) =>
-      RadarRevealRiskTokenAsn(
+  factory RadarRevealRiskTokenNetworkAsn.fromMap(ChannelMap map) =>
+      RadarRevealRiskTokenNetworkAsn(
         asn: _readStringOrNum(map['asn']),
         name: readString(map['name']),
         domain: readString(map['domain']),
@@ -342,11 +348,6 @@ final class RadarRevealRiskTokenDevice {
     this.appName,
     this.appVersion,
     this.appBuild,
-    this.userAgent,
-    this.browserName,
-    this.browserVersion,
-    this.browserEngine,
-    this.browserEngineVersion,
   });
 
   final String? deviceId;
@@ -364,11 +365,6 @@ final class RadarRevealRiskTokenDevice {
   final String? appName;
   final String? appVersion;
   final String? appBuild;
-  final String? userAgent;
-  final String? browserName;
-  final String? browserVersion;
-  final String? browserEngine;
-  final String? browserEngineVersion;
 
   @internal
   factory RadarRevealRiskTokenDevice.fromMap(ChannelMap map) =>
@@ -386,11 +382,6 @@ final class RadarRevealRiskTokenDevice {
         appName: readString(map['appName']),
         appVersion: readString(map['appVersion']),
         appBuild: readString(map['appBuild']),
-        userAgent: readString(map['userAgent']),
-        browserName: readString(map['browserName']),
-        browserVersion: readString(map['browserVersion']),
-        browserEngine: readString(map['browserEngine']),
-        browserEngineVersion: readString(map['browserEngineVersion']),
       );
 }
 

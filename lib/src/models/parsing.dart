@@ -49,15 +49,19 @@ ChannelMap? readMap(Object? value) => value is Map ? value.cast() : null;
 String? readString(Object? value) =>
     value is String && value.isNotEmpty && value != 'null' ? value : null;
 
-double? readDouble(Object? value) => switch (value) {
-  num() => value.toDouble(),
-  String() => double.tryParse(value),
-  _ => null,
-};
+/// Returns null for NaN and infinity, which no field uses as a value.
+double? readDouble(Object? value) {
+  final result = switch (value) {
+    num() => value.toDouble(),
+    String() => double.tryParse(value),
+    _ => null,
+  };
+  return result != null && result.isFinite ? result : null;
+}
 
 int? readInt(Object? value) => switch (value) {
   int() => value,
-  num() => value.toInt(),
+  double() when value.isFinite => value.toInt(),
   String() => int.tryParse(value),
   _ => null,
 };
@@ -73,9 +77,13 @@ bool? readBool(Object? value) => switch (value) {
 /// Reads an ISO 8601 string, or a number of milliseconds since the epoch.
 DateTime? readDate(Object? value) => switch (value) {
   String() => DateTime.tryParse(value),
-  num() => DateTime.fromMillisecondsSinceEpoch(value.toInt(), isUtc: true),
+  num() when value.isFinite && value.abs() <= _maxEpochMilliseconds =>
+    DateTime.fromMillisecondsSinceEpoch(value.toInt(), isUtc: true),
   _ => null,
 };
+
+/// The largest number of milliseconds from the epoch that [DateTime] allows.
+const _maxEpochMilliseconds = 8640000000000000;
 
 List<String> readStringList(Object? value) =>
     value is List ? value.whereType<String>().toList() : const [];
