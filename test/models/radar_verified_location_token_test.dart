@@ -44,14 +44,14 @@ void main() {
       expect(token.token, 'eyJhbGciOi.payload.signature');
       expect(token.format, RadarResponseFormat.jws);
       expect(token.expiresAt, DateTime.utc(2026, 11, 19, 13));
-      expect(token.expiresIn, 3600);
+      expect(token.expiresIn, const Duration(hours: 1));
       expect(token.passed, isFalse);
       expect(token.failureReasons, ['fraud_mocked_from_mock_provider']);
       expect(token.user!.fraud!.mocked, isTrue);
-      expect(token.user!.location!.accuracy, 10);
+      expect(token.user!.location.accuracy, 10);
       expect(token.events.single.type, RadarEventType.userFailedFraud);
       expect(token.events.single.verification, RadarEventVerification.unverify);
-      expect(token.raw!['meta'], {'code': 200});
+      expect(token.raw['meta'], {'code': 200});
     });
 
     test('parses reduced JWE and ID responses', () {
@@ -78,7 +78,7 @@ void main() {
 
     test('is parsed from token updates', () {
       final update = RadarUpdate.fromMethodCall('token', {'token': tokenMap});
-      expect((update! as RadarTokenUpdate).token!.passed, isFalse);
+      expect((update! as RadarTokenUpdate).token.passed, isFalse);
     });
   });
 }

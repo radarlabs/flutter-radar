@@ -11,7 +11,8 @@ import 'radar_verified_location_token.dart';
 /// listeners and to the handler passed to [Radar.registerBackgroundHandler].
 ///
 /// The class is sealed, so a background handler can `switch` over every kind
-/// of update:
+/// of update. Without a `default` case, the switch stops compiling if a new
+/// kind is added, so it can't be missed:
 ///
 /// ```dart
 /// @pragma('vm:entry-point')
@@ -21,7 +22,12 @@ import 'radar_verified_location_token.dart';
 ///       // ...
 ///     case RadarLocationUpdate(:final location, :final user):
 ///       // ...
-///     default:
+///     case RadarClientLocationUpdate() ||
+///         RadarErrorUpdate() ||
+///         RadarLogUpdate() ||
+///         RadarTokenUpdate() ||
+///         RadarIpChangedUpdate() ||
+///         RadarSharingChangedUpdate():
 ///       break;
 ///   }
 /// }
@@ -30,7 +36,8 @@ sealed class RadarUpdate {
   const RadarUpdate();
 
   /// Parses an update from the method name and payload the native side sends.
-  /// Returns null for an unknown method.
+  /// Returns null for an unknown method, or a payload missing a value both
+  /// native SDKs always send.
   @internal
   static RadarUpdate? fromMethodCall(String method, ChannelMap payload) =>
       switch (method) {
@@ -49,16 +56,18 @@ sealed class RadarUpdate {
 /// The user's location was sent to the server. Delivered to
 /// [Radar.onLocation].
 final class RadarLocationUpdate extends RadarUpdate {
-  const RadarLocationUpdate({required this.location, this.user});
+  const RadarLocationUpdate({required this.location, required this.user});
 
-  final RadarLocation? location;
-  final RadarUser? user;
+  final RadarLocation location;
+  final RadarUser user;
 
   @internal
-  factory RadarLocationUpdate.fromMap(ChannelMap map) => RadarLocationUpdate(
-    location: RadarLocation.fromMap(readMap(map['location'])),
-    user: readObject(map['user'], RadarUser.fromMap),
-  );
+  static RadarLocationUpdate? fromMap(ChannelMap map) {
+    final location = RadarLocation.fromMap(readMap(map['location']));
+    final user = readObject(map['user'], RadarUser.fromMap);
+    if (location == null || user == null) return null;
+    return RadarLocationUpdate(location: location, user: user);
+  }
 }
 
 /// The device's location changed, whether or not it was sent to the server.
@@ -70,19 +79,22 @@ final class RadarClientLocationUpdate extends RadarUpdate {
     required this.source,
   });
 
-  final RadarLocation? location;
+  final RadarLocation location;
 
   /// Whether the device is stopped.
   final bool stopped;
   final RadarLocationSource source;
 
   @internal
-  factory RadarClientLocationUpdate.fromMap(ChannelMap map) =>
-      RadarClientLocationUpdate(
-        location: RadarLocation.fromMap(readMap(map['location'])),
-        stopped: readBool(map['stopped']) ?? false,
-        source: RadarLocationSource.fromWire(map['source']),
-      );
+  static RadarClientLocationUpdate? fromMap(ChannelMap map) {
+    final location = RadarLocation.fromMap(readMap(map['location']));
+    if (location == null) return null;
+    return RadarClientLocationUpdate(
+      location: location,
+      stopped: readBool(map['stopped']) ?? false,
+      source: RadarLocationSource.fromWire(map['source']),
+    );
+  }
 }
 
 /// The server returned events. Delivered to [Radar.onEvents].
@@ -125,12 +137,13 @@ final class RadarLogUpdate extends RadarUpdate {
 final class RadarTokenUpdate extends RadarUpdate {
   const RadarTokenUpdate({required this.token});
 
-  final RadarVerifiedLocationToken? token;
+  final RadarVerifiedLocationToken token;
 
   @internal
-  factory RadarTokenUpdate.fromMap(ChannelMap map) => RadarTokenUpdate(
-    token: readObject(map['token'], RadarVerifiedLocationToken.fromMap),
-  );
+  static RadarTokenUpdate? fromMap(ChannelMap map) {
+    final token = readObject(map['token'], RadarVerifiedLocationToken.fromMap);
+    return token == null ? null : RadarTokenUpdate(token: token);
+  }
 }
 
 /// The device's IP address changed. Delivered to [Radar.onIpChanged].

@@ -22,7 +22,7 @@ final class RadarVerifiedLocationToken {
     this.expiresIn,
     this.passed = false,
     this.failureReasons = const [],
-    this.raw,
+    this.raw = const {},
   });
 
   /// The token to relay to your backend for verification. A [RadarResponseFormat.jws]
@@ -43,8 +43,8 @@ final class RadarVerifiedLocationToken {
   /// When the token expires.
   final DateTime? expiresAt;
 
-  /// The number of seconds until the token expires, as of when it was issued.
-  final int? expiresIn;
+  /// How long the token was valid for when it was issued.
+  final Duration? expiresIn;
 
   /// Whether the user passed all jurisdiction and fraud detection checks.
   final bool passed;
@@ -53,7 +53,7 @@ final class RadarVerifiedLocationToken {
   final List<String> failureReasons;
 
   /// The full API response the token was parsed from.
-  final Map<String, Object?>? raw;
+  final Map<String, Object?> raw;
 
   @internal
   factory RadarVerifiedLocationToken.fromMap(ChannelMap map) =>
@@ -64,9 +64,9 @@ final class RadarVerifiedLocationToken {
         user: readObject(map['user'], RadarUser.fromMap),
         events: readList(map['events'], RadarEvent.fromMap),
         expiresAt: readDate(map['expiresAt']),
-        expiresIn: readInt(map['expiresIn']),
+        expiresIn: readSeconds(map['expiresIn']),
         passed: readBool(map['passed']) ?? false,
         failureReasons: readStringList(map['failureReasons']),
-        raw: readJson(map),
+        raw: readJson(map) ?? const {},
       );
 }

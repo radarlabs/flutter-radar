@@ -45,7 +45,7 @@ void main() {
       expect(t.format, RadarResponseFormat.jws);
       expect(t.token, 'eyJ...');
       expect(t.expiresAt, DateTime.utc(2026, 11, 19, 15, 10));
-      expect(t.expiresIn, 600);
+      expect(t.expiresIn, const Duration(minutes: 10));
       expect(t.risk?.level, RadarRevealRiskLevel.high);
       expect(t.risk?.reasons, ['vpn', 'mocked']);
       final ip = t.network!.ipAddress!;
@@ -132,7 +132,10 @@ void main() {
         }).expiresAt,
         isNull,
       );
-      expect(RadarRevealRiskToken.fromMap({'expiresIn': 600.0}).expiresIn, 600);
+      expect(
+        RadarRevealRiskToken.fromMap({'expiresIn': 600.0}).expiresIn,
+        const Duration(minutes: 10),
+      );
     });
   });
 }

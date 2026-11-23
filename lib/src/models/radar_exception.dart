@@ -15,5 +15,5 @@ final class RadarException implements Exception {
   final RadarStatus status;
 
   @override
-  String toString() => 'RadarException: ${status.wireValue}';
+  String toString() => 'RadarException(${status.name})';
 }

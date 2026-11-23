@@ -79,7 +79,7 @@ enum RadarEventVerification {
 
   const RadarEventVerification(this.value);
 
-  /// The integer the API and native SDKs use.
+  @internal
   final int value;
 
   /// Parses a verification value. Returns null if [value] is not 1, 0, or -1.
@@ -102,7 +102,7 @@ enum RadarEventConfidence {
 
   const RadarEventConfidence(this.value);
 
-  /// The integer the API and native SDKs use.
+  @internal
   final int value;
 
   /// Parses a confidence value. Unrecognized values become [none].
@@ -121,7 +121,7 @@ final class RadarEvent {
   const RadarEvent({
     required this.id,
     required this.type,
-    this.createdAt,
+    required this.createdAt,
     this.actualCreatedAt,
     this.live = false,
     this.conversionName,
@@ -145,7 +145,7 @@ final class RadarEvent {
   final RadarEventType type;
 
   /// When the event occurred on the device.
-  final DateTime? createdAt;
+  final DateTime createdAt;
 
   /// When the event was created on the server. Null for some events, such as
   /// conversions.
@@ -187,8 +187,8 @@ final class RadarEvent {
   final RadarEventVerification? verification;
   final RadarEventConfidence confidence;
 
-  /// For exit events, how long the user was inside, in minutes.
-  final double? duration;
+  /// For exit events, how long the user was inside.
+  final Duration? duration;
 
   /// Where the event occurred. Null for events without a location, such as
   /// conversions.
@@ -198,8 +198,12 @@ final class RadarEvent {
   final bool replayed;
   final Map<String, Object?>? metadata;
 
+  /// Returns null if [map] has no `createdAt`. Both native SDKs always send
+  /// one.
   @internal
-  factory RadarEvent.fromMap(ChannelMap map) {
+  static RadarEvent? fromMap(ChannelMap map) {
+    final createdAt = readDate(map['createdAt']);
+    if (createdAt == null) return null;
     final rawType = readString(map['type']);
     // Android omits `type` for conversion events.
     final type =
@@ -216,7 +220,7 @@ final class RadarEvent {
     return RadarEvent(
       id: readString(map['_id']) ?? '',
       type: type,
-      createdAt: readDate(map['createdAt']),
+      createdAt: createdAt,
       actualCreatedAt: readDate(map['actualCreatedAt']),
       live: readBool(map['live']) ?? false,
       conversionName: conversionName,
@@ -230,7 +234,7 @@ final class RadarEvent {
       verifiedPlace: readObject(map['verifiedPlace'], RadarPlace.fromMap),
       verification: RadarEventVerification.fromWire(map['verification']),
       confidence: RadarEventConfidence.fromWire(map['confidence']),
-      duration: readDouble(map['duration']),
+      duration: readMinutes(map['duration']),
       location: _readGeoJsonLocation(map['location'], map['locationAccuracy']),
       replayed: readBool(map['replayed']) ?? false,
       metadata: readJson(map['metadata']),

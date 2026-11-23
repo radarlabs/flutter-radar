@@ -105,8 +105,7 @@ final class RadarExpectedAddress {
   const RadarExpectedAddress({
     required this.expectedAddress,
     this.formattedAddress,
-    this.latitude,
-    this.longitude,
+    this.coordinate,
     this.atAddress = false,
     this.confidence = RadarExpectedAddressConfidence.unknown,
     this.distance,
@@ -118,8 +117,10 @@ final class RadarExpectedAddress {
   /// The expected address as geocoded by Radar. Null if it could not be
   /// geocoded.
   final String? formattedAddress;
-  final double? latitude;
-  final double? longitude;
+
+  /// The coordinate of the geocoded expected address. Null if it could not be
+  /// geocoded.
+  final RadarCoordinate? coordinate;
 
   /// Whether the user is at the expected address.
   final bool atAddress;
@@ -132,36 +133,45 @@ final class RadarExpectedAddress {
   factory RadarExpectedAddress.fromMap(ChannelMap map) => RadarExpectedAddress(
     expectedAddress: readString(map['expectedAddress']) ?? '',
     formattedAddress: readString(map['formattedAddress']),
-    latitude: readDouble(map['latitude']),
-    longitude: readDouble(map['longitude']),
+    coordinate: _readCoordinate(map['latitude'], map['longitude']),
     atAddress: readBool(map['atAddress']) ?? false,
     confidence: RadarExpectedAddressConfidence.fromWire(map['confidence']),
     distance: readDouble(map['distance']),
   );
 }
 
+RadarCoordinate? _readCoordinate(Object? latitude, Object? longitude) {
+  final lat = readDouble(latitude);
+  final lng = readDouble(longitude);
+  return lat == null || lng == null
+      ? null
+      : RadarCoordinate(latitude: lat, longitude: lng);
+}
+
 /// Insights about where the user is relative to their usual locations.
 /// Currently only sent by iOS.
-final class RadarLocationInsights {
-  const RadarLocationInsights({
+final class RadarUserLocationInsights {
+  const RadarUserLocationInsights({
     this.atHome = false,
     this.atWork = false,
     this.traveling = false,
-    this.commuting = false,
+    this.commuting,
   });
 
   final bool atHome;
   final bool atWork;
   final bool traveling;
-  final bool commuting;
+
+  /// Whether the user is commuting. Null when iOS doesn't know.
+  final bool? commuting;
 
   @internal
-  factory RadarLocationInsights.fromMap(ChannelMap map) =>
-      RadarLocationInsights(
+  factory RadarUserLocationInsights.fromMap(ChannelMap map) =>
+      RadarUserLocationInsights(
         atHome: readBool(map['atHome']) ?? false,
         atWork: readBool(map['atWork']) ?? false,
         traveling: readBool(map['traveling']) ?? false,
-        commuting: readBool(map['commuting']) ?? false,
+        commuting: readBool(map['commuting']),
       );
 }
 
@@ -174,7 +184,7 @@ final class RadarUser {
     this.deviceId,
     this.description,
     this.metadata,
-    this.location,
+    required this.location,
     this.activityType = RadarActivityType.unknown,
     this.geofences = const [],
     this.place,
@@ -213,7 +223,7 @@ final class RadarUser {
   /// The user's current location. The native bridges only send coordinates;
   /// [RadarLocation.accuracy] is set only when the payload came from the API,
   /// as the user in a [RadarVerifiedLocationToken] does.
-  final RadarLocation? location;
+  final RadarLocation location;
   final RadarActivityType activityType;
 
   /// The geofences the user is in.
@@ -259,25 +269,24 @@ final class RadarUser {
   final RadarExpectedAddress? expectedAddress;
 
   /// Currently only sent by iOS.
-  final RadarLocationInsights? locationInsights;
+  final RadarUserLocationInsights? locationInsights;
 
+  /// Returns null if [map] has no location. Both native SDKs always send one.
   @internal
-  factory RadarUser.fromMap(ChannelMap map) {
+  static RadarUser? fromMap(ChannelMap map) {
     final coordinate = RadarCoordinate.fromMap(readMap(map['location']));
+    if (coordinate == null) return null;
     return RadarUser(
       id: readString(map['_id']) ?? '',
       userId: readString(map['userId']),
       deviceId: readString(map['deviceId']),
       description: readString(map['description']),
       metadata: readJson(map['metadata']),
-      location:
-          coordinate == null
-              ? null
-              : RadarLocation(
-                latitude: coordinate.latitude,
-                longitude: coordinate.longitude,
-                accuracy: readDouble(map['locationAccuracy']),
-              ),
+      location: RadarLocation(
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        accuracy: readDouble(map['locationAccuracy']),
+      ),
       activityType: RadarActivityType.fromWire(map['activityType']),
       geofences: readList(map['geofences'], RadarGeofence.fromMap),
       place: readObject(map['place'], RadarPlace.fromMap),
@@ -303,7 +312,7 @@ final class RadarUser {
       ),
       locationInsights: readObject(
         map['locationInsights'],
-        RadarLocationInsights.fromMap,
+        RadarUserLocationInsights.fromMap,
       ),
     );
   }

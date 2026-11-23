@@ -7,6 +7,11 @@ import 'package:flutter_radar/src/models/radar_user.dart';
 import 'package:flutter_radar/src/models/radar_verified_location_token.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _point = <Object?, Object?>{
+  'type': 'Point',
+  'coordinates': [-73.99, 40.73],
+};
+
 void main() {
   group('garbage input', () {
     const garbage = <Object?, Object?>{
@@ -56,9 +61,9 @@ void main() {
     });
 
     test('yields defaults', () {
-      final user = RadarUser.fromMap(garbage);
+      expect(RadarUser.fromMap(garbage), isNull);
+      final user = RadarUser.fromMap({...garbage, 'location': _point})!;
       expect(user.id, '');
-      expect(user.location, isNull);
       expect(user.geofences, isEmpty);
       expect(user.source, RadarLocationSource.unknown);
 
@@ -78,7 +83,12 @@ void main() {
       expect(token.user, isNull);
       expect(token.events, isEmpty);
 
-      final event = RadarEvent.fromMap(const {'type': 'user.unknown_thing'});
+      expect(RadarEvent.fromMap(const {'type': 'user.unknown_thing'}), isNull);
+      final event =
+          RadarEvent.fromMap(const {
+            'type': 'user.unknown_thing',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          })!;
       expect(event.type, RadarEventType.unknown);
       expect(event.location, isNull);
     });

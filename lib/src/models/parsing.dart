@@ -87,6 +87,23 @@ DateTime? readDate(Object? value) => switch (value) {
 /// The largest number of milliseconds from the epoch that [DateTime] allows.
 const _maxEpochMilliseconds = 8640000000000000;
 
+/// Reads a number of seconds, which may be fractional.
+Duration? readSeconds(Object? value) => _readDuration(value, 1e6);
+
+/// Reads a number of minutes, which may be fractional.
+Duration? readMinutes(Object? value) => _readDuration(value, 60e6);
+
+Duration? _readDuration(Object? value, double microsecondsPerUnit) {
+  final units = readDouble(value);
+  return units == null
+      ? null
+      : Duration(microseconds: (units * microsecondsPerUnit).round());
+}
+
+/// Converts [duration] to whole minutes for the native SDKs, rounding to the
+/// nearest minute.
+int toMinutes(Duration duration) => (duration.inSeconds / 60).round();
+
 // The list and map readers return unmodifiable collections, so a parsed model
 // can't be changed through them, the same as one built with `const` defaults.
 
@@ -164,4 +181,20 @@ int wholeSeconds(Duration duration, String name) {
     '$name is sent to the native SDKs in whole seconds, but was $duration.',
   );
   return duration.inSeconds;
+}
+
+/// Compares JSON-like values (maps, lists, and scalars) by content.
+bool deepEquals(Object? a, Object? b) {
+  if (a is Map && b is Map) {
+    return a.length == b.length &&
+        a.keys.every((k) => b.containsKey(k) && deepEquals(a[k], b[k]));
+  }
+  if (a is List && b is List) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!deepEquals(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  return a == b;
 }

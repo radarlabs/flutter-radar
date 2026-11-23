@@ -1,3 +1,4 @@
+import 'package:flutter_radar/src/models/radar_location.dart';
 import 'package:flutter_radar/src/models/radar_update.dart';
 import 'package:flutter_radar/src/models/radar_user.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -120,15 +121,15 @@ const _androidUser = <Object?, Object?>{
 void main() {
   group('RadarUser', () {
     test('parses an Android-shaped user', () {
-      final user = RadarUser.fromMap(_androidUser);
+      final user = RadarUser.fromMap(_androidUser)!;
       expect(user.id, 'user-1');
       expect(user.userId, 'alice');
       expect(user.deviceId, 'device-1');
       expect(user.description, 'Alice');
       expect(user.metadata, {'plan': 'pro'});
-      expect(user.location!.latitude, 40.7342);
-      expect(user.location!.longitude, -73.9911);
-      expect(user.location!.accuracy, isNull);
+      expect(user.location.latitude, 40.7342);
+      expect(user.location.longitude, -73.9911);
+      expect(user.location.accuracy, isNull);
       expect(user.geofences.single.id, 'geofence-1');
       expect(user.beacons, isEmpty);
       expect(user.stopped, isTrue);
@@ -150,14 +151,18 @@ void main() {
         RadarExpectedAddressConfidence.high,
       );
       expect(user.expectedAddress!.distance, 3.2);
+      expect(
+        user.expectedAddress!.coordinate,
+        const RadarCoordinate(latitude: 40.7342, longitude: -73.9911),
+      );
       expect(user.locationInsights, isNull);
     });
 
     test('parses an iOS-shaped user', () {
-      final user = RadarUser.fromMap(iosUser);
+      final user = RadarUser.fromMap(iosUser)!;
       expect(user.id, 'user-2');
       expect(user.userId, isNull);
-      expect(user.location!.latitude, 37.7749);
+      expect(user.location.latitude, 37.7749);
       expect(user.activityType, RadarActivityType.stationary);
       expect(user.source, RadarLocationSource.visitArrival);
       expect(user.debug, isTrue);
@@ -165,16 +170,36 @@ void main() {
       expect(user.trip, isNull);
       expect(user.altitude, isNull);
       expect(user.locationInsights!.atHome, isTrue);
+      expect(user.locationInsights!.commuting, isFalse);
+    });
+
+    test('commuting is null when iOS leaves it out', () {
+      final insights = RadarUserLocationInsights.fromMap({'atHome': true});
+      expect(insights.atHome, isTrue);
+      expect(insights.commuting, isNull);
+    });
+
+    test('a user without a location is null', () {
+      expect(RadarUser.fromMap({'_id': 'user-1'}), isNull);
+    });
+
+    test('an expected address without coordinates has no coordinate', () {
+      final address = RadarExpectedAddress.fromMap({
+        'expectedAddress': 'nowhere',
+        'latitude': 40.7,
+      });
+      expect(address.coordinate, isNull);
     });
 
     test('reads locationAccuracy and barometricAltitude from API users', () {
-      final user = RadarUser.fromMap({
-        ...iosUser,
-        'locationAccuracy': 15,
-        'barometricAltitude': 3.5,
-        'altitude': 9.0,
-      });
-      expect(user.location!.accuracy, 15);
+      final user =
+          RadarUser.fromMap({
+            ...iosUser,
+            'locationAccuracy': 15,
+            'barometricAltitude': 3.5,
+            'altitude': 9.0,
+          })!;
+      expect(user.location.accuracy, 15);
       expect(user.altitude, 3.5);
     });
   });

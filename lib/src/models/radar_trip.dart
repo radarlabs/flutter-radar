@@ -102,7 +102,7 @@ final class RadarTripOrder {
     this.firedAt,
     this.firedAttempts,
     this.firedReason,
-    this.updatedAt,
+    required this.updatedAt,
   });
 
   final String id;
@@ -116,29 +116,36 @@ final class RadarTripOrder {
 
   /// Why the order was fired.
   final String? firedReason;
-  final DateTime? updatedAt;
+  final DateTime updatedAt;
 
+  /// Returns null if [map] has no `updatedAt`. Both native SDKs always send
+  /// one.
   @internal
-  factory RadarTripOrder.fromMap(ChannelMap map) => RadarTripOrder(
-    id: readString(map['id']) ?? readString(map['_id']) ?? '',
-    guid: readString(map['guid']),
-    handoffMode: readString(map['handoffMode']),
-    status: RadarTripOrderStatus.fromWire(map['status']),
-    firedAt: readDate(map['firedAt']),
-    firedAttempts: readInt(map['firedAttempts']),
-    firedReason: readString(map['firedReason']),
-    updatedAt: readDate(map['updatedAt']),
-  );
+  static RadarTripOrder? fromMap(ChannelMap map) {
+    final updatedAt = readDate(map['updatedAt']);
+    if (updatedAt == null) return null;
+    return RadarTripOrder(
+      id: readString(map['id']) ?? readString(map['_id']) ?? '',
+      guid: readString(map['guid']),
+      handoffMode: readString(map['handoffMode']),
+      status: RadarTripOrderStatus.fromWire(map['status']),
+      firedAt: readDate(map['firedAt']),
+      firedAttempts: readInt(map['firedAttempts']),
+      firedReason: readString(map['firedReason']),
+      updatedAt: updatedAt,
+    );
+  }
 }
 
 /// A leg of a multi-destination trip.
 ///
 /// Legs returned by Radar have an [id], [status], and ETA. To create a trip
-/// with legs, pass legs with only the destination fields set in
-/// [RadarTripOptions.legs]. Set one destination: [destinationGeofenceTag]
-/// and [destinationGeofenceExternalId], [destinationGeofenceId], [address],
-/// or [coordinates].
+/// with legs, build each leg with the constructor for its destination, such
+/// as [RadarTripLeg.geofence] or [RadarTripLeg.address], and pass them in
+/// [RadarTripOptions.legs].
 final class RadarTripLeg {
+  /// A leg with every field, as Radar returns it. To create a leg for a new
+  /// trip, use the constructor for its destination instead.
   const RadarTripLeg({
     this.id,
     this.status = RadarTripLegStatus.unknown,
@@ -152,10 +159,63 @@ final class RadarTripLeg {
     this.destinationGeofenceId,
     this.address,
     this.coordinates,
-    this.arrivalRadius,
-    this.stopDuration,
+    this.arrivalRadius = 0,
+    this.stopDuration = Duration.zero,
     this.metadata,
   });
+
+  /// A leg to the geofence with [tag] and [externalId].
+  const RadarTripLeg.geofence({
+    required String tag,
+    required String externalId,
+    Duration stopDuration = Duration.zero,
+    Map<String, Object?>? metadata,
+  }) : this(
+         destinationType: RadarTripLegDestinationType.geofence,
+         destinationGeofenceTag: tag,
+         destinationGeofenceExternalId: externalId,
+         stopDuration: stopDuration,
+         metadata: metadata,
+       );
+
+  /// A leg to the geofence with the Radar ID [geofenceId].
+  const RadarTripLeg.geofenceId(
+    String geofenceId, {
+    Duration stopDuration = Duration.zero,
+    Map<String, Object?>? metadata,
+  }) : this(
+         destinationType: RadarTripLegDestinationType.geofence,
+         destinationGeofenceId: geofenceId,
+         stopDuration: stopDuration,
+         metadata: metadata,
+       );
+
+  /// A leg to [address], which Radar geocodes.
+  const RadarTripLeg.address(
+    String address, {
+    Duration stopDuration = Duration.zero,
+    Map<String, Object?>? metadata,
+  }) : this(
+         destinationType: RadarTripLegDestinationType.address,
+         address: address,
+         stopDuration: stopDuration,
+         metadata: metadata,
+       );
+
+  /// A leg to [coordinates]. The user arrives within [arrivalRadius] meters;
+  /// 0 uses the project default.
+  const RadarTripLeg.coordinates(
+    RadarCoordinate coordinates, {
+    int arrivalRadius = 0,
+    Duration stopDuration = Duration.zero,
+    Map<String, Object?>? metadata,
+  }) : this(
+         destinationType: RadarTripLegDestinationType.coordinates,
+         coordinates: coordinates,
+         arrivalRadius: arrivalRadius,
+         stopDuration: stopDuration,
+         metadata: metadata,
+       );
 
   /// The Radar ID of the leg. Pass it to [Radar.updateTripLeg].
   final String? id;
@@ -170,19 +230,21 @@ final class RadarTripLeg {
   /// The distance to the destination in meters.
   final double? etaDistance;
 
-  /// The ETA to the destination in minutes.
-  final double? etaDuration;
+  /// The ETA to the destination.
+  final Duration? etaDuration;
   final String? destinationGeofenceTag;
   final String? destinationGeofenceExternalId;
   final String? destinationGeofenceId;
   final String? address;
   final RadarCoordinate? coordinates;
 
-  /// The arrival radius in meters, for a coordinates destination.
-  final int? arrivalRadius;
+  /// The arrival radius in meters, for a coordinates destination. 0 uses the
+  /// project default.
+  final int arrivalRadius;
 
-  /// How long the user is expected to stay at the destination, in minutes.
-  final int? stopDuration;
+  /// How long the user is expected to stay at the destination. Sent in whole
+  /// minutes.
+  final Duration stopDuration;
   final Map<String, Object?>? metadata;
 
   /// Parses a leg in either the format the native SDKs serialize (flat
@@ -248,14 +310,14 @@ final class RadarTripLeg {
       createdAt: readDate(map['createdAt']),
       updatedAt: readDate(map['updatedAt']),
       etaDistance: readDouble(eta?['distance']),
-      etaDuration: readDouble(eta?['duration']),
+      etaDuration: readMinutes(eta?['duration']),
       destinationGeofenceTag: tag,
       destinationGeofenceExternalId: externalId,
       destinationGeofenceId: geofenceId,
       address: address,
       coordinates: coordinates,
-      arrivalRadius: arrivalRadius,
-      stopDuration: readInt(map['stopDuration']),
+      arrivalRadius: arrivalRadius ?? 0,
+      stopDuration: readMinutes(map['stopDuration']) ?? Duration.zero,
       metadata: readJson(map['metadata']),
     );
   }
@@ -275,13 +337,14 @@ final class RadarTripLeg {
           coordinates == null
               ? null
               : [coordinates.longitude, coordinates.latitude],
-      'arrivalRadius': (arrivalRadius ?? 0) > 0 ? arrivalRadius : null,
+      'arrivalRadius': arrivalRadius > 0 ? arrivalRadius : null,
     });
     return compact({
       '_id': id,
       'status': status == RadarTripLegStatus.unknown ? null : status.wireValue,
       'destination': destination.isEmpty ? null : destination,
-      'stopDuration': (stopDuration ?? 0) > 0 ? stopDuration : null,
+      'stopDuration':
+          toMinutes(stopDuration) > 0 ? toMinutes(stopDuration) : null,
       'metadata': metadata,
     });
   }
@@ -323,8 +386,8 @@ final class RadarTrip {
   /// The distance to the destination geofence in meters.
   final double? etaDistance;
 
-  /// The ETA to the destination geofence in minutes.
-  final double? etaDuration;
+  /// The ETA to the destination geofence.
+  final Duration? etaDuration;
   final RadarTripStatus status;
   final List<RadarTripOrder> orders;
 
@@ -350,7 +413,7 @@ final class RadarTrip {
       ),
       mode: readEnumOrNull(RadarRouteMode.values, map['mode']),
       etaDistance: readDouble(eta?['distance']),
-      etaDuration: readDouble(eta?['duration']),
+      etaDuration: readMinutes(eta?['duration']),
       status: RadarTripStatus.fromWire(map['status']),
       orders: readList(map['orders'], RadarTripOrder.fromMap),
       legs: readList(map['legs'], RadarTripLeg.fromMap),
@@ -369,7 +432,7 @@ final class RadarTripOptions {
     this.destinationGeofenceExternalId,
     this.mode = RadarRouteMode.car,
     this.scheduledArrivalAt,
-    this.approachingThreshold = 0,
+    this.approachingThreshold = Duration.zero,
     this.startTracking = true,
     this.legs = const [],
   });
@@ -389,9 +452,9 @@ final class RadarTripOptions {
   final RadarRouteMode mode;
   final DateTime? scheduledArrivalAt;
 
-  /// The number of minutes before arrival at which the trip becomes
-  /// approaching. 0 uses the project default.
-  final int approachingThreshold;
+  /// How long before arrival the trip becomes approaching. Zero uses the
+  /// project default. Sent in whole minutes.
+  final Duration approachingThreshold;
 
   /// Whether to start tracking when the trip starts.
   final bool startTracking;
@@ -409,7 +472,8 @@ final class RadarTripOptions {
     ),
     mode: RadarRouteMode.fromWire(map['mode']),
     scheduledArrivalAt: readDate(map['scheduledArrivalAt']),
-    approachingThreshold: readInt(map['approachingThreshold']) ?? 0,
+    approachingThreshold:
+        readMinutes(map['approachingThreshold']) ?? Duration.zero,
     startTracking: readBool(map['startTracking']) ?? true,
     legs: readList(map['legs'], RadarTripLeg.fromMap),
   );
@@ -427,8 +491,43 @@ final class RadarTripOptions {
     'mode': mode.wireValue,
     'scheduledArrivalAt': scheduledArrivalAt?.millisecondsSinceEpoch,
     'approachingThreshold':
-        approachingThreshold > 0 ? approachingThreshold : null,
+        toMinutes(approachingThreshold) > 0
+            ? toMinutes(approachingThreshold)
+            : null,
     'startTracking': startTracking,
     'legs': legs.isEmpty ? null : [for (final leg in legs) leg.toMap()],
   });
+
+  /// Returns a copy with the given fields replaced.
+  RadarTripOptions copyWith({
+    String? externalId,
+    Map<String, Object?>? metadata,
+    String? destinationGeofenceTag,
+    String? destinationGeofenceExternalId,
+    RadarRouteMode? mode,
+    DateTime? scheduledArrivalAt,
+    Duration? approachingThreshold,
+    bool? startTracking,
+    List<RadarTripLeg>? legs,
+  }) => RadarTripOptions(
+    externalId: externalId ?? this.externalId,
+    metadata: metadata ?? this.metadata,
+    destinationGeofenceTag:
+        destinationGeofenceTag ?? this.destinationGeofenceTag,
+    destinationGeofenceExternalId:
+        destinationGeofenceExternalId ?? this.destinationGeofenceExternalId,
+    mode: mode ?? this.mode,
+    scheduledArrivalAt: scheduledArrivalAt ?? this.scheduledArrivalAt,
+    approachingThreshold: approachingThreshold ?? this.approachingThreshold,
+    startTracking: startTracking ?? this.startTracking,
+    legs: legs ?? this.legs,
+  );
+
+  /// Options are equal when they send the same values to the native SDKs.
+  @override
+  bool operator ==(Object other) =>
+      other is RadarTripOptions && deepEquals(other.toMap(), toMap());
+
+  @override
+  int get hashCode => Object.hash(externalId, destinationGeofenceTag, mode);
 }

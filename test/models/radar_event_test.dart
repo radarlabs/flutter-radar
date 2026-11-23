@@ -28,24 +28,25 @@ const _region = <Object?, Object?>{
 void main() {
   group('RadarEvent', () {
     test('parses an Android-shaped geofence entry', () {
-      final event = RadarEvent.fromMap({
-        '_id': 'event-1',
-        'createdAt': '2026-11-19T12:00:00.000Z',
-        'actualCreatedAt': '2026-11-19T12:00:01.000Z',
-        'live': false,
-        'type': 'user.entered_geofence',
-        'geofence': _geofence,
-        'confidence': 3,
-        'duration': 0.0,
-        'fraud': fraud,
-        'alternatePlaces': <Object?>[],
-        'location': {
-          'type': 'Point',
-          'coordinates': [-73.9911, 40.7342],
-        },
-        'replayed': false,
-        'metadata': {'source': 'test'},
-      });
+      final event =
+          RadarEvent.fromMap({
+            '_id': 'event-1',
+            'createdAt': '2026-11-19T12:00:00.000Z',
+            'actualCreatedAt': '2026-11-19T12:00:01.000Z',
+            'live': false,
+            'type': 'user.entered_geofence',
+            'geofence': _geofence,
+            'confidence': 3,
+            'duration': 0.0,
+            'fraud': fraud,
+            'alternatePlaces': <Object?>[],
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.9911, 40.7342],
+            },
+            'replayed': false,
+            'metadata': {'source': 'test'},
+          })!;
       expect(event.id, 'event-1');
       expect(event.type, RadarEventType.userEnteredGeofence);
       expect(event.createdAt, DateTime.utc(2026, 11, 19, 12));
@@ -53,7 +54,7 @@ void main() {
       expect(event.live, isFalse);
       expect(event.geofence!.tag, 'store');
       expect(event.confidence, RadarEventConfidence.high);
-      expect(event.duration, 0);
+      expect(event.duration, Duration.zero);
       expect(event.fraud!.passed, isTrue);
       expect(event.location!.latitude, 40.7342);
       expect(event.location!.longitude, -73.9911);
@@ -63,34 +64,37 @@ void main() {
     });
 
     test('parses an iOS-shaped region exit with a trip event', () {
-      final region = RadarEvent.fromMap({
-        '_id': 'event-2',
-        'live': true,
-        'type': 'user.exited_region_country',
-        'region': _region,
-        'confidence': 2,
-        'duration': 12.5,
-        'location': {
-          'type': 'Point',
-          'coordinates': [-73.9911, 40.7342],
-        },
-        'replayed': true,
-        'createdAt': '2026-11-19T12:00:00.000Z',
-      });
+      final region =
+          RadarEvent.fromMap({
+            '_id': 'event-2',
+            'live': true,
+            'type': 'user.exited_region_country',
+            'region': _region,
+            'confidence': 2,
+            'duration': 12.5,
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.9911, 40.7342],
+            },
+            'replayed': true,
+            'createdAt': '2026-11-19T12:00:00.000Z',
+          })!;
       expect(region.type, RadarEventType.userExitedRegionCountry);
       expect(region.region!.code, 'US');
       expect(region.confidence, RadarEventConfidence.medium);
-      expect(region.duration, 12.5);
+      expect(region.duration, const Duration(minutes: 12, seconds: 30));
       expect(region.live, isTrue);
       expect(region.replayed, isTrue);
       expect(region.actualCreatedAt, isNull);
 
-      final trip = RadarEvent.fromMap({
-        '_id': 'event-3',
-        'type': 'user.arrived_at_trip_destination',
-        'trip': iosTrip,
-        'confidence': 0,
-      });
+      final trip =
+          RadarEvent.fromMap({
+            '_id': 'event-3',
+            'type': 'user.arrived_at_trip_destination',
+            'createdAt': '2026-11-19T12:00:00.000Z',
+            'trip': iosTrip,
+            'confidence': 0,
+          })!;
       expect(trip.type, RadarEventType.userArrivedAtTripDestination);
       expect(trip.trip!.status, RadarTripStatus.arrived);
       expect(trip.confidence, RadarEventConfidence.none);
@@ -99,65 +103,79 @@ void main() {
 
     test('parses conversion events from each platform', () {
       // Android omits `type` for conversions.
-      final android = RadarEvent.fromMap({
-        '_id': 'event-4',
-        'live': false,
-        'confidence': 0,
-        'metadata': {'revenue': 10},
-      });
+      final android =
+          RadarEvent.fromMap({
+            '_id': 'event-4',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+            'live': false,
+            'confidence': 0,
+            'metadata': {'revenue': 10},
+          })!;
       expect(android.type, RadarEventType.conversion);
       expect(android.conversionName, isNull);
       expect(android.location, isNull);
 
       // iOS sends `custom`.
-      final ios = RadarEvent.fromMap({'_id': 'event-5', 'type': 'custom'});
+      final ios =
+          RadarEvent.fromMap({
+            '_id': 'event-5',
+            'type': 'custom',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          })!;
       expect(ios.type, RadarEventType.conversion);
       expect(ios.conversionName, isNull);
 
       // The API sends the conversion name.
-      final api = RadarEvent.fromMap({'_id': 'event-6', 'type': 'purchase'});
+      final api =
+          RadarEvent.fromMap({
+            '_id': 'event-6',
+            'type': 'purchase',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          })!;
       expect(api.type, RadarEventType.conversion);
       expect(api.conversionName, 'purchase');
     });
 
     test('parses API fields: verification, accuracy, verified place', () {
-      final event = RadarEvent.fromMap({
-        '_id': 'event-7',
-        'type': 'user.entered_place',
-        'place': {
-          '_id': 'place-1',
-          'name': 'Starbucks',
-          'location': {
-            'type': 'Point',
-            'coordinates': [-73.99, 40.73],
-          },
-        },
-        'verifiedPlace': {
-          '_id': 'place-2',
-          'name': 'Blue Bottle',
-          'location': {
-            'type': 'Point',
-            'coordinates': [-73.99, 40.73],
-          },
-        },
-        'alternatePlaces': [
-          {
-            '_id': 'place-2',
-            'name': 'Blue Bottle',
+      final event =
+          RadarEvent.fromMap({
+            '_id': 'event-7',
+            'type': 'user.entered_place',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+            'place': {
+              '_id': 'place-1',
+              'name': 'Starbucks',
+              'location': {
+                'type': 'Point',
+                'coordinates': [-73.99, 40.73],
+              },
+            },
+            'verifiedPlace': {
+              '_id': 'place-2',
+              'name': 'Blue Bottle',
+              'location': {
+                'type': 'Point',
+                'coordinates': [-73.99, 40.73],
+              },
+            },
+            'alternatePlaces': [
+              {
+                '_id': 'place-2',
+                'name': 'Blue Bottle',
+                'location': {
+                  'type': 'Point',
+                  'coordinates': [-73.99, 40.73],
+                },
+              },
+            ],
+            'verification': -1,
+            'confidence': 1,
             'location': {
               'type': 'Point',
-              'coordinates': [-73.99, 40.73],
+              'coordinates': [-73.9911, 40.7342],
             },
-          },
-        ],
-        'verification': -1,
-        'confidence': 1,
-        'location': {
-          'type': 'Point',
-          'coordinates': [-73.9911, 40.7342],
-        },
-        'locationAccuracy': 25,
-      });
+            'locationAccuracy': 25,
+          })!;
       expect(event.place!.name, 'Starbucks');
       expect(event.verifiedPlace!.id, 'place-2');
       expect(event.alternatePlaces.single.id, 'place-2');

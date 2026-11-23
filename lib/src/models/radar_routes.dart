@@ -24,15 +24,15 @@ final class RadarRouteDistance {
 final class RadarRouteDuration {
   const RadarRouteDuration({required this.value, required this.text});
 
-  /// The duration in minutes.
-  final double value;
+  /// The duration.
+  final Duration value;
 
   /// A display string for the duration, such as `8 mins`.
   final String text;
 
   @internal
   factory RadarRouteDuration.fromMap(ChannelMap map) => RadarRouteDuration(
-    value: readDouble(map['value']) ?? 0,
+    value: readMinutes(map['value']) ?? Duration.zero,
     text: readString(map['text']) ?? '',
   );
 }
@@ -87,8 +87,8 @@ final class RadarRoutes {
     this.motorbike,
   });
 
-  /// The straight-line distance. Has no duration or geometry.
-  final RadarRoute? geodesic;
+  /// The straight-line distance.
+  final RadarRouteDistance? geodesic;
   final RadarRoute? foot;
   final RadarRoute? bike;
   final RadarRoute? car;
@@ -97,7 +97,7 @@ final class RadarRoutes {
 
   @internal
   factory RadarRoutes.fromMap(ChannelMap map) => RadarRoutes(
-    geodesic: readObject(map['geodesic'], RadarRoute.fromMap),
+    geodesic: _readGeodesic(map['geodesic']),
     foot: readObject(map['foot'], RadarRoute.fromMap),
     bike: readObject(map['bike'], RadarRoute.fromMap),
     car: readObject(map['car'], RadarRoute.fromMap),
@@ -139,4 +139,12 @@ final class RadarRouteMatrix {
     if (destinationIndex < 0 || destinationIndex >= row.length) return null;
     return row[destinationIndex];
   }
+}
+
+/// Android wraps the geodesic distance as `{distance: {value, text}}`, and iOS
+/// sends the distance itself.
+RadarRouteDistance? _readGeodesic(Object? value) {
+  final map = readMap(value);
+  if (map == null) return null;
+  return RadarRouteDistance.fromMap(readMap(map['distance']) ?? map);
 }
