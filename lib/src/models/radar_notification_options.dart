@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:meta/meta.dart';
 
 import 'parsing.dart';
@@ -21,21 +23,21 @@ final class RadarNotificationOptions {
   /// notifications, like `"ic_notification"`.
   final String? iconString;
 
-  /// The default icon color for all notifications, as a hex string like
-  /// `"#FF0000"`.
-  final String? iconColor;
+  /// The default icon color for all notifications. Sent as `#RRGGBB`, so the
+  /// alpha is ignored.
+  final Color? iconColor;
 
   /// The foreground service notification icon. Defaults to [iconString].
   final String? foregroundServiceIconString;
 
   /// The foreground service notification icon color. Defaults to [iconColor].
-  final String? foregroundServiceIconColor;
+  final Color? foregroundServiceIconColor;
 
   /// The event notification icon. Defaults to [iconString].
   final String? eventIconString;
 
   /// The event notification icon color. Defaults to [iconColor].
-  final String? eventIconColor;
+  final Color? eventIconColor;
 
   /// A deep link opened when a notification is tapped.
   final String? deepLink;
@@ -43,11 +45,15 @@ final class RadarNotificationOptions {
   @internal
   Map<String, Object?> toMap() => compact({
     'iconString': iconString,
-    'iconColor': iconColor,
+    'iconColor': iconColor == null ? null : colorToHex(iconColor!),
     'foregroundServiceIconString': foregroundServiceIconString,
-    'foregroundServiceIconColor': foregroundServiceIconColor,
+    'foregroundServiceIconColor':
+        foregroundServiceIconColor == null
+            ? null
+            : colorToHex(foregroundServiceIconColor!),
     'eventIconString': eventIconString,
-    'eventIconColor': eventIconColor,
+    'eventIconColor':
+        eventIconColor == null ? null : colorToHex(eventIconColor!),
     'deepLink': deepLink,
   });
 }

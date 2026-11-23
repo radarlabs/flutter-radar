@@ -36,6 +36,8 @@
 //   properties, by hand or with Pigeon (https://pub.dev/packages/pigeon),
 //   so the plugin defines the wire types rather than the native sdk.
 
+import 'dart:ui' show Color;
+
 /// A map decoded by the standard message codec.
 typedef ChannelMap = Map<Object?, Object?>;
 
@@ -146,3 +148,10 @@ T? readEnumOrNull<T extends RadarWireEnum>(List<T> values, Object? value) {
 /// string "null").
 Map<String, Object?> compact(Map<String, Object?> map) =>
     map..removeWhere((_, value) => value == null);
+
+/// Formats [color] as `#RRGGBB`, the format both native SDKs parse. Alpha is
+/// dropped.
+String colorToHex(Color color) {
+  final rgb = color.toARGB32() & 0xFFFFFF;
+  return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}

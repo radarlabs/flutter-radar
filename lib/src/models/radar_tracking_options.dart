@@ -164,9 +164,9 @@ final class RadarTrackingOptions {
     required this.usePressure,
     this.startTrackingAfter,
     this.stopTrackingAfter,
-    this.batchInterval,
-    this.batchSize,
-    this.type,
+    this.batchInterval = Duration.zero,
+    this.batchSize = 0,
+    this.type = RadarTrackingOptionsType.defaultType,
     this.fastestStoppedUpdateInterval,
     this.fastestMovingUpdateInterval,
     this.syncGeofencesLimit,
@@ -239,17 +239,17 @@ final class RadarTrackingOptions {
   /// When to stop tracking. Null tracks until stopped.
   final DateTime? stopTrackingAfter;
 
-  /// The time between batched location syncs. Null or zero disables
-  /// interval-based batching. Sent in whole seconds.
-  final Duration? batchInterval;
+  /// The time between batched location syncs. Zero disables interval-based
+  /// batching. Sent in whole seconds.
+  final Duration batchInterval;
 
-  /// The number of location updates to batch before syncing. Null or zero
-  /// disables size-based batching.
-  final int? batchSize;
+  /// The number of location updates to batch before syncing. Zero disables
+  /// size-based batching.
+  final int batchSize;
 
   /// Where these options came from. Read-only in practice: the native SDK
   /// sets it on remote tracking options.
-  final RadarTrackingOptionsType? type;
+  final RadarTrackingOptionsType type;
 
   /// Android only. The fastest rate at which the app will accept location
   /// updates when stopped. Sent in whole seconds.
@@ -318,6 +318,7 @@ final class RadarTrackingOptions {
     showBlueBar: false,
     useVisits: true,
     useSignificantLocationChanges: true,
+    useIndoorScan: false,
   );
 
   static const responsiveAndroid = RadarTrackingOptions(
@@ -363,6 +364,7 @@ final class RadarTrackingOptions {
     showBlueBar: true,
     useVisits: false,
     useSignificantLocationChanges: false,
+    useIndoorScan: false,
   );
 
   static const continuousAndroid = RadarTrackingOptions(
@@ -408,6 +410,7 @@ final class RadarTrackingOptions {
     showBlueBar: false,
     useVisits: true,
     useSignificantLocationChanges: false,
+    useIndoorScan: false,
   );
 
   static const efficientAndroid = RadarTrackingOptions(
@@ -460,9 +463,9 @@ final class RadarTrackingOptions {
     usePressure: readBool(map['usePressure']) ?? false,
     startTrackingAfter: readDate(map['startTrackingAfter']),
     stopTrackingAfter: readDate(map['stopTrackingAfter']),
-    batchInterval: _readSeconds(map['batchInterval']),
-    batchSize: readInt(map['batchSize']),
-    type: readEnumOrNull(RadarTrackingOptionsType.values, map['type']),
+    batchInterval: _readSeconds(map['batchInterval']) ?? Duration.zero,
+    batchSize: readInt(map['batchSize']) ?? 0,
+    type: RadarTrackingOptionsType.fromWire(map['type']),
     fastestStoppedUpdateInterval: _readSeconds(
       map['fastestStoppedUpdateInterval'],
     ),
@@ -502,9 +505,9 @@ final class RadarTrackingOptions {
     'usePressure': usePressure,
     'startTrackingAfter': startTrackingAfter?.millisecondsSinceEpoch,
     'stopTrackingAfter': stopTrackingAfter?.millisecondsSinceEpoch,
-    'batchInterval': batchInterval?.inSeconds,
+    'batchInterval': batchInterval.inSeconds,
     'batchSize': batchSize,
-    'type': type?.wireValue,
+    'type': type.wireValue,
     'fastestStoppedUpdateInterval': fastestStoppedUpdateInterval?.inSeconds,
     'fastestMovingUpdateInterval': fastestMovingUpdateInterval?.inSeconds,
     'syncGeofencesLimit': syncGeofencesLimit,

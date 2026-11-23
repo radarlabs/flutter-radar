@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_radar/src/models/radar_foreground_service_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,7 +11,7 @@ void main() {
         title: 'Radar',
         icon: 42,
         iconString: 'ic',
-        iconColor: '#FF0000',
+        iconColor: Color(0xFFFF0000),
         updatesOnly: true,
         activity: 'com.example.MainActivity',
         importance: 3,

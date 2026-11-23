@@ -155,14 +155,8 @@ void main() {
         'batchSize': 0,
         'type': 'default',
       });
-      expect(
-        options,
-        RadarTrackingOptions.responsiveAndroid.copyWith(
-          batchInterval: Duration.zero,
-          batchSize: 0,
-          type: RadarTrackingOptionsType.defaultType,
-        ),
-      );
+      // What Android reports after startTrackingCustom(responsiveAndroid).
+      expect(options, RadarTrackingOptions.responsiveAndroid);
       expect(
         RadarTrackingOptions.fromMap({'syncGeofences': 'none'}).syncGeofences,
         isFalse,
@@ -206,13 +200,7 @@ void main() {
       });
       expect(
         options,
-        RadarTrackingOptions.continuousIOS.copyWith(
-          startTrackingAfter: start,
-          useIndoorScan: false,
-          batchInterval: Duration.zero,
-          batchSize: 0,
-          type: RadarTrackingOptionsType.defaultType,
-        ),
+        RadarTrackingOptions.continuousIOS.copyWith(startTrackingAfter: start),
       );
     });
 
@@ -230,7 +218,9 @@ void main() {
       expect(options.syncLocations, RadarTrackingOptionsSyncLocations.all);
       expect(options.stopDistance, 0);
       expect(options.foregroundServiceEnabled, isNull);
-      expect(options.type, isNull);
+      expect(options.type, RadarTrackingOptionsType.defaultType);
+      expect(options.batchInterval, Duration.zero);
+      expect(options.batchSize, 0);
     });
 
     test('copyWith replaces only the given fields', () {

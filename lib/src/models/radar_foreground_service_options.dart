@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:meta/meta.dart';
 
 import 'parsing.dart';
@@ -35,8 +37,8 @@ final class RadarForegroundServiceOptions {
   /// `"ic_notification"`.
   final String? iconString;
 
-  /// The notification icon color, as a hex string like `"#FF0000"`.
-  final String? iconColor;
+  /// The notification icon color. Sent as `#RRGGBB`, so the alpha is ignored.
+  final Color? iconColor;
 
   /// Whether to show the notification only during location updates, rather
   /// than for as long as tracking is on.
@@ -66,7 +68,7 @@ final class RadarForegroundServiceOptions {
     'title': title,
     'icon': icon,
     'iconString': iconString,
-    'iconColor': iconColor,
+    'iconColor': iconColor == null ? null : colorToHex(iconColor!),
     'updatesOnly': updatesOnly,
     'activity': activity,
     'importance': importance,

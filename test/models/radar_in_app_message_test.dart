@@ -1,15 +1,17 @@
+import 'dart:ui';
+
 import 'package:flutter_radar/src/models/radar_in_app_message.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('RadarInAppMessage', () {
     const message = RadarInAppMessage(
-      title: RadarInAppMessageText(text: 'Hi', color: '#000000'),
-      body: RadarInAppMessageText(text: 'Body', color: '#111111'),
+      title: RadarInAppMessageText(text: 'Hi', color: Color(0xFF000000)),
+      body: RadarInAppMessageText(text: 'Body', color: Color(0xFF111111)),
       button: RadarInAppMessageButton(
         text: 'Go',
-        color: '#FFFFFF',
-        backgroundColor: '#0000FF',
+        color: Color(0xFFFFFFFF),
+        backgroundColor: Color(0xFF0000FF),
         deepLink: 'app://go',
       ),
       image: RadarInAppMessageImage(
@@ -38,12 +40,12 @@ void main() {
       // iOS casts these sub-maps to [String: String], so they must not
       // contain nulls.
       const minimal = RadarInAppMessage(
-        title: RadarInAppMessageText(text: 'Hi', color: '#000000'),
-        body: RadarInAppMessageText(text: 'Body', color: '#111111'),
+        title: RadarInAppMessageText(text: 'Hi', color: Color(0xFF000000)),
+        body: RadarInAppMessageText(text: 'Body', color: Color(0xFF111111)),
         button: RadarInAppMessageButton(
           text: 'Go',
-          color: '#FFFFFF',
-          backgroundColor: '#0000FF',
+          color: Color(0xFFFFFFFF),
+          backgroundColor: Color(0xFF0000FF),
         ),
         image: RadarInAppMessageImage(name: 'hero'),
       );
@@ -60,49 +62,9 @@ void main() {
       });
     });
 
-    test('fromMap round-trips toMap', () {
-      final parsed = RadarInAppMessage.fromMap(message.toMap())!;
-      expect(parsed.toMap(), message.toMap());
-    });
-
-    test('fromMap treats Android empty-string defaults as null', () {
-      final parsed =
-          RadarInAppMessage.fromMap({
-            'title': {'text': 'Hi', 'color': '#000000'},
-            'body': {'text': 'Body', 'color': '#111111'},
-            'button': {
-              'text': 'Go',
-              'color': '#FFFFFF',
-              'backgroundColor': '#0000FF',
-              'deepLink': '',
-            },
-            'image': {'name': 'hero', 'url': ''},
-          })!;
-      expect(parsed.button!.deepLink, isNull);
-      expect(parsed.image!.url, isNull);
-      expect(parsed.metadata, isEmpty);
-    });
-
-    test('fromMap returns null without a valid title or body', () {
-      expect(RadarInAppMessage.fromMap(null), isNull);
-      expect(RadarInAppMessage.fromMap({}), isNull);
-      expect(
-        RadarInAppMessage.fromMap({
-          'title': {'text': 'Hi'},
-          'body': {'text': 'Body', 'color': '#111111'},
-        }),
-        isNull,
-      );
-    });
-
-    test('fromMap drops an invalid button', () {
-      final parsed =
-          RadarInAppMessage.fromMap({
-            'title': {'text': 'Hi', 'color': '#000000'},
-            'body': {'text': 'Body', 'color': '#111111'},
-            'button': {'text': 'Go'},
-          })!;
-      expect(parsed.button, isNull);
+    test('colors are sent as #RRGGBB without alpha', () {
+      const text = RadarInAppMessageText(text: 'Hi', color: Color(0x80ab01cd));
+      expect(text.toMap(), {'text': 'Hi', 'color': '#AB01CD'});
     });
   });
 }

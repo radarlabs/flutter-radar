@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_radar/src/models/radar_notification_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -6,11 +8,11 @@ void main() {
     test('toMap matches RadarNotificationOptions.fromJson keys', () {
       const options = RadarNotificationOptions(
         iconString: 'ic',
-        iconColor: '#111111',
+        iconColor: Color(0xFF111111),
         foregroundServiceIconString: 'fg',
-        foregroundServiceIconColor: '#222222',
+        foregroundServiceIconColor: Color(0xFF222222),
         eventIconString: 'ev',
-        eventIconColor: '#333333',
+        eventIconColor: Color(0xFF333333),
         deepLink: 'app://x',
       );
       expect(options.toMap(), {
