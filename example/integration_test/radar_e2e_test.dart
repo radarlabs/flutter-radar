@@ -7,6 +7,7 @@
 
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show Color;
 
 import 'package:flutter_radar/flutter_radar.dart';
 import 'package:flutter_radar_example/environment.dart' show setRadarHosts;
@@ -481,7 +482,7 @@ void main() {
           Radar.setNotificationOptions(
             const RadarNotificationOptions(
               iconString: 'ic_launcher',
-              iconColor: '#000000',
+              iconColor: Color(0xFF000000),
             ),
           ),
         );

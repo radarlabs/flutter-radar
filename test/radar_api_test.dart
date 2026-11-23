@@ -708,7 +708,7 @@ void main() {
         await Radar.setNotificationOptions(
           const RadarNotificationOptions(
             iconString: 'icon',
-            iconColor: '#FF0000',
+            iconColor: Color(0xFFFF0000),
           ),
         );
         expect(calls.last.method, 'setNotificationOptions');

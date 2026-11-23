@@ -499,7 +499,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   title: 'Tracking',
                   text: 'Flutter example is tracking',
                   iconString: 'ic_notification',
-                  iconColor: '#FF6B8D',
+                  iconColor: Color(0xFFFF6B8D),
                   importance: 2,
                   activity: 'io.radar.example.MainActivity',
                 ),
@@ -768,16 +768,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const RadarInAppMessage(
                   title: RadarInAppMessageText(
                     text: 'This is the title',
-                    color: '#000000',
+                    color: Color(0xFF000000),
                   ),
                   body: RadarInAppMessageText(
                     text: 'This is a demo message',
-                    color: '#666666',
+                    color: Color(0xFF666666),
                   ),
                   button: RadarInAppMessageButton(
                     text: 'Send it',
-                    color: '#FFFFFF',
-                    backgroundColor: '#EB0083',
+                    color: Color(0xFFFFFFFF),
+                    backgroundColor: Color(0xFFEB0083),
                   ),
                 ),
               );
