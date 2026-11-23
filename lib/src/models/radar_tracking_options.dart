@@ -219,6 +219,9 @@ final class RadarTrackingOptions {
 
   /// Whether to sync nearby geofences from the server to the client to
   /// improve responsiveness.
+  ///
+  /// The Android SDK also has a campaign-only mode, which currently behaves
+  /// like `true`. It can't be set from Dart, and reads back as `true`.
   final bool syncGeofences;
 
   /// Whether to monitor beacons.
