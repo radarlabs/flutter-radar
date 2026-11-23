@@ -124,7 +124,10 @@ T? readEnumOrNull<T extends RadarWireEnum>(List<T> values, Object? value) {
   return null;
 }
 
-/// Removes entries whose value is null, so optional fields are omitted from a
-/// map sent to the native side.
+/// Removes entries whose value is null, so an unset optional field reaches the
+/// native side as a missing key. This evens out a platform difference: iOS
+/// treats a null value like a missing key, but some Android option parsers
+/// don't (`has(key)` is true for a null value, and `optString` returns the
+/// string "null").
 Map<String, Object?> compact(Map<String, Object?> map) =>
     map..removeWhere((_, value) => value == null);
