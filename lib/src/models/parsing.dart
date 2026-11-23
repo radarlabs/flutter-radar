@@ -87,23 +87,6 @@ DateTime? readDate(Object? value) => switch (value) {
 /// The largest number of milliseconds from the epoch that [DateTime] allows.
 const _maxEpochMilliseconds = 8640000000000000;
 
-/// Reads a number of seconds, which may be fractional.
-Duration? readSeconds(Object? value) => _readDuration(value, 1e6);
-
-/// Reads a number of minutes, which may be fractional.
-Duration? readMinutes(Object? value) => _readDuration(value, 60e6);
-
-Duration? _readDuration(Object? value, double microsecondsPerUnit) {
-  final units = readDouble(value);
-  return units == null
-      ? null
-      : Duration(microseconds: (units * microsecondsPerUnit).round());
-}
-
-/// Converts [duration] to whole minutes for the native SDKs, rounding to the
-/// nearest minute.
-int toMinutes(Duration duration) => (duration.inSeconds / 60).round();
-
 // The list and map readers return unmodifiable collections, so a parsed model
 // can't be changed through them, the same as one built with `const` defaults.
 
@@ -173,14 +156,42 @@ String colorToHex(Color color) {
   return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
 }
 
+// Durations: the native SDKs send and store them as numbers of seconds or
+// minutes.
+
+/// Reads a number of seconds, which may be fractional.
+Duration? readSeconds(Object? value) => _readDuration(value, 1e6);
+
+/// Reads a number of minutes, which may be fractional.
+Duration? readMinutes(Object? value) => _readDuration(value, 60e6);
+
+Duration? _readDuration(Object? value, double microsecondsPerUnit) {
+  final units = readDouble(value);
+  return units == null
+      ? null
+      : Duration(microseconds: (units * microsecondsPerUnit).round());
+}
+
 /// Converts [duration] to whole seconds for a native field that stores an
-/// integer. In debug builds, asserts that nothing would be dropped.
+/// integer, truncating like [Duration.inSeconds]. In debug builds, asserts
+/// that nothing would be dropped.
 int wholeSeconds(Duration duration, String name) {
   assert(
     duration.inMicroseconds % Duration.microsecondsPerSecond == 0,
     '$name is sent to the native SDKs in whole seconds, but was $duration.',
   );
   return duration.inSeconds;
+}
+
+/// Converts [duration] to whole minutes for a native field that stores an
+/// integer, truncating like [Duration.inMinutes]. In debug builds, asserts
+/// that nothing would be dropped.
+int wholeMinutes(Duration duration, String name) {
+  assert(
+    duration.inMicroseconds % Duration.microsecondsPerMinute == 0,
+    '$name is sent to the native SDKs in whole minutes, but was $duration.',
+  );
+  return duration.inMinutes;
 }
 
 /// Compares JSON-like values (maps, lists, and scalars) by content.

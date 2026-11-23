@@ -339,12 +339,12 @@ final class RadarTripLeg {
               : [coordinates.longitude, coordinates.latitude],
       'arrivalRadius': arrivalRadius > 0 ? arrivalRadius : null,
     });
+    final stopMinutes = wholeMinutes(stopDuration, 'stopDuration');
     return compact({
       '_id': id,
       'status': status == RadarTripLegStatus.unknown ? null : status.wireValue,
       'destination': destination.isEmpty ? null : destination,
-      'stopDuration':
-          toMinutes(stopDuration) > 0 ? toMinutes(stopDuration) : null,
+      'stopDuration': stopMinutes > 0 ? stopMinutes : null,
       'metadata': metadata,
     });
   }
@@ -490,10 +490,13 @@ final class RadarTripOptions {
     'destinationGeofenceExternalId': destinationGeofenceExternalId,
     'mode': mode.wireValue,
     'scheduledArrivalAt': scheduledArrivalAt?.millisecondsSinceEpoch,
-    'approachingThreshold':
-        toMinutes(approachingThreshold) > 0
-            ? toMinutes(approachingThreshold)
-            : null,
+    'approachingThreshold': switch (wholeMinutes(
+      approachingThreshold,
+      'approachingThreshold',
+    )) {
+      0 => null,
+      final minutes => minutes,
+    },
     'startTracking': startTracking,
     'legs': legs.isEmpty ? null : [for (final leg in legs) leg.toMap()],
   });

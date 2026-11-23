@@ -226,16 +226,30 @@ void main() {
       expect(
         const RadarTripLeg.address(
           'a',
-          stopDuration: Duration(minutes: 2, seconds: 40),
+          stopDuration: Duration(minutes: 3),
         ).toMap()['stopDuration'],
         3,
       );
       expect(
         const RadarTripOptions(
           externalId: 'x',
+          approachingThreshold: Duration(minutes: 2),
+        ).toMap()['approachingThreshold'],
+        2,
+      );
+      expect(
+        const RadarTripLeg.address(
+          'a',
+          stopDuration: Duration(minutes: 2, seconds: 40),
+        ).toMap,
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        const RadarTripOptions(
+          externalId: 'x',
           approachingThreshold: Duration(seconds: 20),
-        ).toMap().containsKey('approachingThreshold'),
-        isFalse,
+        ).toMap,
+        throwsA(isA<AssertionError>()),
       );
     });
 
