@@ -419,7 +419,7 @@ void main() {
 
       expect((lastCall().arguments as Map)['chains'], ['starbucks']);
       expect(result.places.single.chain?.slug, 'starbucks');
-      expect(result.places.single.location?.latitude, 40.70);
+      expect(result.places.single.location.latitude, 40.70);
     });
 
     test('autocomplete, geocode, and reverseGeocode', () async {
