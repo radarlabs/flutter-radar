@@ -122,8 +122,8 @@ void main() {
       await sendClientLocationEvent();
 
       final update = receivedBackgroundUpdate as RadarClientLocationUpdate;
-      expect(update.location?.latitude, 47.0);
-      expect(update.location?.longitude, -122.0);
+      expect(update.location.latitude, 47.0);
+      expect(update.location.longitude, -122.0);
       expect(update.stopped, isFalse);
       expect(update.source, RadarLocationSource.backgroundLocation);
     });

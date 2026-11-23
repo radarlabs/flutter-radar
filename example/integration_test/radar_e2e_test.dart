@@ -191,7 +191,7 @@ void main() {
         await Radar.trackOnce(location: _nyc);
 
         final update = await received.future.timeout(_callbackTimeout);
-        expect(update.user?.userId, runId);
+        expect(update.user.userId, runId);
         expect(update.location, isNotNull);
       });
 
@@ -304,7 +304,7 @@ void main() {
         expect(token.user?.userId, runId);
 
         final update = await received.future.timeout(_callbackTimeout);
-        expect(update.token?.token, isNotEmpty);
+        expect(update.token.token, isNotEmpty);
       });
 
       test('getVerifiedLocationToken returns a token', () async {
@@ -727,9 +727,9 @@ void main() {
               metadata: {'runId': runId},
               legs: [
                 for (final geofence in geofences.take(2))
-                  RadarTripLeg(
-                    destinationGeofenceTag: tag,
-                    destinationGeofenceExternalId: geofence.externalId,
+                  RadarTripLeg.geofence(
+                    tag: tag,
+                    externalId: geofence.externalId!,
                   ),
               ],
             ),
@@ -781,7 +781,7 @@ void main() {
         final received = Completer<RadarLocationUpdate>();
         Radar.onLocation((update) {
           if (!received.isCompleted &&
-              update.user?.source == RadarLocationSource.mockLocation) {
+              update.user.source == RadarLocationSource.mockLocation) {
             received.complete(update);
           }
         });
@@ -796,7 +796,7 @@ void main() {
         );
 
         final update = await received.future.timeout(_callbackTimeout);
-        expect(update.user?.userId, runId);
+        expect(update.user.userId, runId);
       });
     });
   });

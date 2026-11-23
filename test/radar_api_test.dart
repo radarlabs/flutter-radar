@@ -44,6 +44,10 @@ void main() {
   };
   const userMap = {
     '_id': 'u1',
+    'location': {
+      'type': 'Point',
+      'coordinates': [-73.99, 40.73],
+    },
     'userId': 'user-1',
     'description': 'Jordan',
     'stopped': true,
@@ -51,6 +55,7 @@ void main() {
   const eventMap = {
     '_id': 'e1',
     'type': 'user.entered_geofence',
+    'createdAt': '2026-11-19T15:00:00.000Z',
     'live': true,
     'geofence': {
       '_id': 'g1',
@@ -268,7 +273,11 @@ void main() {
           'mode': 'car',
         },
         'events': [
-          {'_id': 'e2', 'type': 'user.started_trip'},
+          {
+            '_id': 'e2',
+            'type': 'user.started_trip',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          },
         ],
       };
       const tripOptions = RadarTripOptions(
@@ -509,7 +518,10 @@ void main() {
         'mode': 'truck',
         'units': 'metric',
       });
-      expect(matrix.routeBetween(0, 0)?.duration?.value, 5.0);
+      expect(
+        matrix.routeBetween(0, 0)?.duration?.value,
+        const Duration(minutes: 5),
+      );
       expect(matrix.routeBetween(1, 0), isNull);
     });
 
@@ -543,6 +555,7 @@ void main() {
         'event': {
           '_id': 'e3',
           'type': 'purchase',
+          'createdAt': '2026-11-19T15:00:00.000Z',
           'conversionName': 'purchase',
         },
       };
@@ -824,8 +837,8 @@ void main() {
       await send('error', {'status': 'ERROR_NETWORK'});
       await send('log', {'message': 'hello'});
 
-      expect(location?.location?.accuracy, 65.0);
-      expect(location?.user?.stopped, isTrue);
+      expect(location?.location.accuracy, 65.0);
+      expect(location?.user.stopped, isTrue);
       expect(clientLocation?.source, RadarLocationSource.foregroundLocation);
       expect(error?.status, RadarStatus.errorNetwork);
       expect(log?.message, 'hello');
@@ -845,8 +858,8 @@ void main() {
       await send('ipChanged', {});
       await send('sharingChanged', {'sharing': true});
 
-      expect(token?.token?.token, 'abc');
-      expect(token?.token?.passed, isFalse);
+      expect(token?.token.token, 'abc');
+      expect(token?.token.passed, isFalse);
       expect(ipChanged, isTrue);
       expect(sharing, isTrue);
     });

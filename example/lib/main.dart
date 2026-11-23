@@ -595,13 +595,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       'flutter-multi-${DateTime.now().millisecondsSinceEpoch}',
                   mode: RadarRouteMode.car,
                   legs: [
-                    const RadarTripLeg(
-                      destinationGeofenceTag: 'store',
-                      destinationGeofenceExternalId: '123',
+                    const RadarTripLeg.geofence(
+                      tag: 'store',
+                      externalId: '123',
                     ),
-                    const RadarTripLeg(address: '841 Broadway, New York, NY'),
-                    RadarTripLeg(
-                      coordinates: _brooklyn.coordinate,
+                    const RadarTripLeg.address('841 Broadway, New York, NY'),
+                    RadarTripLeg.coordinates(
+                      _brooklyn.coordinate,
                       arrivalRadius: 100,
                     ),
                   ],

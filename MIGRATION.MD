@@ -48,7 +48,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `startTracking('responsive')` | `startTracking(RadarTrackingPreset.responsive)` |
 | `startTrackingCustom({...})` | `startTrackingCustom(RadarTrackingOptions(...))`, or `RadarTrackingOptions.responsive.copyWith(...)` |
 | `Radar.presetResponsive` (and the other preset maps) | `RadarTrackingOptions.responsive`, `.continuous`, `.efficient` |
-| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. Legs are `RadarTripLeg`s. |
+| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
 | `updateTrip(status: 'arrived', ...)` | `updateTrip(status: RadarTripStatus.arrived, ...)` |
 | `updateTripLeg(status: 'arrived', ...)` | `updateTripLeg(status: RadarTripLegStatus.arrived, ...)` |
 | `setNotificationOptions({...})` | `setNotificationOptions(RadarNotificationOptions(...))` |

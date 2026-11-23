@@ -5,11 +5,30 @@ import 'package:flutter_radar/flutter_radar.dart';
 import 'package:flutter_radar/src/radar_background.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _location = {'latitude': 40.7, 'longitude': -73.9};
+
+/// A payload for each update type with the values both platforms always send.
+const _payloads = <String, Map<String, Object?>>{
+  'location': {
+    'location': _location,
+    'user': {
+      '_id': 'u1',
+      'location': {
+        'type': 'Point',
+        'coordinates': [-73.9, 40.7],
+      },
+    },
+  },
+  'clientLocation': {'location': _location},
+  'token': {'token': <String, Object?>{}},
+};
+
 MethodCall _backgroundCall({
   String method = 'location',
   Object? callbackHandle = 42,
-  Object? payload = const <String, dynamic>{},
+  Object? payload,
 }) {
+  payload ??= _payloads[method] ?? const <String, Object?>{};
   return MethodCall(method, {
     'callbackHandle': callbackHandle,
     'payload': payload,
@@ -100,8 +119,8 @@ void main() {
       );
 
       final update = receivedUpdate as RadarClientLocationUpdate;
-      expect(update.location?.latitude, 40.7);
-      expect(update.location?.accuracy, 5.0);
+      expect(update.location.latitude, 40.7);
+      expect(update.location.accuracy, 5.0);
       expect(update.stopped, isTrue);
       expect(update.source, RadarLocationSource.backgroundLocation);
     });

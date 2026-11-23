@@ -85,6 +85,7 @@ Object? describe(Object? value) => switch (value) {
     'truck': describe(value.truck),
     'motorbike': describe(value.motorbike),
   },
+  RadarRouteDistance() => value.text,
   RadarRouteMatrix() => describe(value.rows),
   RadarVerifiedLocationToken() => {
     'passed': value.passed,
