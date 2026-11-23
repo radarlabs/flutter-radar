@@ -223,6 +223,19 @@ void main() {
       expect(options.batchSize, 0);
     });
 
+    test('toMap asserts that durations are whole seconds', () {
+      final options = RadarTrackingOptions.responsive.copyWith(
+        desiredSyncInterval: const Duration(milliseconds: 1500),
+      );
+      expect(options.toMap, throwsA(isA<AssertionError>()));
+      expect(
+        RadarTrackingOptions.responsive
+            .copyWith(fastestMovingUpdateInterval: const Duration(seconds: 30))
+            .toMap()['fastestMovingUpdateInterval'],
+        30,
+      );
+    });
+
     test('copyWith replaces only the given fields', () {
       final copy = RadarTrackingOptions.responsiveIOS.copyWith(beacons: true);
       expect(copy.beacons, isTrue);

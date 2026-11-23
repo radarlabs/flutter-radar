@@ -487,11 +487,20 @@ final class RadarTrackingOptions {
   /// other's keys. Dates are sent as milliseconds since the epoch.
   @internal
   Map<String, Object?> toMap() => compact({
-    'desiredStoppedUpdateInterval': desiredStoppedUpdateInterval.inSeconds,
-    'desiredMovingUpdateInterval': desiredMovingUpdateInterval.inSeconds,
-    'desiredSyncInterval': desiredSyncInterval.inSeconds,
+    'desiredStoppedUpdateInterval': wholeSeconds(
+      desiredStoppedUpdateInterval,
+      'desiredStoppedUpdateInterval',
+    ),
+    'desiredMovingUpdateInterval': wholeSeconds(
+      desiredMovingUpdateInterval,
+      'desiredMovingUpdateInterval',
+    ),
+    'desiredSyncInterval': wholeSeconds(
+      desiredSyncInterval,
+      'desiredSyncInterval',
+    ),
     'desiredAccuracy': desiredAccuracy.wireValue,
-    'stopDuration': stopDuration.inSeconds,
+    'stopDuration': wholeSeconds(stopDuration, 'stopDuration'),
     'stopDistance': stopDistance,
     'replay': replay.wireValue,
     'sync': syncLocations.wireValue,
@@ -505,11 +514,17 @@ final class RadarTrackingOptions {
     'usePressure': usePressure,
     'startTrackingAfter': startTrackingAfter?.millisecondsSinceEpoch,
     'stopTrackingAfter': stopTrackingAfter?.millisecondsSinceEpoch,
-    'batchInterval': batchInterval.inSeconds,
+    'batchInterval': wholeSeconds(batchInterval, 'batchInterval'),
     'batchSize': batchSize,
     'type': type.wireValue,
-    'fastestStoppedUpdateInterval': fastestStoppedUpdateInterval?.inSeconds,
-    'fastestMovingUpdateInterval': fastestMovingUpdateInterval?.inSeconds,
+    'fastestStoppedUpdateInterval': switch (fastestStoppedUpdateInterval) {
+      final value? => wholeSeconds(value, 'fastestStoppedUpdateInterval'),
+      null => null,
+    },
+    'fastestMovingUpdateInterval': switch (fastestMovingUpdateInterval) {
+      final value? => wholeSeconds(value, 'fastestMovingUpdateInterval'),
+      null => null,
+    },
     'syncGeofencesLimit': syncGeofencesLimit,
     'foregroundServiceEnabled': foregroundServiceEnabled,
     'showBlueBar': showBlueBar,

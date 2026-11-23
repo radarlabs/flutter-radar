@@ -155,3 +155,13 @@ String colorToHex(Color color) {
   final rgb = color.toARGB32() & 0xFFFFFF;
   return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
 }
+
+/// Converts [duration] to whole seconds for a native field that stores an
+/// integer. In debug builds, asserts that nothing would be dropped.
+int wholeSeconds(Duration duration, String name) {
+  assert(
+    duration.inMicroseconds % Duration.microsecondsPerSecond == 0,
+    '$name is sent to the native SDKs in whole seconds, but was $duration.',
+  );
+  return duration.inSeconds;
+}
