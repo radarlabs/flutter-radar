@@ -395,10 +395,31 @@ void main() {
       final event = RadarEvent.fromMap({
         '_id': 'event-7',
         'type': 'user.entered_place',
-        'place': {'_id': 'place-1', 'name': 'Starbucks'},
-        'verifiedPlace': {'_id': 'place-2', 'name': 'Blue Bottle'},
+        'place': {
+          '_id': 'place-1',
+          'name': 'Starbucks',
+          'location': {
+            'type': 'Point',
+            'coordinates': [-73.99, 40.73],
+          },
+        },
+        'verifiedPlace': {
+          '_id': 'place-2',
+          'name': 'Blue Bottle',
+          'location': {
+            'type': 'Point',
+            'coordinates': [-73.99, 40.73],
+          },
+        },
         'alternatePlaces': [
-          {'_id': 'place-2', 'name': 'Blue Bottle'},
+          {
+            '_id': 'place-2',
+            'name': 'Blue Bottle',
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.99, 40.73],
+            },
+          },
         ],
         'verification': -1,
         'confidence': 1,
