@@ -7,16 +7,29 @@ import 'radar_status.dart';
 import 'radar_user.dart';
 import 'radar_verified_location_token.dart';
 
-/// An update pushed by the native Radar SDK, delivered to the `Radar.onX`
-/// listeners and to the handler passed to [Radar.registerBackgroundHandler].
+/// Something the native Radar SDK reports on its own, when it happens, rather
+/// than in response to a call. For example:
+///
+/// - [RadarEventsUpdate]: the user entered or exited a geofence, or arrived
+///   at a trip destination.
+/// - [RadarLocationUpdate]: the user's location was sent to Radar while
+///   tracking.
+/// - [RadarErrorUpdate]: getting or sending a location failed, for example
+///   because location permission is missing or a request to Radar failed.
+///
+/// Each kind is delivered to its own listener, such as [Radar.onEvents], and
+/// every kind is delivered to the handler passed to
+/// [Radar.registerBackgroundHandler], whether the app is in the foreground or
+/// the background.
 ///
 /// The class is sealed, so a background handler can `switch` over every kind
 /// of update. Without a `default` case, the switch stops compiling if a new
-/// kind is added, so it can't be missed:
+/// kind is added, so it can't be missed. Add a `default` case instead to
+/// ignore kinds added later:
 ///
 /// ```dart
 /// @pragma('vm:entry-point')
-/// Future<void> onRadarUpdate(RadarUpdate update) async {
+/// Future<void> radarBackgroundHandler(RadarUpdate update) async {
 ///   switch (update) {
 ///     case RadarEventsUpdate(:final events):
 ///       // ...
