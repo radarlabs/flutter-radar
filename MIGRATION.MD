@@ -26,6 +26,8 @@ try {
 }
 ```
 
+Check calls you don't `await`, such as a `Radar.trackOnce()` in an app lifecycle callback. Their failures used to come back as a status nobody read. Now each one is an uncaught async error, which crash reporters such as Crashlytics or Sentry record. Wrap these calls in `try`/`catch` or attach `.catchError`. The compiler doesn't flag them.
+
 **Return values.**
 
 - A method that returns a single value returns it directly:
@@ -39,7 +41,7 @@ try {
 
 Methods that don't return a value, such as `setUserId` or `startTracking`, now return `Future<void>` and let a `PlatformException` propagate instead of printing it.
 
-**Locations.** Pass a `RadarLocation` wherever a `{'latitude': ..., 'longitude': ...}` map was accepted (`trackOnce`, `getContext`, `searchGeofences`, `searchPlaces`, `autocomplete`, `reverseGeocode`, `getDistance`, `getMatrix`, `mockTracking`).
+**Locations.** Pass a `RadarLocation` wherever a `{'latitude': ..., 'longitude': ...}` map was accepted (`trackOnce`, `getContext`, `searchGeofences`, `searchPlaces`, `autocomplete`, `reverseGeocode`, `getDistance`, `getMatrix`, `mockTracking`). `mockTracking`'s `origin` and `destination` are now required.
 
 **Options.**
 
@@ -48,7 +50,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `startTracking('responsive')` | `startTracking(RadarTrackingPreset.responsive)` |
 | `startTrackingCustom({...})` | `startTrackingCustom(RadarTrackingOptions(...))`, or `RadarTrackingOptions.responsive.copyWith(...)` |
 | `Radar.presetResponsive` (and the other preset maps) | `RadarTrackingOptions.responsive`, `.continuous`, `.efficient` |
-| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
+| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. `tripOptions` is now required. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
 | `updateTrip(status: 'arrived', ...)` | `updateTrip(status: RadarTripStatus.arrived, ...)` |
 | `updateTripLeg(status: 'arrived', ...)` | `updateTripLeg(status: RadarTripLegStatus.arrived, ...)` |
 | `setNotificationOptions({...})` | `setNotificationOptions(RadarNotificationOptions(...))` |
@@ -56,14 +58,15 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `showInAppMessage({...})` | `showInAppMessage(RadarInAppMessage(...))` |
 | `setLogLevel('debug')` | `setLogLevel(RadarLogLevel.debug)` |
 | `getPermissionsStatus()` returns a `String?` | returns a `RadarPermissionsStatus` |
-| `desiredAccuracy: 'high'` / `getLocation('high')` | `RadarTrackingOptionsDesiredAccuracy.high` |
+| `desiredAccuracy: 'high'` | `desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high` |
+| `getLocation('high')` | `getLocation(desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high)`. The argument is now named. |
 | `mode: 'car'`, `modes: ['car']`, `units: 'imperial'` | `RadarRouteMode.car`, `{RadarRouteMode.car}`, `RadarRouteUnits.imperial` |
 | Durations as numbers of seconds or minutes, such as `startTrackingVerified(30, false)`, `mockTracking(interval: 1)`, or `'desiredSyncInterval': 20` | `Duration`s: `startTrackingVerified(Duration(seconds: 30), false)`, `mockTracking(interval: Duration(seconds: 1))`, `desiredSyncInterval: Duration(seconds: 20)`. ETAs and other durations Radar returns are `Duration`s too. |
 | `getTrackingOptions()`, `getTripOptions()`, `getTrip()` return a `Map?` | return `RadarTrackingOptions?`, `RadarTripOptions?`, `RadarTrip?` |
 
 **Address validation.** `validateStreetAddress` and `validateAddressLabel` return a `RadarValidateAddressResult` with the address and its verification status.
 
-**Listeners.** Each `Radar.onX` callback receives a typed update instead of a `Map`: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. The `foregroundXCallback` static fields are no longer public.
+**Listeners.** Each `Radar.onX` callback receives a typed update instead of a `Map`: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. The `foregroundXCallback` static fields are no longer public, and the callback typedefs (`LocationCallback`, `ClientLocationCallback`, `ErrorCallback`, `LogCallback`, `EventsCallback`, `TokenCallback`, `IpChangedCallback`, `SharingChangedCallback`) are removed. Use the function types in the `onX` signatures instead.
 
 ```dart
 // Before
