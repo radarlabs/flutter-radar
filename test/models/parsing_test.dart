@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:flutter_radar/src/models/parsing.dart';
 import 'package:flutter_radar/src/models/radar_context.dart';
 import 'package:flutter_radar/src/models/radar_place.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +25,35 @@ void main() {
         'geofences': [circleGeofenceMap],
       });
       expect(() => context.geofences.clear(), throwsUnsupportedError);
+    });
+  });
+
+  group('colorToHex', () {
+    test('formats each channel in its place', () {
+      expect(colorToHex(const Color(0xFFFF0000)), '#FF0000');
+      expect(colorToHex(const Color(0xFF00FF00)), '#00FF00');
+      expect(colorToHex(const Color(0xFF0000FF)), '#0000FF');
+    });
+
+    test('pads with zeros', () {
+      expect(colorToHex(const Color(0xFF000000)), '#000000');
+      expect(colorToHex(const Color(0xFF00000A)), '#00000A');
+    });
+
+    test('uses uppercase hex digits', () {
+      expect(colorToHex(const Color(0xFFabcdef)), '#ABCDEF');
+    });
+
+    test('drops alpha', () {
+      expect(colorToHex(const Color(0x80AB01CD)), '#AB01CD');
+      expect(colorToHex(const Color(0x00FFFFFF)), '#FFFFFF');
+    });
+
+    test('rounds fractional channels to the nearest byte', () {
+      expect(
+        colorToHex(const Color.from(alpha: 1, red: 0.5, green: 0, blue: 1)),
+        '#8000FF',
+      );
     });
   });
 }
