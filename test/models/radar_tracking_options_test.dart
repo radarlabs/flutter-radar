@@ -236,6 +236,17 @@ void main() {
       );
     });
 
+    test('equal options have equal hash codes', () {
+      final copy = RadarTrackingOptions.responsiveIOS.copyWith();
+      expect(copy, RadarTrackingOptions.responsiveIOS);
+      expect(copy.hashCode, RadarTrackingOptions.responsiveIOS.hashCode);
+      expect({
+        RadarTrackingOptions.responsiveIOS,
+        copy,
+        RadarTrackingOptions.efficientIOS,
+      }, hasLength(2));
+    });
+
     test('copyWith replaces only the given fields', () {
       final copy = RadarTrackingOptions.responsiveIOS.copyWith(beacons: true);
       expect(copy.beacons, isTrue);
