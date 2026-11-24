@@ -181,6 +181,45 @@ void main() {
         'expired',
       ]);
     });
+
+    test('garbage values do not throw', () {
+      final trip = RadarTrip.fromMap(const {
+        '_id': 42,
+        'externalId': 7,
+        'metadata': 'meta',
+        'destinationLocation': 'there',
+        'mode': false,
+        'status': 99,
+        'eta': 'soon',
+        'orders': 'none',
+        'legs': [1, 'two', null],
+      });
+      expect(trip.id, '');
+      expect(trip.externalId, '');
+      expect(trip.metadata, isNull);
+      expect(trip.destinationLocation, isNull);
+      expect(trip.mode, isNull);
+      expect(trip.status, RadarTripStatus.unknown);
+      expect(trip.etaDistance, isNull);
+      expect(trip.etaDuration, isNull);
+      expect(trip.orders, isEmpty);
+      expect(trip.legs, isEmpty);
+
+      final leg = RadarTripLeg.fromMap(const {
+        '_id': 42,
+        'destination': [1, 2],
+        'eta': 'soon',
+        'status': 99,
+        'createdAt': true,
+        'stopDuration': 'long',
+        'metadata': 'meta',
+      });
+      expect(leg.status, RadarTripLegStatus.unknown);
+      expect(leg.createdAt, isNull);
+      expect(leg.etaDuration, isNull);
+      expect(leg.stopDuration, Duration.zero);
+      expect(leg.metadata, isNull);
+    });
   });
 
   group('RadarTripOptions', () {
@@ -402,6 +441,30 @@ void main() {
       expect(ios.mode, RadarRouteMode.motorbike);
       expect(ios.approachingThreshold, const Duration(minutes: 3));
       expect(ios.startTracking, isFalse);
+    });
+
+    test('missing and garbage values get the defaults', () {
+      for (final map in const <Map<Object?, Object?>>[
+        {},
+        {
+          'externalId': 42,
+          'metadata': 'meta',
+          'mode': false,
+          'scheduledArrivalAt': {'when': 'later'},
+          'approachingThreshold': 'soon',
+          'startTracking': 'maybe',
+          'legs': 'none',
+        },
+      ]) {
+        final options = RadarTripOptions.fromMap(map);
+        expect(options.externalId, '');
+        expect(options.metadata, isNull);
+        expect(options.mode, RadarRouteMode.car);
+        expect(options.scheduledArrivalAt, isNull);
+        expect(options.approachingThreshold, Duration.zero);
+        expect(options.startTracking, isTrue);
+        expect(options.legs, isEmpty);
+      }
     });
   });
 }

@@ -200,6 +200,62 @@ void main() {
       expect(RadarEventType.fromWire(42), RadarEventType.unknown);
     });
 
+    test('garbage values do not throw', () {
+      const garbage = <Object?, Object?>{
+        '_id': 42,
+        'type': 'user.unknown_thing',
+        'createdAt': true,
+        'actualCreatedAt': 'yesterday',
+        'geofence': 'geofence',
+        'place': 1,
+        'region': [1, 2],
+        'beacon': 'beacon',
+        'trip': 'trip',
+        'fraud': 'fraud',
+        'alternatePlaces': 'none',
+        'verifiedPlace': 3,
+        'verification': 'maybe',
+        'confidence': 'very',
+        'duration': 'long',
+        'location': 'here',
+        'metadata': 'meta',
+      };
+      expect(RadarEvent.fromMap(garbage), isNull);
+
+      final event =
+          RadarEvent.fromMap({
+            ...garbage,
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          })!;
+      expect(event.id, '');
+      expect(event.type, RadarEventType.unknown);
+      expect(event.actualCreatedAt, isNull);
+      expect(event.geofence, isNull);
+      expect(event.place, isNull);
+      expect(event.region, isNull);
+      expect(event.beacon, isNull);
+      expect(event.trip, isNull);
+      expect(event.fraud, isNull);
+      expect(event.alternatePlaces, isEmpty);
+      expect(event.verifiedPlace, isNull);
+      expect(event.verification, isNull);
+      expect(event.confidence, RadarEventConfidence.none);
+      expect(event.duration, isNull);
+      expect(event.location, isNull);
+      expect(event.metadata, isNull);
+    });
+
+    test('an unrecognized user.* type is unknown, not a conversion', () {
+      expect(RadarEvent.fromMap(const {'type': 'user.unknown_thing'}), isNull);
+      final event =
+          RadarEvent.fromMap(const {
+            'type': 'user.unknown_thing',
+            'createdAt': '2026-11-19T15:00:00.000Z',
+          })!;
+      expect(event.type, RadarEventType.unknown);
+      expect(event.conversionName, isNull);
+    });
+
     test('enum fallbacks', () {
       expect(RadarEventConfidence.fromWire(9), RadarEventConfidence.none);
       expect(RadarEventConfidence.fromWire('2'), RadarEventConfidence.medium);

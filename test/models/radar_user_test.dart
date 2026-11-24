@@ -183,6 +183,60 @@ void main() {
       expect(RadarUser.fromMap({'_id': 'user-1'}), isNull);
     });
 
+    test('garbage values do not throw', () {
+      const garbage = <Object?, Object?>{
+        '_id': 42,
+        'userId': ['user-1'],
+        'metadata': 'meta',
+        'activityType': 7,
+        'geofences': 'none',
+        'place': 'home',
+        'beacons': {'a': 1},
+        'segments': [1, 'two', null],
+        'topChains': 'chains',
+        'source': 7,
+        'trip': 'trip',
+        'fraud': 'fraud',
+        'expectedAddress': [1, 2],
+        'locationInsights': 'insights',
+      };
+      expect(RadarUser.fromMap({...garbage, 'location': 'here'}), isNull);
+
+      final user =
+          RadarUser.fromMap({
+            ...garbage,
+            'location': {
+              'type': 'Point',
+              'coordinates': [-73.99, 40.73],
+            },
+          })!;
+      expect(user.id, '');
+      expect(user.userId, isNull);
+      expect(user.metadata, isNull);
+      expect(user.activityType, RadarActivityType.unknown);
+      expect(user.geofences, isEmpty);
+      expect(user.place, isNull);
+      expect(user.beacons, isEmpty);
+      expect(user.segments, isEmpty);
+      expect(user.topChains, isEmpty);
+      expect(user.source, RadarLocationSource.unknown);
+      expect(user.trip, isNull);
+      expect(user.fraud, isNull);
+      expect(user.expectedAddress, isNull);
+      expect(user.locationInsights, isNull);
+    });
+  });
+
+  group('RadarSegment', () {
+    test('garbage values do not throw', () {
+      final segment = RadarSegment.fromMap(const {
+        'description': 3,
+        'externalId': ['commuters'],
+      });
+      expect(segment.description, '');
+      expect(segment.externalId, '');
+    });
+
     test('an expected address without coordinates has no coordinate', () {
       final address = RadarExpectedAddress.fromMap({
         'expectedAddress': 'nowhere',

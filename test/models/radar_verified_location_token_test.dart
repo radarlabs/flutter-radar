@@ -76,6 +76,29 @@ void main() {
       expect(id.passed, isFalse);
     });
 
+    test('garbage values do not throw', () {
+      final token = RadarVerifiedLocationToken.fromMap(const {
+        '_id': 42,
+        'token': ['t'],
+        'format': 7,
+        'user': 'bob',
+        'events': {'a': 1},
+        'expiresAt': true,
+        'expiresIn': 'soon',
+        'passed': 'maybe',
+        'failureReasons': 'many',
+      });
+      expect(token.id, isNull);
+      expect(token.token, isNull);
+      expect(token.format, RadarResponseFormat.jws);
+      expect(token.user, isNull);
+      expect(token.events, isEmpty);
+      expect(token.expiresAt, isNull);
+      expect(token.expiresIn, isNull);
+      expect(token.passed, isFalse);
+      expect(token.failureReasons, isEmpty);
+    });
+
     test('is parsed from token updates', () {
       final update = RadarUpdate.fromMethodCall('token', {'token': tokenMap});
       expect((update! as RadarTokenUpdate).token.passed, isFalse);

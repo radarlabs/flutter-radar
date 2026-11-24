@@ -62,5 +62,32 @@ void main() {
 
       expect(RadarRouteMatrix.fromWire({'not': 'a list'}), isNull);
     });
+
+    test('garbage values do not throw', () {
+      final routes = RadarRoutes.fromMap(const {
+        'geodesic': 'far',
+        'foot': 1,
+        'car': {
+          'distance': 'far',
+          'duration': {'value': 'long', 'text': 4},
+          'geometry': {'coordinates': 'x'},
+        },
+      });
+      expect(routes.geodesic, isNull);
+      expect(routes.foot, isNull);
+      expect(routes.car!.distance, isNull);
+      expect(routes.car!.duration!.value, Duration.zero);
+      expect(routes.car!.duration!.text, '');
+      expect(routes.car!.geometry!.coordinates, isEmpty);
+
+      final matrix =
+          RadarRouteMatrix.fromWire([
+            1,
+            'a',
+            [2],
+          ])!;
+      expect(matrix.routeBetween(0, 0), isNull);
+      expect(matrix.routeBetween(2, 0), isNull);
+    });
   });
 }
