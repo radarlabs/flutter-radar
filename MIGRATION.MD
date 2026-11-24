@@ -28,6 +28,8 @@ try {
 
 Check calls you don't `await`, such as a `Radar.trackOnce()` in an app lifecycle callback. Their failures used to come back as a status nobody read. Now each one is an uncaught async error, which crash reporters such as Crashlytics or Sentry record. Wrap these calls in `try`/`catch` or attach `.catchError`. The compiler doesn't flag them.
 
+`cancelTrip`, `completeTrip` and `updateTrip` throw `RadarException(RadarStatus.errorBadRequest)` when there's no active trip. Check `await Radar.getTripOptions()` first if you call them defensively. `errorNotFound` means the trip had already ended on the server; the SDK clears it either way.
+
 **Return values.**
 
 - A method that returns a single value returns it directly:

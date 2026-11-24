@@ -384,7 +384,9 @@ void main() {
 
       test('getContext', () async {
         final result = await Radar.getContext(_nyc);
-        expect(result.location.latitude, closeTo(_nyc.latitude, 1e-4));
+        // Both native SDKs pass the request location back unchanged.
+        expect(result.location.latitude, _nyc.latitude);
+        expect(result.location.longitude, _nyc.longitude);
       });
 
       test(
