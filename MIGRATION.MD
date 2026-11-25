@@ -2,7 +2,7 @@
 
 ## Map-based API to typed models (4.0.0)
 
-Every method that took or returned a `Map` now uses typed models, and enum-like `String` arguments are now Dart enums. The method channel format is unchanged, so no native changes are needed.
+Every method that took or returned a `Map` now uses typed models, and enum-like `String` arguments are now Dart enums.
 
 **Errors.** Methods that make a request return a typed result on success and throw a `RadarException` when the request fails. They used to return a `Map` with a `status` string. Read the failure reason from `RadarException.status`. A `PlatformException`, which used to come back as `{'error': code}` or was only printed, now propagates. It means the plugin itself failed, not the Radar request. Any location the SDK obtained before a request failed is still delivered to `onClientLocation` and the background handler.
 
@@ -43,7 +43,9 @@ Check calls you don't `await`, such as a `Radar.trackOnce()` in an app lifecycle
 
 Methods that don't return a value, such as `setUserId` or `startTracking`, now return `Future<void>` and let a `PlatformException` propagate instead of printing it.
 
-**Locations.** Pass a `RadarLocation` wherever a `{'latitude': ..., 'longitude': ...}` map was accepted (`trackOnce`, `getContext`, `searchGeofences`, `searchPlaces`, `autocomplete`, `reverseGeocode`, `getDistance`, `getMatrix`, `mockTracking`). `mockTracking`'s `origin` and `destination` are now required.
+**Locations.** Pass a `RadarLocation` wherever a `{'latitude': ..., 'longitude': ...}` map was accepted (`trackOnce`, `getContext`, `searchGeofences`, `searchPlaces`, `autocomplete`, `reverseGeocode`, `getDistance`, `getMatrix`, `mockTracking`).
+
+**Required arguments.** Some arguments that were optional are now required: `tripOptions` on `startTrip`, `query` on `autocomplete`, `destination`, `modes` and `units` on `getDistance`, and `origin` and `destination` on `mockTracking`.
 
 **Options.**
 
@@ -52,7 +54,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `startTracking('responsive')` | `startTracking(RadarTrackingPreset.responsive)` |
 | `startTrackingCustom({...})` | `startTrackingCustom(RadarTrackingOptions(...))`, or `RadarTrackingOptions.responsive.copyWith(...)` |
 | `Radar.presetResponsive` (and the other preset maps) | `RadarTrackingOptions.responsive`, `.continuous`, `.efficient` |
-| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. `tripOptions` is now required. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
+| `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
 | `updateTrip(status: 'arrived', ...)` | `updateTrip(status: RadarTripStatus.arrived, ...)` |
 | `updateTripLeg(status: 'arrived', ...)` | `updateTripLeg(status: RadarTripLegStatus.arrived, ...)` |
 | `setNotificationOptions({...})` | `setNotificationOptions(RadarNotificationOptions(...))` |
@@ -68,7 +70,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 
 **Address validation.** `validateStreetAddress` and `validateAddressLabel` return a `RadarValidateAddressResult` with the address and its verification status.
 
-**Listeners.** Each `Radar.onX` callback receives a typed update instead of a `Map`: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. The `foregroundXCallback` static fields are no longer public, and the callback typedefs (`LocationCallback`, `ClientLocationCallback`, `ErrorCallback`, `LogCallback`, `EventsCallback`, `TokenCallback`, `IpChangedCallback`, `SharingChangedCallback`) are removed. Use the function types in the `onX` signatures instead.
+**Listeners.** Each `Radar.onX` callback receives a typed update: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. Most callbacks used to receive a `Map`. The `onIpChanged` callback used to take no arguments, and `onSharingChanged` took a `bool`; read it from `update.sharing` now. The `foregroundXCallback` static fields are no longer public, and the callback typedefs (`LocationCallback`, `ClientLocationCallback`, `ErrorCallback`, `LogCallback`, `EventsCallback`, `TokenCallback`, `IpChangedCallback`, `SharingChangedCallback`) are removed. Use the function types in the `onX` signatures instead.
 
 ```dart
 // Before

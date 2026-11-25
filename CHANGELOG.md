@@ -4,6 +4,7 @@
 - **Breaking:** Platform errors now throw a `PlatformException` instead of being printed or returned as `{'error': code}`. Methods without a return value return `Future<void>`.
 - **Breaking:** Removes `RadarBackgroundEvent` and `RadarBackgroundEventType`; the background handler receives a `RadarUpdate`.
 - Fixes `Radar.setNotificationOptions()` and `Radar.setForegroundServiceOptions()` never completing on iOS, and `Radar.logTermination()` never completing on Android. Platform-only methods now do nothing on the other platform.
+- Fixes `Radar.getTags()` always throwing.
 
 # 4.0.0-beta.4
 
