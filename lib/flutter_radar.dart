@@ -6,21 +6,21 @@ import 'package:flutter/services.dart';
 
 import 'src/models/parsing.dart';
 import 'src/models/radar_address.dart';
-import 'src/models/radar_event.dart';
-import 'src/models/radar_reveal_risk_token.dart';
-import 'src/models/radar_routes.dart';
-import 'src/models/radar_verified_location_token.dart';
 import 'src/models/radar_enums.dart';
+import 'src/models/radar_event.dart';
 import 'src/models/radar_exception.dart';
 import 'src/models/radar_foreground_service_options.dart';
 import 'src/models/radar_in_app_message.dart';
 import 'src/models/radar_location.dart';
 import 'src/models/radar_notification_options.dart';
 import 'src/models/radar_results.dart';
+import 'src/models/radar_reveal_risk_token.dart';
+import 'src/models/radar_routes.dart';
 import 'src/models/radar_status.dart';
 import 'src/models/radar_tracking_options.dart';
 import 'src/models/radar_trip.dart';
 import 'src/models/radar_update.dart';
+import 'src/models/radar_verified_location_token.dart';
 import 'src/radar_background.dart';
 
 export 'src/models/models.dart';
@@ -38,7 +38,7 @@ export 'src/radar_background.dart' show RadarBackgroundHandler;
 /// `PlatformException`. Errors from background tracking, where nothing is
 /// awaiting a result, are delivered to [onError] and the background handler.
 class Radar {
-  static const MethodChannel _channel = const MethodChannel('flutter_radar');
+  static const MethodChannel _channel = MethodChannel('flutter_radar');
 
   static void Function(RadarLocationUpdate update)? _onLocation;
   static void Function(RadarClientLocationUpdate update)? _onClientLocation;
