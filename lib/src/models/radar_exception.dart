@@ -9,6 +9,7 @@ import 'radar_status.dart';
 /// Errors from background tracking, where nothing is awaiting a result, are
 /// delivered to [Radar.onError] and the background handler instead.
 final class RadarException implements Exception {
+  /// Creates a [RadarException] with the given [status].
   const RadarException(this.status);
 
   /// Why the request failed. Never [RadarStatus.success].

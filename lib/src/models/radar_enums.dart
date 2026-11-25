@@ -16,7 +16,6 @@ enum RadarLogLevel implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a log level string. Unrecognized values become [none].
   @internal
   static RadarLogLevel fromWire(Object? value) => readEnum(values, value, none);
 }
@@ -48,10 +47,9 @@ enum RadarPermissionsStatus implements RadarWireEnum {
   @internal
   final String wireValue;
 
+  /// Whether foreground or background permissions are granted.
   bool get isGranted => this == grantedForeground || this == grantedBackground;
 
-  /// Parses a native permissions status. Unrecognized values become
-  /// [unknown].
   @internal
   static RadarPermissionsStatus fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -63,10 +61,19 @@ enum RadarPermissionsStatus implements RadarWireEnum {
 /// [truck] and [motorbike] are only supported by `getMatrix`. `getDistance`
 /// and `mockTracking` treat them as [car].
 enum RadarRouteMode implements RadarWireEnum {
+  /// Foot.
   foot('foot'),
+
+  /// Bike.
   bike('bike'),
+
+  /// Car.
   car('car'),
+
+  /// Truck.
   truck('truck'),
+
+  /// Motorbike.
   motorbike('motorbike');
 
   const RadarRouteMode(this.wireValue);
@@ -75,15 +82,16 @@ enum RadarRouteMode implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a route mode string. Unrecognized values become [car], matching
-  /// the native bridges.
   @internal
   static RadarRouteMode fromWire(Object? value) => readEnum(values, value, car);
 }
 
 /// The distance units for routing.
 enum RadarRouteUnits implements RadarWireEnum {
+  /// Imperial (feet).
   imperial('imperial'),
+
+  /// Metric (meters).
   metric('metric');
 
   const RadarRouteUnits(this.wireValue);
@@ -92,8 +100,6 @@ enum RadarRouteUnits implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a units string. Unrecognized values become [imperial], matching
-  /// the native bridges.
   @internal
   static RadarRouteUnits fromWire(Object? value) =>
       readEnum(values, value, imperial);

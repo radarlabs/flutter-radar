@@ -9,12 +9,21 @@ import 'parsing.dart';
 /// Used by [RadarTrackingOptions.desiredAccuracy], and by `Radar.trackOnce`
 /// and `Radar.getLocation`.
 enum RadarTrackingOptionsDesiredAccuracy implements RadarWireEnum {
+  /// The highest accuracy. Uses `PRIORITY_HIGH_ACCURACY` on Android and
+  /// `kCLLocationAccuracyBest` on iOS.
   high('high'),
+
+  /// Medium accuracy. Uses `PRIORITY_BALANCED_POWER_ACCURACY` on Android and
+  /// `kCLLocationAccuracyHundredMeters` on iOS.
   medium('medium'),
+
+  /// Low accuracy. Uses `PRIORITY_LOW_POWER` on Android and
+  /// `kCLLocationAccuracyKilometer` on iOS.
   low('low'),
 
-  /// Android only. iOS treats it as [medium], and `Radar.getLocation` treats
-  /// it as the SDK default on both platforms.
+  /// The lowest power. Uses `PRIORITY_NO_POWER`. Android only. iOS treats it
+  /// as [medium], and `Radar.getLocation` treats it as the SDK default on both
+  /// platforms.
   none('none');
 
   const RadarTrackingOptionsDesiredAccuracy(this.wireValue);
@@ -23,8 +32,6 @@ enum RadarTrackingOptionsDesiredAccuracy implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses an accuracy string. Unrecognized values become [medium], matching
-  /// both native SDKs.
   @internal
   static RadarTrackingOptionsDesiredAccuracy fromWire(Object? value) =>
       readEnum(values, value, medium);
@@ -47,8 +54,6 @@ enum RadarTrackingOptionsReplay implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a replay string. Unrecognized values become [none], matching both
-  /// native SDKs.
   @internal
   static RadarTrackingOptionsReplay fromWire(Object? value) =>
       readEnum(values, value, none);
@@ -74,7 +79,6 @@ enum RadarTrackingOptionsSyncLocations implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a sync string. Unrecognized values become [all].
   @internal
   static RadarTrackingOptionsSyncLocations fromWire(Object? value) =>
       readEnum(values, value, all);
@@ -95,7 +99,6 @@ enum RadarTrackingOptionsType implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a type string. Unrecognized values become [defaultType].
   @internal
   static RadarTrackingOptionsType fromWire(Object? value) =>
       readEnum(values, value, defaultType);
@@ -116,6 +119,8 @@ enum RadarTrackingOptionsType implements RadarWireEnum {
 /// Platform-only fields that are null are left out of [toMap], so the native
 /// SDK uses its default.
 final class RadarTrackingOptions {
+  /// Creates a [RadarTrackingOptions]. Prefer starting from a preset such as
+  /// [responsive] and using [copyWith].
   const RadarTrackingOptions({
     required this.desiredStoppedUpdateInterval,
     required this.desiredMovingUpdateInterval,
@@ -159,6 +164,7 @@ final class RadarTrackingOptions {
   /// How often to sync location updates to the server. Sent in whole seconds.
   final Duration desiredSyncInterval;
 
+  /// The desired accuracy of location updates.
   final RadarTrackingOptionsDesiredAccuracy desiredAccuracy;
 
   /// How long the device must stay within [stopDistance] to be considered
@@ -169,6 +175,7 @@ final class RadarTrackingOptions {
   /// be considered stopped.
   final int stopDistance;
 
+  /// Which failed location updates to replay to the server.
   final RadarTrackingOptionsReplay replay;
 
   /// Which location updates to sync to the server. Sent as `sync`.
@@ -269,6 +276,10 @@ final class RadarTrackingOptions {
 
   static bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
 
+  /// The iOS responsive preset. Updates about every 2.5 minutes when moving and
+  /// shuts down when stopped to save battery. Once stopped, the device must move
+  /// more than 100 meters to wake up and start moving again. Low battery usage.
+  /// Requires the `location` background mode.
   static const responsiveIOS = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration.zero,
     desiredMovingUpdateInterval: Duration(seconds: 150),
@@ -292,6 +303,14 @@ final class RadarTrackingOptions {
     useIndoorScan: false,
   );
 
+  /// The Android responsive preset. Updates about every 2.5 minutes while moving
+  /// and shuts down when stopped to save battery. Once stopped, the device must
+  /// move more than 100 meters to wake up and start moving again. Low battery
+  /// usage.
+  ///
+  /// Location updates may be delayed significantly by Doze Mode, App Standby,
+  /// and Background Location Limits, or if the device has connectivity issues,
+  /// low battery, or Wi-Fi disabled.
   static const responsiveAndroid = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration.zero,
     fastestStoppedUpdateInterval: Duration.zero,
@@ -315,6 +334,9 @@ final class RadarTrackingOptions {
     usePressure: false,
   );
 
+  /// The iOS continuous preset. Updates about every 30 seconds while moving or
+  /// stopped. Moderate battery usage. Shows the flashing blue status bar during
+  /// tracking.
   static const continuousIOS = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration(seconds: 30),
     desiredMovingUpdateInterval: Duration(seconds: 30),
@@ -338,6 +360,10 @@ final class RadarTrackingOptions {
     useIndoorScan: false,
   );
 
+  /// The Android continuous preset. Updates about every 30 seconds while moving
+  /// or stopped. Starts a foreground service. Moderate battery usage. Requires
+  /// declaring `io.radar.sdk.RadarForegroundService` in your app manifest.
+  /// Intended for trips and live tracking, not geofencing.
   static const continuousAndroid = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration(seconds: 30),
     fastestStoppedUpdateInterval: Duration(seconds: 30),
@@ -361,6 +387,10 @@ final class RadarTrackingOptions {
     usePressure: false,
   );
 
+  /// The iOS efficient preset. Uses the iOS visit monitoring service to update
+  /// only on stops and exits. Once stopped, the device must move several hundred
+  /// meters and trigger a visit departure to wake up and start moving again.
+  /// Lowest battery usage.
   static const efficientIOS = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration.zero,
     desiredMovingUpdateInterval: Duration.zero,
@@ -384,6 +414,10 @@ final class RadarTrackingOptions {
     useIndoorScan: false,
   );
 
+  /// The Android efficient preset. Updates as fast as every 6 minutes while
+  /// moving and periodically when stopped. Once stopped, the device must move
+  /// more than 100 meters and wait for at least 15 minutes to wake up and start
+  /// moving again. Lowest battery usage.
   static const efficientAndroid = RadarTrackingOptions(
     desiredStoppedUpdateInterval: Duration(seconds: 3600),
     fastestStoppedUpdateInterval: Duration(seconds: 1200),
@@ -407,8 +441,6 @@ final class RadarTrackingOptions {
     usePressure: false,
   );
 
-  /// Parses the options returned by `Radar.getTrackingOptions`. Missing
-  /// values fall back to what the native SDKs use for a missing key.
   @internal
   factory RadarTrackingOptions.fromMap(ChannelMap map) => RadarTrackingOptions(
     desiredStoppedUpdateInterval:
@@ -453,9 +485,6 @@ final class RadarTrackingOptions {
     useIndoorScan: readBool(map['useIndoorScan']),
   );
 
-  /// The map read by `RadarTrackingOptions.fromJson` on Android and
-  /// `trackingOptionsFromDictionary:` on iOS. Each platform ignores the
-  /// other's keys. Dates are sent as milliseconds since the epoch.
   @internal
   Map<String, Object?> toMap() => compact({
     'desiredStoppedUpdateInterval': wholeSeconds(

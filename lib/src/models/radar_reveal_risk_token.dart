@@ -17,7 +17,6 @@ enum RadarRevealRiskLevel implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a risk level. Unrecognized values become [none].
   @internal
   static RadarRevealRiskLevel fromWire(Object? value) =>
       readEnum(values, value, none);
@@ -65,17 +64,26 @@ final class RadarRevealRiskToken {
     this.raw = const {},
   });
 
+  /// The Radar ID of the reveal risk check.
   final String id;
 
   /// The response format selected by the server.
   final RadarResponseFormat format;
+
+  /// The risk information for the reveal risk check.
   final RadarRevealRiskTokenRisk? risk;
+
+  /// The network information for the reveal risk check.
   final RadarRevealRiskTokenNetwork? network;
+
+  /// The device information for the reveal risk check.
   final RadarRevealRiskTokenDevice? device;
 
   /// A signed JWT containing the risk, network, and device information.
   /// Verify it server-side with your secret key.
   final String? token;
+
+  /// When the token expires.
   final DateTime? expiresAt;
 
   /// How long the token was valid for when it was issued.
@@ -105,6 +113,7 @@ final class RadarRevealRiskTokenRisk {
     this.reasons = const [],
   });
 
+  /// The risk level.
   final RadarRevealRiskLevel level;
 
   /// The risk signals that contributed to [level].
@@ -122,8 +131,13 @@ final class RadarRevealRiskTokenRisk {
 final class RadarRevealRiskTokenNetwork {
   const RadarRevealRiskTokenNetwork({this.ipAddress, this.privacy, this.asn});
 
+  /// The IP address and IP geolocation for the reveal risk check.
   final RadarRevealRiskTokenNetworkIpAddress? ipAddress;
+
+  /// The IP privacy information for the reveal risk check.
   final RadarRevealRiskTokenNetworkPrivacy? privacy;
+
+  /// The IP ASN information for the reveal risk check.
   final RadarRevealRiskTokenNetworkAsn? asn;
 
   @internal

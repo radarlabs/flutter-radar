@@ -18,7 +18,10 @@ final class RadarRegion {
     this.expected = false,
   });
 
+  /// The Radar ID of the region.
   final String id;
+
+  /// The name of the region.
   final String name;
 
   /// The region code, such as `US` or `NY`.
@@ -30,18 +33,28 @@ final class RadarRegion {
   /// The country flag emoji, for countries.
   final String? flag;
 
-  /// Whether the region is allowed by the project's fraud settings.
+  /// Whether the jurisdiction is allowed. May be `false` if Fraud is not
+  /// enabled.
   final bool allowed;
 
-  /// Whether the region passed all fraud jurisdiction checks.
+  /// Whether the region passed all fraud jurisdiction checks. May be `false`
+  /// if Fraud is not enabled.
   final bool passed;
+
+  /// Whether the user is in an exclusion zone for the jurisdiction. May be
+  /// `false` if Fraud is not enabled.
   final bool inExclusionZone;
+
+  /// Whether the user is too close to the border for the jurisdiction. May be
+  /// `false` if Fraud is not enabled.
   final bool inBufferZone;
 
-  /// Distance to the region's border in meters.
+  /// Distance to the region's border in meters. May be 0 if Fraud is not
+  /// enabled.
   final double? distanceToBorder;
 
-  /// Whether the user was expected to be in this region.
+  /// Whether the user was expected to be in this region, based on the values
+  /// passed to [Radar.setExpectedJurisdiction].
   final bool expected;
 
   @internal

@@ -57,11 +57,6 @@ enum RadarEventType implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses an event type string.
-  ///
-  /// Any string that is not a `user.*` type or `unknown` is a conversion: iOS
-  /// sends `custom`, and the API sends the conversion name itself.
-  /// Unrecognized `user.*` types and non-strings become [unknown].
   @internal
   static RadarEventType fromWire(Object? value) {
     if (value is! String) return unknown;
@@ -82,7 +77,6 @@ enum RadarEventVerification {
   @internal
   final int value;
 
-  /// Parses a verification value. Returns null if [value] is not 1, 0, or -1.
   @internal
   static RadarEventVerification? fromWire(Object? value) {
     final number = readInt(value);
@@ -95,9 +89,16 @@ enum RadarEventVerification {
 
 /// How confident Radar is in an event.
 enum RadarEventConfidence {
+  /// Unknown confidence.
   none(0),
+
+  /// Low confidence.
   low(1),
+
+  /// Medium confidence.
   medium(2),
+
+  /// High confidence.
   high(3);
 
   const RadarEventConfidence(this.value);
@@ -105,7 +106,6 @@ enum RadarEventConfidence {
   @internal
   final int value;
 
-  /// Parses a confidence value. Unrecognized values become [none].
   @internal
   static RadarEventConfidence fromWire(Object? value) {
     final number = readInt(value);
@@ -141,7 +141,10 @@ final class RadarEvent {
     this.metadata,
   });
 
+  /// The Radar ID of the event.
   final String id;
+
+  /// The type of the event.
   final RadarEventType type;
 
   /// When the event occurred on the device.
@@ -174,6 +177,8 @@ final class RadarEvent {
 
   /// For trip events, the trip.
   final RadarTrip? trip;
+
+  /// For fraud events, the fraud checks.
   final RadarFraud? fraud;
 
   /// For place entry events, alternate place candidates.
@@ -185,6 +190,8 @@ final class RadarEvent {
   /// Whether the event was verified. Null unless the payload came from the
   /// API, as the events in a [RadarVerifiedLocationToken] do.
   final RadarEventVerification? verification;
+
+  /// The confidence level of the event.
   final RadarEventConfidence confidence;
 
   /// For exit events, how long the user was inside.
@@ -196,6 +203,8 @@ final class RadarEvent {
 
   /// Whether the event was replayed from an offline buffer.
   final bool replayed;
+
+  /// The metadata of the event. Set on conversion events only.
   final Map<String, Object?>? metadata;
 
   /// Returns null if [map] has no `createdAt`. Both native SDKs always send

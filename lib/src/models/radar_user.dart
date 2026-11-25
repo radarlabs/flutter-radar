@@ -11,26 +11,43 @@ import 'radar_trip.dart';
 
 /// What triggered a location update.
 enum RadarLocationSource implements RadarWireEnum {
+  /// A foreground location update.
   foregroundLocation('FOREGROUND_LOCATION'),
+
+  /// A background location update.
   backgroundLocation('BACKGROUND_LOCATION'),
+
+  /// A location passed in manually, such as to [Radar.trackOnce].
   manualLocation('MANUAL_LOCATION'),
 
-  /// iOS only.
+  /// A visit arrival detected by the device. iOS only.
   visitArrival('VISIT_ARRIVAL'),
 
-  /// iOS only.
+  /// A visit departure detected by the device. iOS only.
   visitDeparture('VISIT_DEPARTURE'),
+
+  /// A geofence entry detected by the device.
   geofenceEnter('GEOFENCE_ENTER'),
 
-  /// Android only.
+  /// A geofence dwell detected by the device. Android only.
   geofenceDwell('GEOFENCE_DWELL'),
+
+  /// A geofence exit detected by the device.
   geofenceExit('GEOFENCE_EXIT'),
+
+  /// A mock location, such as from [Radar.mockTracking].
   mockLocation('MOCK_LOCATION'),
+
+  /// A beacon entry detected by the device.
   beaconEnter('BEACON_ENTER'),
+
+  /// A beacon exit detected by the device.
   beaconExit('BEACON_EXIT'),
 
-  /// iOS only.
+  /// A location from the Radar indoors SDK. iOS only.
   indoors('INDOORS'),
+
+  /// The source is unknown.
   unknown('UNKNOWN');
 
   const RadarLocationSource(this.wireValue);
@@ -39,7 +56,6 @@ enum RadarLocationSource implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a native location source. Unrecognized values become [unknown].
   @internal
   static RadarLocationSource fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -47,11 +63,22 @@ enum RadarLocationSource implements RadarWireEnum {
 
 /// The user's activity, as detected by the device's motion sensors.
 enum RadarActivityType implements RadarWireEnum {
+  /// The activity is unknown.
   unknown('unknown'),
+
+  /// Stationary.
   stationary('stationary'),
+
+  /// Walking.
   foot('foot'),
+
+  /// Running.
   run('run'),
+
+  /// Biking.
   bike('bike'),
+
+  /// Driving.
   car('car');
 
   const RadarActivityType(this.wireValue);
@@ -60,7 +87,6 @@ enum RadarActivityType implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses an activity type. Unrecognized values become [unknown].
   @internal
   static RadarActivityType fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -70,7 +96,10 @@ enum RadarActivityType implements RadarWireEnum {
 final class RadarSegment {
   const RadarSegment({required this.description, required this.externalId});
 
+  /// The description of the segment.
   final String description;
+
+  /// The external ID of the segment.
   final String externalId;
 
   @internal
@@ -93,7 +122,6 @@ enum RadarExpectedAddressConfidence implements RadarWireEnum {
   @internal
   final String wireValue;
 
-  /// Parses a confidence string. Unrecognized values become [unknown].
   @internal
   static RadarExpectedAddressConfidence fromWire(Object? value) =>
       readEnum(values, value, unknown);
@@ -148,7 +176,7 @@ RadarCoordinate? _readCoordinate(Object? latitude, Object? longitude) {
       : RadarCoordinate(latitude: lat, longitude: lng);
 }
 
-/// Insights about where the user is relative to their usual locations.
+/// The user's learned home, work, and travel state.
 /// Currently only sent by iOS.
 final class RadarUserLocationInsights {
   const RadarUserLocationInsights({
@@ -158,8 +186,13 @@ final class RadarUserLocationInsights {
     this.commuting,
   });
 
+  /// Whether the user is at their learned home location.
   final bool atHome;
+
+  /// Whether the user is at their learned work location.
   final bool atWork;
+
+  /// Whether the user is traveling away from home.
   final bool traveling;
 
   /// Whether the user is commuting. Null when iOS doesn't know.
@@ -212,6 +245,8 @@ final class RadarUser {
 
   /// The ID set with `Radar.setUserId`. Null if the user is not identified.
   final String? userId;
+
+  /// The device ID of the user.
   final String? deviceId;
 
   /// The description set with `Radar.setDescription`.
@@ -224,16 +259,23 @@ final class RadarUser {
   /// [RadarLocation.accuracy] is set only when the payload came from the API,
   /// as the user in a [RadarVerifiedLocationToken] does.
   final RadarLocation location;
+
+  /// The user's current activity type.
   final RadarActivityType activityType;
 
-  /// The geofences the user is in.
+  /// The geofences the user is in. Empty if the user is not in any
+  /// geofences. See the
+  /// [geofences docs](https://radar.com/documentation/geofences).
   final List<RadarGeofence> geofences;
 
   /// The place the user is at. Null if the user is not at a place or Places
-  /// is not enabled.
+  /// is not enabled. See the
+  /// [places docs](https://radar.com/documentation/places).
   final RadarPlace? place;
 
-  /// The beacons the user is near.
+  /// The beacons the user is near. Empty if the user is not near any beacons
+  /// or Beacons is not enabled. See the
+  /// [beacons docs](https://radar.com/documentation/beacons).
   final List<RadarBeacon> beacons;
 
   /// Whether the user is stopped.
@@ -241,24 +283,46 @@ final class RadarUser {
 
   /// Whether the user was last updated in the foreground.
   final bool foreground;
+
+  /// The user's current country. Null if country is not available or
+  /// Regions is not enabled. See the [regions docs](https://radar.com/documentation/regions).
   final RadarRegion? country;
+
+  /// The user's current state. Null if state is not available or Regions is
+  /// not enabled. See the [regions docs](https://radar.com/documentation/regions).
   final RadarRegion? state;
 
-  /// The user's designated market area.
+  /// The user's current designated market area (DMA). Null if DMA is not
+  /// available or Regions is not enabled. See the
+  /// [regions docs](https://radar.com/documentation/regions).
   final RadarRegion? dma;
+
+  /// The user's current postal code. Null if postal code is not available or
+  /// Regions is not enabled. See the [regions docs](https://radar.com/documentation/regions).
   final RadarRegion? postalCode;
+
+  /// The chains near the user. Empty if no chains are nearby or nearby chains
+  /// are not enabled.
   final List<RadarChain> nearbyPlaceChains;
+
+  /// The user's segments. Empty if segments are not enabled.
   final List<RadarSegment> segments;
+
+  /// The user's top chains. Empty if segments are not enabled.
   final List<RadarChain> topChains;
 
   /// What triggered the user's current location.
   final RadarLocationSource source;
 
-  /// The user's current trip. Null if the user is not on a trip.
+  /// The user's current trip. Null if the user is not on a trip. See the
+  /// [trip tracking docs](https://radar.com/documentation/trip-tracking).
   final RadarTrip? trip;
 
-  /// Whether debug mode is on for the user.
+  /// Whether the user has been marked as debug in the dashboard.
   final bool debug;
+
+  /// The user's current fraud state. Null if Fraud is not enabled. See the
+  /// [fraud docs](https://radar.com/documentation/fraud).
   final RadarFraud? fraud;
 
   /// The user's altitude in meters, from the barometer when available.
@@ -268,7 +332,8 @@ final class RadarUser {
   /// expected address is set.
   final RadarExpectedAddress? expectedAddress;
 
-  /// Currently only sent by iOS.
+  /// The user's learned home, work, and travel state. Null if location
+  /// insights are not enabled. Currently only sent by iOS.
   final RadarUserLocationInsights? locationInsights;
 
   /// Returns null if [map] has no location. Both native SDKs always send one.

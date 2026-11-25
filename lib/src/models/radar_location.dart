@@ -6,11 +6,12 @@ import 'parsing.dart';
 final class RadarCoordinate {
   const RadarCoordinate({required this.latitude, required this.longitude});
 
+  /// The latitude in degrees.
   final double latitude;
+
+  /// The longitude in degrees.
   final double longitude;
 
-  /// Parses a GeoJSON `Point` (`{"type": "Point", "coordinates": [lng, lat]}`)
-  /// or a map with `latitude` and `longitude` keys.
   @internal
   static RadarCoordinate? fromMap(ChannelMap? map) {
     if (map == null) return null;
@@ -28,7 +29,6 @@ final class RadarCoordinate {
     return RadarCoordinate(latitude: latitude, longitude: longitude);
   }
 
-  /// Parses a GeoJSON `[longitude, latitude]` pair.
   @internal
   static RadarCoordinate? fromLngLat(Object? value) {
     if (value is! List || value.length < 2) return null;
@@ -78,7 +78,10 @@ final class RadarLocation {
     this.mocked,
   });
 
+  /// The latitude in degrees.
   final double latitude;
+
+  /// The longitude in degrees.
   final double longitude;
 
   /// Horizontal accuracy in meters.
@@ -86,19 +89,28 @@ final class RadarLocation {
 
   /// Altitude in meters.
   final double? altitude;
+
+  /// Vertical accuracy of [altitude] in meters.
   final double? verticalAccuracy;
 
-  /// Speed in meters per second.
+  /// Speed in meters per second. On iOS, negative if unavailable.
   final double? speed;
+
+  /// Accuracy of [speed] in meters per second.
   final double? speedAccuracy;
 
-  /// Course (bearing) in degrees.
+  /// Course (bearing) in degrees, measured clockwise from true north. On iOS,
+  /// negative if unavailable.
   final double? course;
+
+  /// Accuracy of [course] in degrees.
   final double? courseAccuracy;
 
-  /// Whether the platform reported the location as simulated.
+  /// Whether the location is mocked. On iOS, this is also true for locations
+  /// from an external accessory, and requires iOS 15 or later.
   final bool? mocked;
 
+  /// The [latitude] and [longitude] as a [RadarCoordinate].
   RadarCoordinate get coordinate =>
       RadarCoordinate(latitude: latitude, longitude: longitude);
 
