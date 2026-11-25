@@ -47,10 +47,37 @@ Future<void> initializeRadar() async {
 
 Call `Radar.registerBackgroundHandler()` during normal Dart application initialization. No custom Android `Application` or iOS `AppDelegate` setup is required.
 
-The durable background handler and `Radar.onX` listeners are independent subscriptions:
+To react to updates while the app is running, listen to a `Radar.onX` stream, such as `Radar.onLocation` or `Radar.onEvents`. Each is a broadcast stream, so any number of listeners can subscribe, and updates that arrive with no listener are dropped.
+
+```dart
+final subscription = Radar.onEvents.listen((update) {
+  for (final event in update.events) {
+    print(event.type);
+  }
+});
+
+// Later, to stop listening:
+await subscription.cancel();
+```
+
+Cancel a subscription when whatever owns it goes away, such as in a `State`'s `dispose`. To show the latest update in the UI, pass the stream to a `StreamBuilder`, which subscribes and cancels for you:
+
+```dart
+StreamBuilder<RadarLocationUpdate>(
+  stream: Radar.onLocation,
+  builder: (context, snapshot) {
+    final location = snapshot.data?.location;
+    return Text(location == null
+        ? 'Waiting for a location'
+        : '${location.latitude}, ${location.longitude}');
+  },
+)
+```
+
+The durable background handler and the `Radar.onX` streams are independent subscriptions:
 
 - The registered background handler is the durable event sink and can run in the primary Flutter engine or a headless engine.
-- `Radar.onX` listeners are engine-scoped observers intended for active application or UI behavior.
+- `Radar.onX` streams are engine-scoped observers intended for active application or UI behavior.
 - When both are registered on a running engine, both may receive the same underlying event.
 - Durable events are delivered serially and queued until the appropriate Dart handler is ready.
 

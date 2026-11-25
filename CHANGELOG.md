@@ -3,6 +3,7 @@
 - **Breaking:** Replaces the `Map`-based public API with typed models. Methods that make a request return typed results and throw a `RadarException` when the request fails, options and locations are typed classes, enum-like strings are Dart enums, and listeners and the background handler receive typed `RadarUpdate`s. See [MIGRATION.MD](MIGRATION.MD).
 - **Breaking:** Platform errors now throw a `PlatformException` instead of being printed or returned as `{'error': code}`. Methods without a return value return `Future<void>`.
 - **Breaking:** Removes `RadarBackgroundEvent` and `RadarBackgroundEventType`; the background handler receives a `RadarUpdate`.
+- **Breaking:** Replaces the `Radar.onX(callback)` and `Radar.offX()` listener pairs with broadcast streams of the same names, such as `Radar.onLocation.listen(...)`. Cancel the `StreamSubscription` to stop listening. Each stream accepts any number of listeners, and `RadarExistingCallbackException` is removed.
 - **Breaking:** Removes `Radar.startTrackingCustom()`. `Radar.startTracking()` takes a `RadarTrackingOptions`, such as `RadarTrackingOptions.responsive` or a preset adjusted with `copyWith()`.
 - Fixes `Radar.setNotificationOptions()` and `Radar.setForegroundServiceOptions()` never completing on iOS, and `Radar.logTermination()` never completing on Android. Platform-only methods now do nothing on the other platform.
 - Fixes `Radar.getTags()` always throwing.

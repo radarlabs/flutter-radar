@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_radar/flutter_radar.dart';
@@ -762,20 +764,22 @@ void main() {
   });
 
   group('listeners', () {
+    final subscriptions = <StreamSubscription<Object?>>[];
+
     setUp(() async {
       await Radar.initialize('prj_test_pk');
     });
 
-    tearDown(() {
-      Radar.offLocation();
-      Radar.offClientLocation();
-      Radar.offEvents();
-      Radar.offError();
-      Radar.offLog();
-      Radar.offToken();
-      Radar.offIpChanged();
-      Radar.offSharingChanged();
+    tearDown(() async {
+      for (final subscription in subscriptions) {
+        await subscription.cancel();
+      }
+      subscriptions.clear();
     });
+
+    void listen<T>(Stream<T> stream, void Function(T update) onData) {
+      subscriptions.add(stream.listen(onData));
+    }
 
     Future<void> send(String method, Map<String, Object?> payload) async {
       await messenger.handlePlatformMessage(
@@ -785,11 +789,13 @@ void main() {
         ),
         null,
       );
+      // Broadcast streams deliver asynchronously.
+      await pumpEventQueue();
     }
 
     test('onEvents receives typed events and user', () async {
       RadarEventsUpdate? received;
-      Radar.onEvents((update) => received = update);
+      listen(Radar.onEvents, (update) => received = update);
 
       await send('events', {
         'events': [eventMap],
@@ -804,7 +810,7 @@ void main() {
       'onEvents tolerates iOS sending an empty string for no user',
       () async {
         RadarEventsUpdate? received;
-        Radar.onEvents((update) => received = update);
+        listen(Radar.onEvents, (update) => received = update);
 
         await send('events', {
           'events': [eventMap],
@@ -821,10 +827,10 @@ void main() {
       RadarClientLocationUpdate? clientLocation;
       RadarErrorUpdate? error;
       RadarLogUpdate? log;
-      Radar.onLocation((u) => location = u);
-      Radar.onClientLocation((u) => clientLocation = u);
-      Radar.onError((u) => error = u);
-      Radar.onLog((u) => log = u);
+      listen(Radar.onLocation, (u) => location = u);
+      listen(Radar.onClientLocation, (u) => clientLocation = u);
+      listen(Radar.onError, (u) => error = u);
+      listen(Radar.onLog, (u) => log = u);
 
       await send('location', {'location': locationMap, 'user': userMap});
       await send('clientLocation', {
@@ -846,9 +852,9 @@ void main() {
       RadarTokenUpdate? token;
       var ipChanged = false;
       bool? sharing;
-      Radar.onToken((u) => token = u);
-      Radar.onIpChanged((_) => ipChanged = true);
-      Radar.onSharingChanged((u) => sharing = u.sharing);
+      listen(Radar.onToken, (u) => token = u);
+      listen(Radar.onIpChanged, (_) => ipChanged = true);
+      listen(Radar.onSharingChanged, (u) => sharing = u.sharing);
 
       await send('token', {
         'token': {'token': 'abc', 'passed': false},
@@ -862,12 +868,40 @@ void main() {
       expect(sharing, isTrue);
     });
 
-    test('registering a second listener throws', () {
-      Radar.onLog((_) {});
-      expect(
-        () => Radar.onLog((_) {}),
-        throwsA(isA<RadarExistingCallbackException>()),
-      );
+    test('every listener receives each update', () async {
+      final messages = <String>[];
+      listen(Radar.onLog, (u) => messages.add('first: ${u.message}'));
+      listen(Radar.onLog, (u) => messages.add('second: ${u.message}'));
+
+      await send('log', {'message': 'hello'});
+
+      expect(messages, ['first: hello', 'second: hello']);
+    });
+
+    test('a canceled listener stops receiving updates', () async {
+      final messages = <String>[];
+      final subscription = Radar.onLog.listen((u) => messages.add(u.message));
+
+      await send('log', {'message': 'before'});
+      await subscription.cancel();
+      await send('log', {'message': 'after'});
+
+      expect(messages, ['before']);
+    });
+
+    test('updates with no listener are dropped', () async {
+      await send('log', {'message': 'dropped'});
+
+      final messages = <String>[];
+      listen(Radar.onLog, (u) => messages.add(u.message));
+      await send('log', {'message': 'kept'});
+
+      expect(messages, ['kept']);
+    });
+
+    test('streams are equal across reads', () {
+      // StreamBuilder resubscribes when its stream isn't == the previous one.
+      expect(Radar.onLocation == Radar.onLocation, isTrue);
     });
   });
 }
