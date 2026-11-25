@@ -14,7 +14,7 @@ enum RadarAddressConfidence implements RadarWireEnum {
   /// Fallback.
   fallback('fallback'),
 
-  /// Unknown. Also used for unrecognized values.
+  /// Unknown, or a value this version of the plugin doesn't recognize.
   none('none');
 
   const RadarAddressConfidence(this.wireValue);
@@ -45,7 +45,7 @@ enum RadarAddressVerificationStatus implements RadarWireEnum {
   /// Unable to verify. The output fields contain the input data.
   unverified('UNVERIFIED'),
 
-  /// Unknown. Also used for unrecognized values.
+  /// Unknown, or a value this version of the plugin doesn't recognize.
   none('NONE');
 
   const RadarAddressVerificationStatus(this.wireValue);

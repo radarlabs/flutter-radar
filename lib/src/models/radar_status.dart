@@ -47,7 +47,7 @@ enum RadarStatus implements RadarWireEnum {
   /// Internal server error.
   errorServer('ERROR_SERVER'),
 
-  /// Unknown error. Also used for unrecognized status strings.
+  /// Unknown error, or a status this version of the plugin doesn't recognize.
   errorUnknown('ERROR_UNKNOWN');
 
   const RadarStatus(this.wireValue);
