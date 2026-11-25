@@ -188,28 +188,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       '${env.label} · ${host.isEmpty ? 'no Local URL' : host} · '
           '${keyPrefix(settings.resolvedPublishableKey)}',
     );
-    await Radar.initialize(
-      settings.resolvedPublishableKey,
-      options: RadarInitializeOptions(
-        fraud: true,
-        trackVerifiedAutoFailover: true,
-        networkTimeout: const Duration(seconds: 20),
-        ipChangeDebounceInterval: const Duration(seconds: 5),
-      ),
-    );
-    await Radar.registerBackgroundHandler(_onBackgroundUpdate);
-    await Radar.setUserId('flutter');
-    await Radar.setDescription('Flutter');
-    await Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
-    await Radar.setLogLevel(RadarLogLevel.info);
-    await Radar.setAnonymousTrackingEnabled(false);
+    // initState can't await this, so catch failures here; otherwise they'd
+    // be uncaught and the rest of the setup would be skipped silently.
+    try {
+      await Radar.initialize(
+        settings.resolvedPublishableKey,
+        options: RadarInitializeOptions(
+          fraud: true,
+          trackVerifiedAutoFailover: true,
+          networkTimeout: const Duration(seconds: 20),
+          ipChangeDebounceInterval: const Duration(seconds: 5),
+        ),
+      );
+      await Radar.registerBackgroundHandler(_onBackgroundUpdate);
+      await Radar.setUserId('flutter');
+      await Radar.setDescription('Flutter');
+      await Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
+      await Radar.setLogLevel(RadarLogLevel.info);
+      await Radar.setAnonymousTrackingEnabled(false);
 
-    for (final def in _listenerDefs) {
-      _setListener(def, true);
+      for (final def in _listenerDefs) {
+        _setListener(def, true);
+      }
+
+      await _refreshPermissions();
+      console.log('initialize', 'Radar initialized');
+    } catch (e) {
+      console.logError('initialize', e);
     }
-
-    await _refreshPermissions();
-    console.log('initialize', 'Radar initialized');
   }
 
   Future<void> _refreshPermissions() async {

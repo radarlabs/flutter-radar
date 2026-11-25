@@ -15,9 +15,15 @@ analyzer:
 linter:
   rules:
     # Most Radar methods return a Future that throws on failure, so a
-    # forgotten await means an unhandled error. (discarded_futures would also
-    # cover non-async functions, but older analyzers in the supported range
-    # report false positives on closures that return a Future.)
+    # forgotten await means an unhandled error.
+    #
+    # unawaited_futures only checks async functions. discarded_futures also
+    # catches Futures dropped in synchronous code, such as initState,
+    # lifecycle callbacks and onPressed handlers, but the analyzer in Flutter
+    # 3.29 wrongly flags arrow functions that return a Future
+    # (`() => Radar.sdkVersion()`). Enable it once the minimum supported
+    # Flutter version is past that bug; the code already passes it on
+    # Flutter 3.47.
     - unawaited_futures
     - avoid_dynamic_calls
     - always_declare_return_types
