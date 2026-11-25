@@ -93,7 +93,10 @@ Object? describe(Object? value) => switch (value) {
     'failureReasons': value.failureReasons,
     'user': describe(value.user),
   },
-  RadarRevealRiskToken() => {'id': value.id, 'level': describe(value.risk?.level)},
+  RadarRevealRiskToken() => {
+    'id': value.id,
+    'level': describe(value.risk?.level),
+  },
   RadarLocationResult() => {
     'location': describe(value.location),
     'stopped': value.stopped,

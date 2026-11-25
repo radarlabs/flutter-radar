@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -11,11 +12,8 @@ class ConsoleEntry {
   final String body;
   final DateTime timestamp;
 
-  ConsoleEntry({
-    required this.label,
-    required this.status,
-    required this.body,
-  }) : timestamp = DateTime.now();
+  ConsoleEntry({required this.label, required this.status, required this.body})
+    : timestamp = DateTime.now();
 
   String get formattedTime {
     final h = timestamp.hour.toString().padLeft(2, '0');
@@ -39,11 +37,13 @@ class ConsoleController extends ChangeNotifier {
   bool get isEmpty => _entries.isEmpty;
 
   void log(String label, Object? result, {ConsoleStatus? status}) {
-    _add(ConsoleEntry(
-      label: label,
-      status: status ?? ConsoleStatus.success,
-      body: prettyValue(result),
-    ));
+    _add(
+      ConsoleEntry(
+        label: label,
+        status: status ?? ConsoleStatus.success,
+        body: prettyValue(result),
+      ),
+    );
   }
 
   /// Listener events fire continuously once tracking starts, so they go to the
@@ -54,11 +54,13 @@ class ConsoleController extends ChangeNotifier {
   }
 
   void logError(String label, Object error) {
-    _add(ConsoleEntry(
-      label: label,
-      status: ConsoleStatus.error,
-      body: error.toString(),
-    ));
+    _add(
+      ConsoleEntry(
+        label: label,
+        status: ConsoleStatus.error,
+        body: error.toString(),
+      ),
+    );
   }
 
   void clear() {
@@ -151,14 +153,17 @@ class _ConsolePanelState extends State<ConsolePanel> {
               child: SizedBox(
                 height: _expanded ? maxHeight : 0,
                 width: double.infinity,
-                child: entries.isEmpty
-                    ? _emptyState(theme)
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                        itemCount: entries.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 6),
-                        itemBuilder: (context, i) => _EntryTile(entry: entries[i]),
-                      ),
+                child:
+                    entries.isEmpty
+                        ? _emptyState(theme)
+                        : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                          itemCount: entries.length,
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 6),
+                          itemBuilder:
+                              (context, i) => _EntryTile(entry: entries[i]),
+                        ),
               ),
             ),
           ],
@@ -198,17 +203,22 @@ class _ConsolePanelState extends State<ConsolePanel> {
             IconButton(
               tooltip: 'Copy all',
               icon: const Icon(Icons.copy_all, size: 20),
-              onPressed: count == 0
-                  ? null
-                  : () {
-                      Clipboard.setData(ClipboardData(text: console.asText()));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Console copied'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
+              onPressed:
+                  count == 0
+                      ? null
+                      : () {
+                        unawaited(
+                          Clipboard.setData(
+                            ClipboardData(text: console.asText()),
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Console copied'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
             ),
             IconButton(
               tooltip: 'Clear',
@@ -253,17 +263,23 @@ class _EntryTileState extends State<_EntryTile> {
     final entry = widget.entry;
     final lines = entry.body.split('\n');
     final isTruncatable = lines.length > _collapsedLineLimit;
-    final body = _expanded || !isTruncatable
-        ? entry.body
-        : '${lines.take(_collapsedLineLimit).join('\n')}\n…';
+    final body =
+        _expanded || !isTruncatable
+            ? entry.body
+            : '${lines.take(_collapsedLineLimit).join('\n')}\n…';
 
     return Card(
       margin: EdgeInsets.zero,
       color: theme.colorScheme.surface,
       child: InkWell(
-        onTap: isTruncatable ? () => setState(() => _expanded = !_expanded) : null,
+        onTap:
+            isTruncatable ? () => setState(() => _expanded = !_expanded) : null,
         onLongPress: () {
-          Clipboard.setData(ClipboardData(text: '${entry.label}\n${entry.body}'));
+          unawaited(
+            Clipboard.setData(
+              ClipboardData(text: '${entry.label}\n${entry.body}'),
+            ),
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Entry copied'),
