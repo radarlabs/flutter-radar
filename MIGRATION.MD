@@ -62,6 +62,7 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 | `showInAppMessage({...})` | `showInAppMessage(RadarInAppMessage(...))` |
 | `setLogLevel('debug')` | `setLogLevel(RadarLogLevel.debug)` |
 | `getPermissionsStatus()` returns a `String?` | returns a `RadarPermissionsStatus` |
+| `requestPermissions(background)` returns the status as a `String` | returns a `RadarPermissionsStatus` |
 | `desiredAccuracy: 'high'` | `desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high` |
 | `getLocation('high')` | `getLocation(desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high)`. The argument is now named. |
 | `mode: 'car'`, `modes: ['car']`, `units: 'imperial'` | `RadarRouteMode.car`, `{RadarRouteMode.car}`, `RadarRouteUnits.imperial` |

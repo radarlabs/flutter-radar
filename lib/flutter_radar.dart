@@ -141,8 +141,12 @@ class Radar {
     );
   }
 
-  static Future<void> requestPermissions(bool background) async {
-    await _invoke<void>('requestPermissions', {'background': background});
+  static Future<RadarPermissionsStatus> requestPermissions(
+    bool background,
+  ) async {
+    return RadarPermissionsStatus.fromWire(
+      await _invoke<String>('requestPermissions', {'background': background}),
+    );
   }
 
   static Future<void> setUserId(String userId) async {
