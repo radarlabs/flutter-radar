@@ -193,11 +193,10 @@ class Radar {
     }, RadarTrackResult.fromMap);
   }
 
-  static Future<void> startTracking(RadarTrackingPreset preset) async {
-    await _invoke<void>('startTracking', {'preset': preset.wireValue});
-  }
-
-  static Future<void> startTrackingCustom(RadarTrackingOptions options) async {
+  /// Starts tracking with [options]. Pass a preset, such as
+  /// [RadarTrackingOptions.responsive], or adjust one with
+  /// [RadarTrackingOptions.copyWith].
+  static Future<void> startTracking(RadarTrackingOptions options) async {
     await _invoke<void>('startTrackingCustom', options.toMap());
   }
 

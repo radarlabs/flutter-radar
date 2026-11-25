@@ -225,19 +225,22 @@ void main() {
       await expectLater(Radar.getTrip(), throwsA(isA<PlatformException>()));
     });
 
-    test('startTracking sends the preset', () async {
-      await Radar.startTracking(RadarTrackingPreset.continuous);
+    test('startTracking sends a preset as its full options', () async {
+      await Radar.startTracking(RadarTrackingOptions.continuousAndroid);
 
-      expect(lastCall().method, 'startTracking');
-      expect(lastCall().arguments, {'preset': 'continuous'});
+      expect(lastCall().method, 'startTrackingCustom');
+      expect(
+        lastCall().arguments,
+        RadarTrackingOptions.continuousAndroid.toMap(),
+      );
     });
 
-    test('startTrackingCustom sends the options map', () async {
+    test('startTracking sends adjusted options', () async {
       final options = RadarTrackingOptions.efficientAndroid.copyWith(
         beacons: true,
       );
 
-      await Radar.startTrackingCustom(options);
+      await Radar.startTracking(options);
 
       expect(lastCall().method, 'startTrackingCustom');
       expect(lastCall().arguments, options.toMap());

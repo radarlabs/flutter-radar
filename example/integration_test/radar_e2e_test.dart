@@ -249,14 +249,14 @@ void main() {
         if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
         }
-        await Radar.startTracking(RadarTrackingPreset.responsive);
+        await Radar.startTracking(RadarTrackingOptions.responsive);
         expect(await Radar.isTracking(), isTrue);
         expect(await Radar.getTrackingOptions(), isNotNull);
         await Radar.stopTracking();
         expect(await Radar.isTracking(), isFalse);
       });
 
-      test('startTrackingCustom and isUsingRemoteTrackingOptions', () async {
+      test('startTracking with adjusted options', () async {
         if (!await hasLocationPermission()) {
           return markTestSkipped(_noPermission);
         }
@@ -264,7 +264,7 @@ void main() {
         // native.
         const interval = Duration(seconds: 170);
         await replied(
-          Radar.startTrackingCustom(
+          Radar.startTracking(
             RadarTrackingOptions.responsive.copyWith(
               desiredStoppedUpdateInterval: interval,
             ),

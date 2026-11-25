@@ -17,10 +17,6 @@ void main() {
         RadarTrackingOptions.continuousIOS,
       );
       expect(RadarTrackingOptions.efficient, RadarTrackingOptions.efficientIOS);
-      expect(
-        RadarTrackingPreset.continuous.options,
-        RadarTrackingOptions.continuousIOS,
-      );
     });
 
     test('getters pick the Android variant on Android', () {
@@ -35,10 +31,6 @@ void main() {
       );
       expect(
         RadarTrackingOptions.efficient,
-        RadarTrackingOptions.efficientAndroid,
-      );
-      expect(
-        RadarTrackingPreset.efficient.options,
         RadarTrackingOptions.efficientAndroid,
       );
     });
@@ -155,7 +147,7 @@ void main() {
         'batchSize': 0,
         'type': 'default',
       });
-      // What Android reports after startTrackingCustom(responsiveAndroid).
+      // What Android reports after startTracking(responsiveAndroid).
       expect(options, RadarTrackingOptions.responsiveAndroid);
       expect(
         RadarTrackingOptions.fromMap({'syncGeofences': 'none'}).syncGeofences,
@@ -284,11 +276,6 @@ void main() {
         'in-geofence',
         'is-user',
       ]);
-      expect(RadarTrackingPreset.values.map((e) => e.wireValue), [
-        'responsive',
-        'continuous',
-        'efficient',
-      ]);
     });
 
     test('fallbacks', () {
@@ -308,7 +295,6 @@ void main() {
         RadarTrackingOptionsType.fromWire('x'),
         RadarTrackingOptionsType.defaultType,
       );
-      expect(RadarTrackingPreset.fromWire('x'), RadarTrackingPreset.responsive);
     });
   });
 }

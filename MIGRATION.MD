@@ -51,8 +51,8 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 
 | Before | After |
 |---|---|
-| `startTracking('responsive')` | `startTracking(RadarTrackingPreset.responsive)` |
-| `startTrackingCustom({...})` | `startTrackingCustom(RadarTrackingOptions(...))`, or `RadarTrackingOptions.responsive.copyWith(...)` |
+| `startTracking('responsive')` | `startTracking(RadarTrackingOptions.responsive)` |
+| `startTrackingCustom({...})` | `startTracking(RadarTrackingOptions.responsive.copyWith(...))`, or `startTracking(RadarTrackingOptions(...))`. `startTrackingCustom` is removed; `startTracking` takes any options. |
 | `Radar.presetResponsive` (and the other preset maps) | `RadarTrackingOptions.responsive`, `.continuous`, `.efficient` |
 | `startTrip(tripOptions: {...})` | `startTrip(tripOptions: RadarTripOptions(...))`. Build legs with `RadarTripLeg.geofence(...)`, `.geofenceId(...)`, `.address(...)` or `.coordinates(...)`. |
 | `updateTrip(status: 'arrived', ...)` | `updateTrip(status: RadarTripStatus.arrived, ...)` |

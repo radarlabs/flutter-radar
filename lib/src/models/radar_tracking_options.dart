@@ -101,42 +101,13 @@ enum RadarTrackingOptionsType implements RadarWireEnum {
       readEnum(values, value, defaultType);
 }
 
-/// A built-in tracking preset, for `Radar.startTracking`.
+/// Options for background tracking, for `Radar.startTracking`.
 ///
-/// Starting tracking with a preset uses the native SDK's own preset options,
-/// which may differ from [RadarTrackingOptions.responsive] and friends if the
-/// native SDK changes them.
-enum RadarTrackingPreset implements RadarWireEnum {
-  responsive('responsive'),
-  continuous('continuous'),
-  efficient('efficient');
-
-  const RadarTrackingPreset(this.wireValue);
-
-  @override
-  @internal
-  final String wireValue;
-
-  /// Parses a preset string. Unrecognized values become [responsive],
-  /// matching both native bridges.
-  @internal
-  static RadarTrackingPreset fromWire(Object? value) =>
-      readEnum(values, value, responsive);
-
-  /// The tracking options for this preset on the current platform.
-  RadarTrackingOptions get options => switch (this) {
-    responsive => RadarTrackingOptions.responsive,
-    continuous => RadarTrackingOptions.continuous,
-    efficient => RadarTrackingOptions.efficient,
-  };
-}
-
-/// Options for background tracking, for `Radar.startTrackingCustom`.
-///
-/// Start from a preset and adjust it with [copyWith]:
+/// Start with a preset, or adjust one with [copyWith]:
 ///
 /// ```dart
-/// Radar.startTrackingCustom(
+/// Radar.startTracking(RadarTrackingOptions.responsive);
+/// Radar.startTracking(
 ///   RadarTrackingOptions.responsive.copyWith(beacons: true),
 /// );
 /// ```

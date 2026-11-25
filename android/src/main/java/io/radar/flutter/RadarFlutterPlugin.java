@@ -308,9 +308,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "trackOnce":
                         trackOnce(call, result);
                         break;
-                    case "startTracking":
-                        startTracking(call, result);
-                        break;
                     case "startTrackingCustom":
                         startTrackingCustom(call, result);
                         break;
@@ -787,22 +784,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             Radar.trackOnce(accuracyLevel, beaconsTrackingOption, callback);
         }
     }      
-
-    private static void startTracking(MethodCall call, Result result) {
-        String preset = call.argument("preset");
-        if (preset == null) {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        } else if (preset.equals("continuous")) {
-            Radar.startTracking(RadarTrackingOptions.CONTINUOUS);
-        } else if (preset.equals("responsive")) {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        } else if (preset.equals("efficient")) {
-            Radar.startTracking(RadarTrackingOptions.EFFICIENT);
-        } else {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        }
-        result.success(true);
-    }
 
     private static void startTrackingCustom(MethodCall call, Result result) {
         HashMap optionsMap = (HashMap)call.arguments;

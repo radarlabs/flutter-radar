@@ -464,13 +464,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             }),
             ApiAction('getLocation(high)', () => Radar.getLocation(
                 desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high)),
-            for (final preset in RadarTrackingPreset.values)
-              ApiAction('startTracking(${preset.name})', () async {
-                await Radar.startTracking(preset);
-                return preset.name;
+            for (final (name, options) in [
+              ('responsive', RadarTrackingOptions.responsive),
+              ('continuous', RadarTrackingOptions.continuous),
+              ('efficient', RadarTrackingOptions.efficient),
+            ])
+              ApiAction('startTracking($name)', () async {
+                await Radar.startTracking(options);
+                return name;
               }),
-            ApiAction('startTrackingCustom()', () async {
-              await Radar.startTrackingCustom(
+            ApiAction('startTracking(custom)', () async {
+              await Radar.startTracking(
                 RadarTrackingOptions.responsive.copyWith(
                   showBlueBar: true,
                   foregroundServiceEnabled: true,

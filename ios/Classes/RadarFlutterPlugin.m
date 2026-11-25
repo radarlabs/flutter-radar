@@ -201,8 +201,6 @@ RadarFlutterSharedEventCoordinator(void) {
         [self getLocation:call withResult:result];
     } else if ([@"trackOnce" isEqualToString:call.method]) {
         [self trackOnce:call withResult:result];
-    } else if ([@"startTracking" isEqualToString:call.method]) {
-        [self startTracking:call withResult:result];
     } else if ([@"startTrackingCustom" isEqualToString:call.method]) {
         [self startTrackingCustom:call withResult:result];
     } else if ([@"startTrackingVerified" isEqualToString:call.method]) {
@@ -622,24 +620,6 @@ RadarFlutterSharedEventCoordinator(void) {
         
         [Radar trackOnceWithDesiredAccuracy:desiredAccuracy beacons:beaconsTrackingOption completionHandler:completionHandler];
     }
-}
-
-- (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {    
-    NSDictionary *argsDict = call.arguments;
-
-    NSString *preset = argsDict[@"preset"];
-    if (!preset) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
-    } else if ([preset isEqualToString:@"continuous"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.presetContinuous];
-    } else if ([preset isEqualToString:@"responsive"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
-    } else if ([preset isEqualToString:@"efficient"]) {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.presetEfficient];
-    } else {
-        [Radar startTrackingWithOptions:RadarTrackingOptions.presetResponsive];
-    }
-    result(nil);
 }
 
 - (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
