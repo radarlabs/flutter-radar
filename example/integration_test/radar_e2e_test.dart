@@ -59,8 +59,10 @@ RadarEvent eventOf(RadarTrackResult result, RadarEventType type) {
 /// Collects every event delivered to [Radar.onEvents], from any track.
 class DeliveredEvents {
   DeliveredEvents() {
-    Radar.onEvents((update) => _events.addAll(update.events));
-    addTearDown(Radar.offEvents);
+    final subscription = Radar.onEvents.listen(
+      (update) => _events.addAll(update.events),
+    );
+    addTearDown(subscription.cancel);
   }
 
   final _events = <RadarEvent>[];
@@ -178,10 +180,10 @@ void main() {
 
       test('delivers onLocation to Dart', () async {
         final received = Completer<RadarLocationUpdate>();
-        Radar.onLocation((update) {
+        final subscription = Radar.onLocation.listen((update) {
           if (!received.isCompleted) received.complete(update);
         });
-        addTearDown(Radar.offLocation);
+        addTearDown(subscription.cancel);
 
         await Radar.trackOnce(location: _nyc);
 
@@ -192,10 +194,10 @@ void main() {
 
       test('delivers onLog to Dart at debug level', () async {
         final received = Completer<RadarLogUpdate>();
-        Radar.onLog((update) {
+        final subscription = Radar.onLog.listen((update) {
           if (!received.isCompleted) received.complete(update);
         });
-        addTearDown(Radar.offLog);
+        addTearDown(subscription.cancel);
 
         await Radar.trackOnce(location: _nyc);
 
@@ -221,10 +223,10 @@ void main() {
           return markTestSkipped(_noPermission);
         }
         final received = Completer<RadarClientLocationUpdate>();
-        Radar.onClientLocation((update) {
+        final subscription = Radar.onClientLocation.listen((update) {
           if (!received.isCompleted) received.complete(update);
         });
-        addTearDown(Radar.offClientLocation);
+        addTearDown(subscription.cancel);
 
         final result = await Radar.trackOnce();
         expect(result.user?.userId, runId);
@@ -282,10 +284,10 @@ void main() {
           return markTestSkipped(_noPermission);
         }
         final received = Completer<RadarTokenUpdate>();
-        Radar.onToken((update) {
+        final subscription = Radar.onToken.listen((update) {
           if (!received.isCompleted) received.complete(update);
         });
-        addTearDown(Radar.offToken);
+        addTearDown(subscription.cancel);
 
         final token = await Radar.trackVerified(
           reason: 'e2e',
@@ -755,13 +757,13 @@ void main() {
         // as the device-location track iOS sends on startTrip, can still
         // arrive first.
         final received = Completer<RadarLocationUpdate>();
-        Radar.onLocation((update) {
+        final subscription = Radar.onLocation.listen((update) {
           if (!received.isCompleted &&
               update.user.source == RadarLocationSource.mockLocation) {
             received.complete(update);
           }
         });
-        addTearDown(Radar.offLocation);
+        addTearDown(subscription.cancel);
 
         await Radar.mockTracking(
           origin: _nyc,

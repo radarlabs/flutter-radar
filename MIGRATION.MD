@@ -70,18 +70,24 @@ Methods that don't return a value, such as `setUserId` or `startTracking`, now r
 
 **Address validation.** `validateStreetAddress` and `validateAddressLabel` return a `RadarValidateAddressResult` with the address and its verification status.
 
-**Listeners.** Each `Radar.onX` callback receives a typed update: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. Most callbacks used to receive a `Map`. The `onIpChanged` callback used to take no arguments, and `onSharingChanged` took a `bool`; read it from `update.sharing` now. The `foregroundXCallback` static fields are no longer public, and the callback typedefs (`LocationCallback`, `ClientLocationCallback`, `ErrorCallback`, `LogCallback`, `EventsCallback`, `TokenCallback`, `IpChangedCallback`, `SharingChangedCallback`) are removed. Use the function types in the `onX` signatures instead.
+**Listeners.** The `Radar.onX(callback)` and `Radar.offX()` pairs are replaced by broadcast streams with the same names: `onLocation`, `onClientLocation`, `onError`, `onLog`, `onEvents`, `onIpChanged`, `onSharingChanged` and `onToken`. Call `listen` to subscribe, and cancel the returned `StreamSubscription` instead of calling `offX()`. Any number of listeners can subscribe to each stream, so `RadarExistingCallbackException` is removed. Like any stream, they work with `StreamBuilder`, `where`, `map` and `await for`. Updates are delivered asynchronously, and updates that arrive with no listener are dropped, as before.
+
+Each stream emits a typed update: `RadarLocationUpdate`, `RadarClientLocationUpdate`, `RadarEventsUpdate`, `RadarErrorUpdate`, `RadarLogUpdate`, `RadarTokenUpdate`, `RadarIpChangedUpdate`, and `RadarSharingChangedUpdate`. Most callbacks used to receive a `Map`. The `onIpChanged` callback used to take no arguments, and `onSharingChanged` took a `bool`; read it from `update.sharing` now. The `foregroundXCallback` static fields are no longer public, and the callback typedefs (`LocationCallback`, `ClientLocationCallback`, `ErrorCallback`, `LogCallback`, `EventsCallback`, `TokenCallback`, `IpChangedCallback`, `SharingChangedCallback`) are removed.
 
 ```dart
 // Before
 Radar.onEvents((result) {
   final events = result['events'];
 });
+// ...
+Radar.offEvents();
 
 // After
-Radar.onEvents((update) {
+final subscription = Radar.onEvents.listen((update) {
   for (final event in update.events) { ... }
 });
+// ...
+await subscription.cancel();
 ```
 
 **Background handler.** `RadarBackgroundEvent` and `RadarBackgroundEventType` are removed. The handler receives the same sealed `RadarUpdate` as the listeners, so it can `switch` over every update type. See the README.

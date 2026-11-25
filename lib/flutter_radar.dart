@@ -40,14 +40,21 @@ export 'src/radar_background.dart' show RadarBackgroundHandler;
 class Radar {
   static const MethodChannel _channel = MethodChannel('flutter_radar');
 
-  static void Function(RadarLocationUpdate update)? _onLocation;
-  static void Function(RadarClientLocationUpdate update)? _onClientLocation;
-  static void Function(RadarErrorUpdate update)? _onError;
-  static void Function(RadarLogUpdate update)? _onLog;
-  static void Function(RadarEventsUpdate update)? _onEvents;
-  static void Function(RadarTokenUpdate update)? _onToken;
-  static void Function(RadarIpChangedUpdate update)? _onIpChanged;
-  static void Function(RadarSharingChangedUpdate update)? _onSharingChanged;
+  static final _locationController =
+      StreamController<RadarLocationUpdate>.broadcast();
+  static final _clientLocationController =
+      StreamController<RadarClientLocationUpdate>.broadcast();
+  static final _errorController =
+      StreamController<RadarErrorUpdate>.broadcast();
+  static final _logController = StreamController<RadarLogUpdate>.broadcast();
+  static final _eventsController =
+      StreamController<RadarEventsUpdate>.broadcast();
+  static final _tokenController =
+      StreamController<RadarTokenUpdate>.broadcast();
+  static final _ipChangedController =
+      StreamController<RadarIpChangedUpdate>.broadcast();
+  static final _sharingChangedController =
+      StreamController<RadarSharingChangedUpdate>.broadcast();
 
   /// Invokes [method] and parses its map result with [fromMap].
   ///
@@ -116,21 +123,21 @@ class Radar {
     final update = RadarUpdate.fromMethodCall(call.method, payload ?? const {});
     switch (update) {
       case RadarLocationUpdate():
-        _onLocation?.call(update);
+        _locationController.add(update);
       case RadarClientLocationUpdate():
-        _onClientLocation?.call(update);
+        _clientLocationController.add(update);
       case RadarErrorUpdate():
-        _onError?.call(update);
+        _errorController.add(update);
       case RadarLogUpdate():
-        _onLog?.call(update);
+        _logController.add(update);
       case RadarEventsUpdate():
-        _onEvents?.call(update);
+        _eventsController.add(update);
       case RadarTokenUpdate():
-        _onToken?.call(update);
+        _tokenController.add(update);
       case RadarIpChangedUpdate():
-        _onIpChanged?.call(update);
+        _ipChangedController.add(update);
       case RadarSharingChangedUpdate():
-        _onSharingChanged?.call(update);
+        _sharingChangedController.add(update);
       case null:
         break;
     }
@@ -919,158 +926,57 @@ class Radar {
     });
   }
 
-  /// Registers [callback] to receive location updates.
+  /// Location updates.
   ///
-  /// Fires when the user's location is updated and synced to the server, with
-  /// the location and the user. Only one location listener can be registered at
-  /// a time; registering another throws a [RadarExistingCallbackException].
-  /// Remove it with [offLocation].
-  static void onLocation(void Function(RadarLocationUpdate update) callback) {
-    if (_onLocation != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onLocation = callback;
-  }
+  /// Emits when the user's location is updated and synced to the server, with
+  /// the location and the user.
+  static Stream<RadarLocationUpdate> get onLocation =>
+      _locationController.stream;
 
-  /// Removes the listener registered with [onLocation].
-  static void offLocation() {
-    _onLocation = null;
-  }
-
-  /// Registers [callback] to receive client location updates.
+  /// Client location updates.
   ///
-  /// Fires when the device's location is updated, but not necessarily synced to
-  /// the server, with the location, whether the device is stopped, and the
+  /// Emits when the device's location is updated, but not necessarily synced
+  /// to the server, with the location, whether the device is stopped, and the
   /// location source. To receive server-synced locations and user state, use
-  /// [onLocation]. Only one client location listener can be registered at a
-  /// time; registering another throws a [RadarExistingCallbackException].
-  /// Remove it with [offClientLocation].
-  static void onClientLocation(
-    void Function(RadarClientLocationUpdate update) callback,
-  ) {
-    if (_onClientLocation != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onClientLocation = callback;
-  }
+  /// [onLocation].
+  static Stream<RadarClientLocationUpdate> get onClientLocation =>
+      _clientLocationController.stream;
 
-  /// Removes the listener registered with [onClientLocation].
-  static void offClientLocation() {
-    _onClientLocation = null;
-  }
-
-  /// Registers [callback] to receive errors.
+  /// Errors.
   ///
-  /// Fires when a request fails, with its status. Only one error listener can be
-  /// registered at a time; registering another throws a
-  /// [RadarExistingCallbackException]. Remove it with [offError].
-  static void onError(void Function(RadarErrorUpdate update) callback) {
-    if (_onError != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onError = callback;
-  }
+  /// Emits when a request fails, with its status.
+  static Stream<RadarErrorUpdate> get onError => _errorController.stream;
 
-  /// Removes the listener registered with [onError].
-  static void offError() {
-    _onError = null;
-  }
+  /// Debug log messages.
+  static Stream<RadarLogUpdate> get onLog => _logController.stream;
 
-  /// Registers [callback] to receive debug log messages.
+  /// Events.
   ///
-  /// Only one log listener can be registered at a time; registering another
-  /// throws a [RadarExistingCallbackException]. Remove it with [offLog].
-  static void onLog(void Function(RadarLogUpdate update) callback) {
-    if (_onLog != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onLog = callback;
-  }
+  /// Emits when events are received, with the events and the user, if any.
+  static Stream<RadarEventsUpdate> get onEvents => _eventsController.stream;
 
-  /// Removes the listener registered with [onLog].
-  static void offLog() {
-    _onLog = null;
-  }
-
-  /// Registers [callback] to receive events.
+  /// Changes to the device's IP address.
   ///
-  /// Fires when events are received, with the events and the user, if any. Only
-  /// one events listener can be registered at a time; registering another
-  /// throws a [RadarExistingCallbackException]. Remove it with [offEvents].
-  static void onEvents(void Function(RadarEventsUpdate update) callback) {
-    if (_onEvents != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onEvents = callback;
-  }
+  /// Emits while IP change monitoring is active, at most once per
+  /// [RadarInitializeOptions.ipChangeDebounceInterval].
+  static Stream<RadarIpChangedUpdate> get onIpChanged =>
+      _ipChangedController.stream;
 
-  /// Removes the listener registered with [onEvents].
-  static void offEvents() {
-    _onEvents = null;
-  }
+  /// Changes to the device's screen sharing state.
+  static Stream<RadarSharingChangedUpdate> get onSharingChanged =>
+      _sharingChangedController.stream;
 
-  /// Registers [callback] to be notified when the device's IP address
-  /// changes.
+  /// Verified location tokens.
   ///
-  /// Fires while IP change monitoring is active, at most once per
-  /// [RadarInitializeOptions.ipChangeDebounceInterval]. Only one IP change
-  /// listener can be registered at a time; registering another throws a
-  /// [RadarExistingCallbackException]. Remove it with [offIpChanged].
-  static void onIpChanged(void Function(RadarIpChangedUpdate update) callback) {
-    if (_onIpChanged != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onIpChanged = callback;
-  }
-
-  /// Removes the listener registered with [onIpChanged].
-  static void offIpChanged() {
-    _onIpChanged = null;
-  }
-
-  /// Registers [callback] to be notified when the device's screen sharing
-  /// state changes.
-  ///
-  /// Only one sharing listener can be registered at a time; registering another
-  /// throws a [RadarExistingCallbackException]. Remove it with
-  /// [offSharingChanged].
-  static void onSharingChanged(
-    void Function(RadarSharingChangedUpdate update) callback,
-  ) {
-    if (_onSharingChanged != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onSharingChanged = callback;
-  }
-
-  /// Removes the listener registered with [onSharingChanged].
-  static void offSharingChanged() {
-    _onSharingChanged = null;
-  }
-
-  /// Registers [callback] to receive verified location tokens.
-  ///
-  /// Fires when the user's verified location is updated. Verify the token
-  /// server-side using your secret key. Only one token listener can be
-  /// registered at a time; registering another throws a
-  /// [RadarExistingCallbackException]. Remove it with [offToken].
-  static void onToken(void Function(RadarTokenUpdate update) callback) {
-    if (_onToken != null) {
-      throw RadarExistingCallbackException();
-    }
-    _onToken = callback;
-  }
-
-  /// Removes the listener registered with [onToken].
-  static void offToken() {
-    _onToken = null;
-  }
+  /// Emits when the user's verified location is updated. Verify the token
+  /// server-side using your secret key.
+  static Stream<RadarTokenUpdate> get onToken => _tokenController.stream;
 
   /// Registers [handler] as the durable event sink across foreground,
   /// background, and headless delivery.
   ///
-  /// Existing `onX` listeners remain independent engine-scoped observers.
-  /// When both are registered, both may receive the same event.
+  /// The listener streams, such as [onLocation], are independent of it and
+  /// scoped to the current Flutter engine. An update can reach both.
   ///
   /// Replaces any previously registered handler. [handler] must be a top-level
   /// or static function annotated with `@pragma('vm:entry-point')`.
@@ -1180,15 +1086,4 @@ class RadarInitializeOptions {
     if (autoHandleNotificationDeepLinks != null)
       'autoHandleNotificationDeepLinks': autoHandleNotificationDeepLinks,
   };
-}
-
-/// Thrown when registering a listener, such as with [Radar.onLocation],
-/// while one of the same kind is already registered.
-///
-/// Remove the existing listener with the matching `off` method first.
-class RadarExistingCallbackException implements Exception {
-  @override
-  String toString() {
-    return 'Existing callback already exists for this event. Please call the corresponding `off` method first.';
-  }
 }

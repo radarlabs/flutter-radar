@@ -79,10 +79,9 @@ class MyApp extends StatelessWidget {
 
 class _ListenerDef {
   final String name;
-  final void Function() enable;
-  final void Function() disable;
+  final StreamSubscription<Object?> Function() listen;
 
-  const _ListenerDef(this.name, this.enable, this.disable);
+  const _ListenerDef(this.name, this.listen);
 }
 
 class HomePage extends StatefulWidget {
@@ -100,44 +99,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String? _tripId;
   List<String> _legIds = [];
 
-  final Set<String> _enabledListeners = {};
+  final Map<String, StreamSubscription<Object?>> _subscriptions = {};
 
   late final List<_ListenerDef> _listenerDefs = [
-    _ListenerDef(
-      'onLocation',
-      () => Radar.onLocation(_onLocation),
-      () => Radar.offLocation(),
-    ),
+    _ListenerDef('onLocation', () => Radar.onLocation.listen(_onLocation)),
     _ListenerDef(
       'onClientLocation',
-      () => Radar.onClientLocation(_onClientLocation),
-      () => Radar.offClientLocation(),
+      () => Radar.onClientLocation.listen(_onClientLocation),
     ),
-    _ListenerDef(
-      'onError',
-      () => Radar.onError(_onError),
-      () => Radar.offError(),
-    ),
-    _ListenerDef('onLog', () => Radar.onLog(_onLog), () => Radar.offLog()),
-    _ListenerDef(
-      'onEvents',
-      () => Radar.onEvents(_onEvents),
-      () => Radar.offEvents(),
-    ),
-    _ListenerDef(
-      'onToken',
-      () => Radar.onToken(_onToken),
-      () => Radar.offToken(),
-    ),
-    _ListenerDef(
-      'onIpChanged',
-      () => Radar.onIpChanged(_onIpChanged),
-      () => Radar.offIpChanged(),
-    ),
+    _ListenerDef('onError', () => Radar.onError.listen(_onError)),
+    _ListenerDef('onLog', () => Radar.onLog.listen(_onLog)),
+    _ListenerDef('onEvents', () => Radar.onEvents.listen(_onEvents)),
+    _ListenerDef('onToken', () => Radar.onToken.listen(_onToken)),
+    _ListenerDef('onIpChanged', () => Radar.onIpChanged.listen(_onIpChanged)),
     _ListenerDef(
       'onSharingChanged',
-      () => Radar.onSharingChanged(_onSharingChanged),
-      () => Radar.offSharingChanged(),
+      () => Radar.onSharingChanged.listen(_onSharingChanged),
     ),
   ];
 
@@ -152,6 +129,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    for (final subscription in _subscriptions.values) {
+      unawaited(subscription.cancel());
+    }
     super.dispose();
   }
 
@@ -226,22 +206,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _setListener(_ListenerDef def, bool enabled) {
-    try {
+    if (enabled == _subscriptions.containsKey(def.name)) return;
+    setState(() {
       if (enabled) {
-        def.enable();
+        _subscriptions[def.name] = def.listen();
       } else {
-        def.disable();
+        unawaited(_subscriptions.remove(def.name)?.cancel());
       }
-      setState(() {
-        if (enabled) {
-          _enabledListeners.add(def.name);
-        } else {
-          _enabledListeners.remove(def.name);
-        }
-      });
-    } catch (e) {
-      console.logError(def.name, e);
-    }
+    });
   }
 
   Future<void> _run(ApiAction action) async {
@@ -378,7 +350,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         leading: Icon(Icons.podcasts, color: theme.colorScheme.primary),
         title: Text('Listeners', style: theme.textTheme.titleSmall),
         subtitle: Text(
-          '${_enabledListeners.length} of ${_listenerDefs.length} active',
+          '${_subscriptions.length} of ${_listenerDefs.length} active',
           style: theme.textTheme.bodySmall,
         ),
         children: [
@@ -386,7 +358,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             SwitchListTile(
               dense: true,
               title: Text(def.name, style: theme.textTheme.bodyMedium),
-              value: _enabledListeners.contains(def.name),
+              value: _subscriptions.containsKey(def.name),
               onChanged: (value) => _setListener(def, value),
             ),
         ],
