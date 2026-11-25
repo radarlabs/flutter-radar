@@ -6,18 +6,13 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'api_section.dart';
 import 'console.dart';
+import 'describe.dart';
 import 'environment.dart';
 import 'settings_page.dart';
 
-const Map<String, double> _manhattan = {
-  'latitude': 40.783826,
-  'longitude': -73.975363,
-};
+const _manhattan = RadarLocation(latitude: 40.783826, longitude: -73.975363);
 
-const Map<String, double> _brooklyn = {
-  'latitude': 40.703900,
-  'longitude': -73.986700,
-};
+const _brooklyn = RadarLocation(latitude: 40.703900, longitude: -73.986700);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,27 +22,40 @@ Future<void> main() async {
   runApp(MyApp(settings: settings));
 }
 
-void _onLocation(Map res) => console.logEvent('onLocation', res);
+void _onLocation(RadarLocationUpdate update) =>
+    console.logEvent('onLocation', describe(update));
 
-void _onClientLocation(Map res) => console.logEvent('onClientLocation', res);
+void _onClientLocation(RadarClientLocationUpdate update) =>
+    console.logEvent('onClientLocation', describe(update));
 
-void _onError(Map res) => console.logEvent('onError', res);
+void _onError(RadarErrorUpdate update) =>
+    console.logEvent('onError', describe(update));
 
-void _onLog(Map res) => console.logEvent('onLog', res);
+void _onLog(RadarLogUpdate update) => console.logEvent('onLog', update.message);
 
-void _onEvents(Map res) => console.logEvent('onEvents', res);
+void _onEvents(RadarEventsUpdate update) =>
+    console.logEvent('onEvents', describe(update));
 
-void _onToken(Map res) => console.logEvent('onToken', res);
+void _onToken(RadarTokenUpdate update) =>
+    console.logEvent('onToken', describe(update));
 
-void _onIpChanged() => console.logEvent('onIpChanged', 'IP address changed');
+void _onIpChanged(RadarIpChangedUpdate update) =>
+    console.logEvent('onIpChanged', describe(update));
+
+void _onSharingChanged(RadarSharingChangedUpdate update) =>
+    console.logEvent('onSharingChanged', describe(update));
 
 @pragma('vm:entry-point')
-Future<void> _onBackgroundEvent(RadarBackgroundEvent event) async {
-  debugPrint('radar background: ${event.type.name} ${event.payload}');
+Future<void> _onBackgroundUpdate(RadarUpdate update) async {
+  switch (update) {
+    case RadarEventsUpdate(:final events):
+      debugPrint('radar background: ${events.length} events');
+    case RadarClientLocationUpdate(:final location, :final source):
+      debugPrint('radar background: $location from ${source.name}');
+    default:
+      debugPrint('radar background: ${describe(update)}');
+  }
 }
-
-void _onSharingChanged(bool sharing) =>
-    console.logEvent('onSharingChanged', {'sharing': sharing});
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.settings});
@@ -164,11 +172,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ipChangeDebounceInterval: const Duration(seconds: 5),
       ),
     );
-    await Radar.registerBackgroundHandler(_onBackgroundEvent);
+    await Radar.registerBackgroundHandler(_onBackgroundUpdate);
     await Radar.setUserId('flutter');
     await Radar.setDescription('Flutter');
     await Radar.setMetadata({'foo': 'bar', 'bax': true, 'qux': 1});
-    await Radar.setLogLevel('info');
+    await Radar.setLogLevel(RadarLogLevel.info);
     await Radar.setAnonymousTrackingEnabled(false);
 
     for (final def in _listenerDefs) {
@@ -182,7 +190,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _refreshPermissions() async {
     final status = await Radar.getPermissionsStatus();
     if (mounted) {
-      setState(() => _permissionStatus = status ?? 'UNKNOWN');
+      setState(() => _permissionStatus = status.name);
     }
   }
 
@@ -208,7 +216,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _run(ApiAction action) async {
     try {
       final result = await action.run();
-      console.log(action.label, result);
+      console.log(action.label, describe(result));
     } catch (e) {
       console.logError(action.label, e);
     }
@@ -216,20 +224,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// Leg operations need IDs minted by the server, so the multi-destination
   /// trip response is stashed for the buttons that follow it.
-  void _captureTrip(Object? response) {
-    if (response is! Map) return;
-    final trip = response['trip'];
-    if (trip is! Map) return;
-    final legs = trip['legs'];
+  void _captureTrip(RadarTrip? trip) {
+    if (trip == null) return;
     setState(() {
-      _tripId = trip['_id'] as String?;
-      _legIds = legs is List
-          ? legs
-              .whereType<Map>()
-              .map((leg) => leg['_id'])
-              .whereType<String>()
-              .toList()
-          : <String>[];
+      _tripId = trip.id;
+      _legIds = trip.legs.map((leg) => leg.id).whereType<String>().toList();
     });
   }
 
@@ -384,12 +383,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               final status = await Permission.activityRecognition.request();
               return status.toString();
             }),
-            ApiAction("setLogLevel('info')", () async {
-              await Radar.setLogLevel('info');
+            ApiAction('setLogLevel(info)', () async {
+              await Radar.setLogLevel(RadarLogLevel.info);
               return 'info';
             }),
-            ApiAction("setLogLevel('debug')", () async {
-              await Radar.setLogLevel('debug');
+            ApiAction('setLogLevel(debug)', () async {
+              await Radar.setLogLevel(RadarLogLevel.debug);
               return 'debug';
             }),
           ],
@@ -456,32 +455,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           actions: [
             ApiAction('trackOnce()', () => Radar.trackOnce()),
             ApiAction('trackOnce(location)',
-                () => Radar.trackOnce(location: Map<String, dynamic>.from(_manhattan))),
+                () => Radar.trackOnce(location: _manhattan)),
             ApiAction('trackOnce() -> user.locationInsights', () async {
               if (!Platform.isIOS) {
                 return 'iOS only: the Radar Android SDK has no locationInsights.';
               }
-              return (await Radar.trackOnce())?['user']?['locationInsights'];
+              return (await Radar.trackOnce()).user?.locationInsights;
             }),
-            ApiAction("getLocation('high')", () => Radar.getLocation('high')),
-            ApiAction("startTracking('responsive')", () async {
-              await Radar.startTracking('responsive');
-              return 'responsive';
-            }),
-            ApiAction("startTracking('continuous')", () async {
-              await Radar.startTracking('continuous');
-              return 'continuous';
-            }),
-            ApiAction("startTracking('efficient')", () async {
-              await Radar.startTracking('efficient');
-              return 'efficient';
-            }),
-            ApiAction('startTrackingCustom()', () async {
-              await Radar.startTrackingCustom({
-                ...Radar.presetResponsive,
-                'showBlueBar': true,
-                'foregroundServiceEnabled': true,
-              });
+            ApiAction('getLocation(high)', () => Radar.getLocation(
+                desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.high)),
+            for (final (name, options) in [
+              ('responsive', RadarTrackingOptions.responsive),
+              ('continuous', RadarTrackingOptions.continuous),
+              ('efficient', RadarTrackingOptions.efficient),
+            ])
+              ApiAction('startTracking($name)', () async {
+                await Radar.startTracking(options);
+                return name;
+              }),
+            ApiAction('startTracking(custom)', () async {
+              await Radar.startTracking(
+                RadarTrackingOptions.responsive.copyWith(
+                  showBlueBar: true,
+                  foregroundServiceEnabled: true,
+                ),
+              );
               return Radar.getTrackingOptions();
             }),
             ApiAction('stopTracking()', () async {
@@ -495,20 +493,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('mockTracking()', () => Radar.mockTracking(
                   origin: _manhattan,
                   destination: _brooklyn,
-                  mode: 'car',
+                  mode: RadarRouteMode.car,
                   steps: 3,
-                  interval: 3,
+                  interval: const Duration(seconds: 3),
                 )),
             ApiAction('setForegroundServiceOptions()', () async {
-              await Radar.setForegroundServiceOptions({
-                'title': 'Tracking',
-                'text': 'Flutter example is tracking',
-                'iconString': 'ic_notification',
-                'iconColor': '#FF6B8D',
-                'importance': 2,
-                'updatesOnly': false,
-                'activity': 'io.radar.example.MainActivity',
-              });
+              await Radar.setForegroundServiceOptions(
+                const RadarForegroundServiceOptions(
+                  title: 'Tracking',
+                  text: 'Flutter example is tracking',
+                  iconString: 'ic_notification',
+                  iconColor: Color(0xFFFF6B8D),
+                  importance: 2,
+                  activity: 'io.radar.example.MainActivity',
+                ),
+              );
               return 'ok';
             }),
           ],
@@ -521,7 +520,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('trackVerified(beacons)',
                 () => Radar.trackVerified(beacons: true, reason: 'qa')),
             ApiAction('trackVerified() -> token.format',
-                () async => (await Radar.trackVerified())?['token']?['format']),
+                () async => (await Radar.trackVerified()).format),
             ApiAction('startRangingBeacons()', () async {
               await Radar.startRangingBeacons();
               return 'ranging';
@@ -531,7 +530,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return 'stopped';
             }),
             ApiAction('startTrackingVerified()', () async {
-              await Radar.startTrackingVerified(30, false);
+              await Radar.startTrackingVerified(
+                  const Duration(seconds: 30), false);
               return 'started';
             }),
             ApiAction('stopTrackingVerified()', () async {
@@ -547,7 +547,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             }),
             ApiAction('revealRisk()', () => Radar.revealRisk()),
             ApiAction('revealRisk() -> revealRisk.format',
-                () async => (await Radar.revealRisk())?['revealRisk']?['format']),
+                () async => (await Radar.revealRisk()).format),
             ApiAction('isSharing()', () => Radar.isSharing()),
             ApiAction('clearSharing()', () async {
               await Radar.clearSharing();
@@ -572,7 +572,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return 'cleared';
             }),
             ApiAction('trackOnce() -> user.expectedAddress',
-                () async => (await Radar.trackOnce())?['user']?['expectedAddress']),
+                () async => (await Radar.trackOnce()).user?.expectedAddress),
           ],
         ),
         ApiSection(
@@ -580,53 +580,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           icon: Icons.route_outlined,
           actions: [
             ApiAction('startTrip (single destination)', () async {
-              final response = await Radar.startTrip(tripOptions: {
-                'externalId': 'flutter-${DateTime.now().millisecondsSinceEpoch}',
-                'destinationGeofenceTag': 'store',
-                'destinationGeofenceExternalId': '123',
-                'mode': 'car',
-                'metadata': {'test': 123},
-              });
-              _captureTrip(response);
+              final response = await Radar.startTrip(
+                tripOptions: RadarTripOptions(
+                  externalId:
+                      'flutter-${DateTime.now().millisecondsSinceEpoch}',
+                  destinationGeofenceTag: 'store',
+                  destinationGeofenceExternalId: '123',
+                  mode: RadarRouteMode.car,
+                  metadata: {'test': 123},
+                ),
+              );
+              _captureTrip(response.trip);
               return response;
             }),
             ApiAction('startTrip (multi-destination)', () async {
-              final response = await Radar.startTrip(tripOptions: {
-                'externalId': 'flutter-multi-${DateTime.now().millisecondsSinceEpoch}',
-                'mode': 'car',
-                'legs': [
-                  {
-                    'destinationGeofenceTag': 'store',
-                    'destinationGeofenceExternalId': '123',
-                  },
-                  {'address': '841 Broadway, New York, NY'},
-                  {
-                    // GeoJSON order, and both SDKs index it positionally: a
-                    // {latitude, longitude} map passes the length check and
-                    // then crashes on element access.
-                    'coordinates': [
-                      _brooklyn['longitude'],
-                      _brooklyn['latitude'],
-                    ],
-                    'arrivalRadius': 100,
-                  },
-                ],
-              });
-              _captureTrip(response);
+              final response = await Radar.startTrip(
+                tripOptions: RadarTripOptions(
+                  externalId:
+                      'flutter-multi-${DateTime.now().millisecondsSinceEpoch}',
+                  mode: RadarRouteMode.car,
+                  legs: [
+                    const RadarTripLeg.geofence(
+                      tag: 'store',
+                      externalId: '123',
+                    ),
+                    const RadarTripLeg.address('841 Broadway, New York, NY'),
+                    RadarTripLeg.coordinates(
+                      _brooklyn.coordinate,
+                      arrivalRadius: 100,
+                    ),
+                  ],
+                ),
+              );
+              _captureTrip(response.trip);
               return response;
             }),
             ApiAction('getTrip()', () async {
-              final response = await Radar.getTrip();
-              _captureTrip({'trip': response});
-              return response;
+              final trip = await Radar.getTrip();
+              _captureTrip(trip);
+              return trip;
             }),
             ApiAction('getTripOptions()', () => Radar.getTripOptions()),
-            ApiAction("updateTrip('arrived')", () => Radar.updateTrip(
-                  status: 'arrived',
-                  options: {
-                    'externalId': 'flutter-trip',
-                    'metadata': {'parkingSpot': '5'},
-                  },
+            ApiAction('updateTrip(arrived)', () => Radar.updateTrip(
+                  status: RadarTripStatus.arrived,
+                  options: const RadarTripOptions(
+                    externalId: 'flutter-trip',
+                    metadata: {'parkingSpot': '5'},
+                  ),
                 )),
             ApiAction('updateTripLeg (first leg)', () async {
               if (_legIds.isEmpty) {
@@ -635,11 +635,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return Radar.updateTripLeg(
                 tripId: _tripId,
                 legId: _legIds.first,
-                status: 'arrived',
+                status: RadarTripLegStatus.arrived,
               );
             }),
-            ApiAction("updateCurrentTripLeg('arrived')",
-                () => Radar.updateCurrentTripLeg(status: 'arrived')),
+            ApiAction('updateCurrentTripLeg(arrived)', () =>
+                Radar.updateCurrentTripLeg(status: RadarTripLegStatus.arrived)),
             ApiAction('reorderTripLegs (reversed)', () async {
               if (_legIds.length < 2) {
                 return 'Need at least two legs. Run "startTrip (multi-destination)" first.';
@@ -658,15 +658,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           icon: Icons.search,
           actions: [
             ApiAction('searchGeofences()', () => Radar.searchGeofences(
-                  near: Map<String, dynamic>.from(_manhattan),
+                  near: _manhattan,
                   radius: 1000,
                   limit: 10,
                   includeGeometry: true,
-                  tags: List.empty(),
-                  metadata: {},
                 )),
             ApiAction('searchPlaces()', () => Radar.searchPlaces(
-                  near: Map<String, dynamic>.from(_manhattan),
+                  near: _manhattan,
                   radius: 1000,
                   chains: ['starbucks'],
                   chainMetadata: {'customFlag': 'true'},
@@ -674,7 +672,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 )),
             ApiAction('autocomplete()', () => Radar.autocomplete(
                   query: 'brooklyn roasting',
-                  near: Map<String, dynamic>.from(_manhattan),
+                  near: _manhattan,
                   limit: 10,
                   layers: ['address', 'street'],
                   country: 'US',
@@ -684,21 +682,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ApiAction('reverseGeocode()', () => Radar.reverseGeocode()),
             ApiAction('ipGeocode()', () => Radar.ipGeocode()),
             ApiAction('getContext()',
-                () => Radar.getContext(Map<String, dynamic>.from(_manhattan))),
+                () => Radar.getContext(_manhattan)),
             ApiAction('getDistance()', () => Radar.getDistance(
                   origin: _manhattan,
                   destination: _brooklyn,
-                  modes: ['car', 'foot'],
-                  units: 'imperial',
+                  modes: {RadarRouteMode.car, RadarRouteMode.foot},
+                  units: RadarRouteUnits.imperial,
                 )),
             ApiAction('getMatrix()', () => Radar.getMatrix(
                   origins: [_manhattan, _brooklyn],
-                  destinations: [
-                    {'latitude': 40.64189, 'longitude': -73.78779},
-                    {'latitude': 35.99801, 'longitude': -78.94294},
+                  destinations: const [
+                    RadarLocation(latitude: 40.64189, longitude: -73.78779),
+                    RadarLocation(latitude: 35.99801, longitude: -78.94294),
                   ],
-                  mode: 'car',
-                  units: 'imperial',
+                  mode: RadarRouteMode.car,
+                  units: RadarRouteUnits.imperial,
                 )),
             ApiAction('validateStreetAddress()',
                 () => Radar.validateStreetAddress(
@@ -759,7 +757,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           icon: Icons.notifications_none,
           actions: [
             ApiAction('setNotificationOptions()', () async {
-              await Radar.setNotificationOptions({'iconString': 'icon'});
+              await Radar.setNotificationOptions(
+                const RadarNotificationOptions(iconString: 'icon'),
+              );
               return 'ok';
             }),
             ApiAction('setPushNotificationToken()', () async {
@@ -769,16 +769,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return token.isEmpty ? 'cleared' : token;
             }),
             ApiAction('showInAppMessage()', () async {
-              await Radar.showInAppMessage({
-                'type': 'banner',
-                'title': {'text': 'This is the title', 'color': '#000000'},
-                'body': {'text': 'This is a demo message', 'color': '#666666'},
-                'button': {
-                  'text': 'Send it',
-                  'color': '#FFFFFF',
-                  'backgroundColor': '#EB0083',
-                },
-              });
+              await Radar.showInAppMessage(
+                const RadarInAppMessage(
+                  title: RadarInAppMessageText(
+                    text: 'This is the title',
+                    color: Color(0xFF000000),
+                  ),
+                  body: RadarInAppMessageText(
+                    text: 'This is a demo message',
+                    color: Color(0xFF666666),
+                  ),
+                  button: RadarInAppMessageButton(
+                    text: 'Send it',
+                    color: Color(0xFFFFFFFF),
+                    backgroundColor: Color(0xFFEB0083),
+                  ),
+                ),
+              );
               return 'shown';
             }),
           ],
