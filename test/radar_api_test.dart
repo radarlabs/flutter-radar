@@ -228,7 +228,7 @@ void main() {
     test('startTracking sends a preset as its full options', () async {
       await Radar.startTracking(RadarTrackingOptions.continuousAndroid);
 
-      expect(lastCall().method, 'startTrackingCustom');
+      expect(lastCall().method, 'startTracking');
       expect(
         lastCall().arguments,
         RadarTrackingOptions.continuousAndroid.toMap(),
@@ -242,7 +242,7 @@ void main() {
 
       await Radar.startTracking(options);
 
-      expect(lastCall().method, 'startTrackingCustom');
+      expect(lastCall().method, 'startTracking');
       expect(lastCall().arguments, options.toMap());
       expect((lastCall().arguments as Map)['beacons'], isTrue);
     });

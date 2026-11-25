@@ -197,7 +197,7 @@ class Radar {
   /// [RadarTrackingOptions.responsive], or adjust one with
   /// [RadarTrackingOptions.copyWith].
   static Future<void> startTracking(RadarTrackingOptions options) async {
-    await _invoke<void>('startTrackingCustom', options.toMap());
+    await _invoke<void>('startTracking', options.toMap());
   }
 
   static Future<void> startTrackingVerified(

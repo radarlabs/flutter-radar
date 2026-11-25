@@ -308,8 +308,8 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "trackOnce":
                         trackOnce(call, result);
                         break;
-                    case "startTrackingCustom":
-                        startTrackingCustom(call, result);
+                    case "startTracking":
+                        startTracking(call, result);
                         break;
                     case "startTrackingVerified":
                         startTrackingVerified(call, result);
@@ -785,7 +785,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
         }
     }      
 
-    private static void startTrackingCustom(MethodCall call, Result result) {
+    private static void startTracking(MethodCall call, Result result) {
         HashMap optionsMap = (HashMap)call.arguments;
         JSONObject optionsJson = new JSONObject(optionsMap);
         RadarTrackingOptions options = RadarTrackingOptions.fromJson(optionsJson);

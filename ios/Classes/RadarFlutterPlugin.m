@@ -201,8 +201,8 @@ RadarFlutterSharedEventCoordinator(void) {
         [self getLocation:call withResult:result];
     } else if ([@"trackOnce" isEqualToString:call.method]) {
         [self trackOnce:call withResult:result];
-    } else if ([@"startTrackingCustom" isEqualToString:call.method]) {
-        [self startTrackingCustom:call withResult:result];
+    } else if ([@"startTracking" isEqualToString:call.method]) {
+        [self startTracking:call withResult:result];
     } else if ([@"startTrackingVerified" isEqualToString:call.method]) {
         [self startTrackingVerified:call withResult:result];
     } else if ([@"stopTrackingVerified" isEqualToString:call.method]) {
@@ -622,7 +622,7 @@ RadarFlutterSharedEventCoordinator(void) {
     }
 }
 
-- (void)startTrackingCustom:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)startTracking:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *optionsDict = call.arguments;
     RadarTrackingOptions *options = [RadarTrackingOptions trackingOptionsFromDictionary:optionsDict];
     [Radar startTrackingWithOptions:options];
