@@ -6,16 +6,9 @@ import 'radar_location.dart';
 
 /// The risk level of a reveal risk check.
 enum RadarRevealRiskLevel implements RadarWireEnum {
-  /// No risk.
   none('none'),
-
-  /// Low risk.
   low('low'),
-
-  /// Medium risk.
   medium('medium'),
-
-  /// High risk.
   high('high');
 
   const RadarRevealRiskLevel(this.wireValue);

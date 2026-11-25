@@ -302,7 +302,7 @@ class Radar {
   /// [steps] locations along the route, [interval] apart. [interval] is sent
   /// in whole seconds, from 1 to 60.
   ///
-  /// [mode] is the travel mode. [interval] is from 1 to 60 seconds. See the
+  /// [mode] is the travel mode. See the
   /// [SDK docs](https://radar.com/documentation/sdk/flutter).
   ///
   /// Returns once the simulation starts. Each step is delivered to the
@@ -513,11 +513,10 @@ class Radar {
   /// Autocompletes partial addresses and place names, sorted by relevance.
   ///
   /// [query] is the partial address or place name. [near] is an optional
-  /// location for the search; unlike [searchPlaces], omitting it doesn't use the
-  /// device's location. [limit] is the max number of addresses to return, from
-  /// 1 to 100. [country] is an optional 2-letter country code filter, and
-  /// [layers] optionally filters by layer. If [mailable] is true, returns only
-  /// mailable addresses. See the
+  /// location for the search. [limit] is the max number of addresses to
+  /// return, from 1 to 100. [country] is an optional 2-letter country code
+  /// filter, and [layers] optionally filters by layer. If [mailable] is true,
+  /// returns only mailable addresses. See the
   /// [autocomplete docs](https://radar.com/documentation/api#autocomplete).
   ///
   /// Throws a [RadarException] if the request fails.
@@ -853,8 +852,7 @@ class Radar {
     return await _invoke('isInitialized');
   }
 
-  /// Returns the version of the native Radar SDK, such as "3.5.1" or
-  /// "3.5.1-beta.2".
+  /// Returns the version of the native Radar SDK, such as "4.0.0".
   static Future<String?> sdkVersion() async {
     return await _invoke('sdkVersion');
   }

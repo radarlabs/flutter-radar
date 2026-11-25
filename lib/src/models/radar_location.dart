@@ -106,8 +106,8 @@ final class RadarLocation {
   /// Accuracy of [course] in degrees.
   final double? courseAccuracy;
 
-  /// Whether the platform reported the location as simulated. On iOS, this
-  /// requires iOS 15 or later.
+  /// Whether the location is mocked. On iOS, this is also true for locations
+  /// from an external accessory, and requires iOS 15 or later.
   final bool? mocked;
 
   /// The [latitude] and [longitude] as a [RadarCoordinate].

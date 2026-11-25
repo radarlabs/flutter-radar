@@ -33,8 +33,8 @@ final class RadarRegion {
   /// The country flag emoji, for countries.
   final String? flag;
 
-  /// Whether the region is allowed by the project's fraud settings. May be
-  /// `false` if Fraud is not enabled.
+  /// Whether the jurisdiction is allowed. May be `false` if Fraud is not
+  /// enabled.
   final bool allowed;
 
   /// Whether the region passed all fraud jurisdiction checks. May be `false`
