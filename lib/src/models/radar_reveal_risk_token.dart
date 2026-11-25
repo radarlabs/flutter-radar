@@ -78,8 +78,8 @@ final class RadarRevealRiskToken {
   final String? token;
   final DateTime? expiresAt;
 
-  /// Seconds until the token expires.
-  final int? expiresIn;
+  /// How long the token was valid for when it was issued.
+  final Duration? expiresIn;
 
   /// The full response map.
   final Map<String, Object?> raw;
@@ -93,7 +93,7 @@ final class RadarRevealRiskToken {
     device: readObject(map['device'], RadarRevealRiskTokenDevice.fromMap),
     token: readString(map['token']),
     expiresAt: readDate(map['expiresAt']),
-    expiresIn: readInt(map['expiresIn']),
+    expiresIn: readSeconds(map['expiresIn']),
     raw: readJson(map) ?? const {},
   );
 }

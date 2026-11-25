@@ -58,3 +58,59 @@ const circleGeofenceMap = <Object?, Object?>{
   'dwellThreshold': 5,
   'stopDetection': true,
 };
+
+const fraud = <Object?, Object?>{
+  'passed': true,
+  'bypassed': false,
+  'verified': true,
+  'proxy': false,
+  'mocked': false,
+  'compromised': false,
+  'jumped': false,
+  'inaccurate': false,
+  'sharing': false,
+  'blocked': false,
+};
+
+// The trip as iOS's [RadarTrip dictionaryValue] serializes it: `eta` always
+// present, mode always present.
+const iosTrip = <Object?, Object?>{
+  '_id': 'trip-2',
+  'externalId': 'order-2',
+  'mode': 'foot',
+  'eta': {'distance': 0, 'duration': 0},
+  'status': 'arrived',
+  'legs': [
+    {
+      '_id': 'leg-3',
+      'status': 'arrived',
+      'destination': {'address': '841 Broadway, New York, NY'},
+    },
+  ],
+};
+
+// A user as iOS's [RadarUser dictionaryValue] serializes it.
+const iosUser = <Object?, Object?>{
+  '_id': 'user-2',
+  'deviceId': 'device-2',
+  'location': {
+    'type': 'Point',
+    'coordinates': [-122.4194, 37.7749],
+  },
+  'activityType': 'stationary',
+  'geofences': <Object?>[],
+  'stopped': false,
+  'foreground': true,
+  'nearbyPlaceChains': <Object?>[],
+  'segments': <Object?>[],
+  'topChains': <Object?>[],
+  'source': 'VISIT_ARRIVAL',
+  'debug': true,
+  'fraud': fraud,
+  'locationInsights': {
+    'atHome': true,
+    'atWork': false,
+    'traveling': false,
+    'commuting': false,
+  },
+};

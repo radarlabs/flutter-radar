@@ -441,15 +441,15 @@ final class RadarTrackingOptions {
   @internal
   factory RadarTrackingOptions.fromMap(ChannelMap map) => RadarTrackingOptions(
     desiredStoppedUpdateInterval:
-        _readSeconds(map['desiredStoppedUpdateInterval']) ?? Duration.zero,
+        readSeconds(map['desiredStoppedUpdateInterval']) ?? Duration.zero,
     desiredMovingUpdateInterval:
-        _readSeconds(map['desiredMovingUpdateInterval']) ?? Duration.zero,
+        readSeconds(map['desiredMovingUpdateInterval']) ?? Duration.zero,
     desiredSyncInterval:
-        _readSeconds(map['desiredSyncInterval']) ?? Duration.zero,
+        readSeconds(map['desiredSyncInterval']) ?? Duration.zero,
     desiredAccuracy: RadarTrackingOptionsDesiredAccuracy.fromWire(
       map['desiredAccuracy'],
     ),
-    stopDuration: _readSeconds(map['stopDuration']) ?? Duration.zero,
+    stopDuration: readSeconds(map['stopDuration']) ?? Duration.zero,
     stopDistance: readInt(map['stopDistance']) ?? 0,
     replay: RadarTrackingOptionsReplay.fromWire(map['replay']),
     syncLocations: RadarTrackingOptionsSyncLocations.fromWire(map['sync']),
@@ -463,13 +463,13 @@ final class RadarTrackingOptions {
     usePressure: readBool(map['usePressure']) ?? false,
     startTrackingAfter: readDate(map['startTrackingAfter']),
     stopTrackingAfter: readDate(map['stopTrackingAfter']),
-    batchInterval: _readSeconds(map['batchInterval']) ?? Duration.zero,
+    batchInterval: readSeconds(map['batchInterval']) ?? Duration.zero,
     batchSize: readInt(map['batchSize']) ?? 0,
     type: RadarTrackingOptionsType.fromWire(map['type']),
-    fastestStoppedUpdateInterval: _readSeconds(
+    fastestStoppedUpdateInterval: readSeconds(
       map['fastestStoppedUpdateInterval'],
     ),
-    fastestMovingUpdateInterval: _readSeconds(
+    fastestMovingUpdateInterval: readSeconds(
       map['fastestMovingUpdateInterval'],
     ),
     syncGeofencesLimit: readInt(map['syncGeofencesLimit']),
@@ -644,11 +644,6 @@ final class RadarTrackingOptions {
 
   @override
   String toString() => 'RadarTrackingOptions(${toMap()})';
-}
-
-Duration? _readSeconds(Object? value) {
-  final seconds = readInt(value);
-  return seconds == null ? null : Duration(seconds: seconds);
 }
 
 /// iOS sends a bool. Android's `toJson` sends `"none"`, `"nearest"`, or
