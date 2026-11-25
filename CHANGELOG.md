@@ -6,6 +6,11 @@
 - **Breaking:** Removes `Radar.startTrackingCustom()`. `Radar.startTracking()` takes a `RadarTrackingOptions`, such as `RadarTrackingOptions.responsive` or a preset adjusted with `copyWith()`.
 - Fixes `Radar.setNotificationOptions()` and `Radar.setForegroundServiceOptions()` never completing on iOS, and `Radar.logTermination()` never completing on Android. Platform-only methods now do nothing on the other platform.
 - Fixes `Radar.getTags()` always throwing.
+- Fixes `Radar.searchGeofences()` crashing on iOS and failing on Android when `tags`, `metadata` or `includeGeometry` is omitted, and ignoring its other arguments on iOS when `near` is omitted.
+- Fixes `Radar.getDistance()` ignoring `modes` on Android, and the `truck` and `motorbike` modes being dropped by `Radar.getDistance()` and `Radar.mockTracking()`.
+- Fixes `Radar.mockTracking()` never completing. It now completes once the simulation starts.
+- Fixes `Radar.getTripOptions()` failing on Android when there are no trip options.
+- Fixes `Radar.getLocation()` ignoring the `none` accuracy on Android and using the SDK default instead.
 
 # 4.0.0-beta.4
 

@@ -57,9 +57,6 @@ enum RadarPermissionsStatus implements RadarWireEnum {
 
 /// A travel mode for routing, used by `Radar.getDistance`, `Radar.getMatrix`,
 /// and `Radar.mockTracking`.
-///
-/// [truck] and [motorbike] are only supported by `getMatrix`. `getDistance`
-/// and `mockTracking` treat them as [car].
 enum RadarRouteMode implements RadarWireEnum {
   /// Foot.
   foot('foot'),

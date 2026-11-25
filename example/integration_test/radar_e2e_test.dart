@@ -43,11 +43,6 @@ const _noPermission =
     'Location permission not granted. scripts/e2e.sh grants it; if running '
     'by hand, grant it on the device first.';
 
-const _androidNestedTripOptions =
-    'Known bug: the Android bridge copies nested lists and maps in trip '
-    'options (jsonForMap) as raw ArrayList/HashMap values, which the SDK '
-    "can't read, so legs and metadata never reach the API.";
-
 const _paymentRequired =
     'Address validation needs an Enterprise plan or trial '
     '(ERROR_PAYMENT_REQUIRED).';
@@ -369,18 +364,9 @@ void main() {
         );
       });
 
-      test(
-        'searchGeofences with only near, radius and limit',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge throws NullPointerException for '
-                    'omitted tags (ArrayList.toArray) and includeGeometry '
-                    '(Boolean unboxing).'
-                : null,
-        () async {
-          await Radar.searchGeofences(near: _nyc, radius: 1000, limit: 10);
-        },
-      );
+      test('searchGeofences with only near, radius and limit', () async {
+        await Radar.searchGeofences(near: _nyc, radius: 1000, limit: 10);
+      });
 
       test('getContext', () async {
         final result = await Radar.getContext(_nyc);
@@ -389,24 +375,16 @@ void main() {
         expect(result.location.longitude, _nyc.longitude);
       });
 
-      test(
-        'getDistance returns a route for each requested mode',
-        skip:
-            Platform.isAndroid
-                ? 'Known bug: the Android bridge ignores modes (loops over an '
-                    'empty array), so the API returns ERROR_BAD_REQUEST.'
-                : null,
-        () async {
-          final routes = await Radar.getDistance(
-            origin: _nyc,
-            destination: _brooklyn,
-            modes: {RadarRouteMode.car, RadarRouteMode.foot},
-            units: RadarRouteUnits.imperial,
-          );
-          expect(routes.car, isNotNull);
-          expect(routes.foot, isNotNull);
-        },
-      );
+      test('getDistance returns a route for each requested mode', () async {
+        final routes = await Radar.getDistance(
+          origin: _nyc,
+          destination: _brooklyn,
+          modes: {RadarRouteMode.car, RadarRouteMode.foot},
+          units: RadarRouteUnits.imperial,
+        );
+        expect(routes.car, isNotNull);
+        expect(routes.foot, isNotNull);
+      });
 
       test('getMatrix', () async {
         final matrix = await Radar.getMatrix(
@@ -716,63 +694,59 @@ void main() {
         eventOf(arrived, RadarEventType.userArrivedAtTripDestination);
       });
 
-      test(
-        'multi-leg trip: reorder and update legs',
-        skip: Platform.isAndroid ? _androidNestedTripOptions : null,
-        () async {
-          if (skipWithout(2)) return;
-          await useNewUser('trip-legs');
-          final started = await Radar.startTrip(
-            tripOptions: RadarTripOptions(
-              externalId: '$runId-legs',
-              mode: RadarRouteMode.car,
-              metadata: {'runId': runId},
-              legs: [
-                for (final geofence in geofences.take(2))
-                  RadarTripLeg.geofence(
-                    tag: tag,
-                    externalId: geofence.externalId!,
-                  ),
-              ],
-            ),
+      test('multi-leg trip: reorder and update legs', () async {
+        if (skipWithout(2)) return;
+        await useNewUser('trip-legs');
+        final started = await Radar.startTrip(
+          tripOptions: RadarTripOptions(
+            externalId: '$runId-legs',
+            mode: RadarRouteMode.car,
+            metadata: {'runId': runId},
+            legs: [
+              for (final geofence in geofences.take(2))
+                RadarTripLeg.geofence(
+                  tag: tag,
+                  externalId: geofence.externalId!,
+                ),
+            ],
+          ),
+        );
+        if (started.trip.legs.isEmpty) {
+          // The API ignores legs unless the project allows them.
+          return markTestSkipped(
+            'The project has multi-destination trips turned off '
+            '(enableMultipleDestinationTrips), so the trip has no legs.',
           );
-          if (started.trip.legs.isEmpty) {
-            // The API ignores legs unless the project allows them.
-            return markTestSkipped(
-              'The project has multi-destination trips turned off '
-              '(enableMultipleDestinationTrips), so the trip has no legs.',
-            );
-          }
-          expect(started.trip.metadata, containsPair('runId', runId));
-          final legIds = [for (final leg in started.trip.legs) leg.id!];
-          expect(legIds, hasLength(2));
+        }
+        expect(started.trip.metadata, containsPair('runId', runId));
+        final legIds = [for (final leg in started.trip.legs) leg.id!];
+        expect(legIds, hasLength(2));
 
-          final newOrder = legIds.reversed.toList();
-          final reordered = await Radar.reorderTripLegs(legIds: newOrder);
-          expect(reordered.trip.legs.map((leg) => leg.id), newOrder);
+        final newOrder = legIds.reversed.toList();
+        final reordered = await Radar.reorderTripLegs(legIds: newOrder);
+        expect(reordered.trip.legs.map((leg) => leg.id), newOrder);
 
-          RadarTripLegStatus? statusOf(RadarTrip trip, String legId) =>
-              trip.legs.firstWhere((leg) => leg.id == legId).status;
+        RadarTripLegStatus? statusOf(RadarTrip trip, String legId) =>
+            trip.legs.firstWhere((leg) => leg.id == legId).status;
 
-          // Reordering starts the new first leg, so move it on from there.
-          final updated = await Radar.updateTripLeg(
-            legId: newOrder.first,
-            status: RadarTripLegStatus.approaching,
-          );
-          expect(
-            statusOf(updated.trip, newOrder.first),
-            RadarTripLegStatus.approaching,
-          );
+        // Reordering starts the new first leg, so move it on from there.
+        final updated = await Radar.updateTripLeg(
+          legId: newOrder.first,
+          status: RadarTripLegStatus.approaching,
+        );
+        expect(
+          statusOf(updated.trip, newOrder.first),
+          RadarTripLegStatus.approaching,
+        );
 
-          final current = await Radar.updateCurrentTripLeg(
-            status: RadarTripLegStatus.arrived,
-          );
-          expect(
-            statusOf(current.trip, newOrder.first),
-            RadarTripLegStatus.arrived,
-          );
-        },
-      );
+        final current = await Radar.updateCurrentTripLeg(
+          status: RadarTripLegStatus.arrived,
+        );
+        expect(
+          statusOf(current.trip, newOrder.first),
+          RadarTripLegStatus.arrived,
+        );
+      });
     });
 
     group('mock tracking', () {

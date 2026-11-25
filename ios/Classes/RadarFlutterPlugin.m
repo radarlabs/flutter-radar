@@ -264,9 +264,11 @@ RadarFlutterSharedEventCoordinator(void) {
     } else if ([@"getMatrix" isEqualToString:call.method]) {
         [self getMatrix:call withResult:result];        
     } else if ([@"setNotificationOptions" isEqualToString:call.method]) {
-        // do nothing
+        // Android only; reply so the call completes.
+        result(nil);
     } else if ([@"setForegroundServiceOptions" isEqualToString:call.method]) {
-        // do nothing
+        // Android only; reply so the call completes.
+        result(nil);
     } else if ([@"trackVerified" isEqualToString:call.method]) {
         [self trackVerified:call withResult:result];
     } else if ([@"getVerifiedLocationToken" isEqualToString:call.method]) {
@@ -555,9 +557,9 @@ RadarFlutterSharedEventCoordinator(void) {
 
     NSDictionary *argsDict = call.arguments;
 
-    NSString *accuracy = argsDict[@"desiredAccuracy"];
-    NSLog(@"accuracy: %@", accuracy);
-    if (!accuracy || ![accuracy isKindOfClass:[NSString class]]) {
+    id accuracyValue = argsDict[@"desiredAccuracy"];
+    NSString *accuracy = [accuracyValue isKindOfClass:[NSString class]] ? [accuracyValue lowercaseString] : nil;
+    if (!accuracy) {
         [Radar getLocationWithCompletionHandler:completionHandler];
     } else if ([accuracy isEqualToString:@"high"]) {
         [Radar getLocationWithDesiredAccuracy:RadarTrackingOptionsDesiredAccuracyHigh completionHandler:completionHandler];
@@ -698,13 +700,8 @@ RadarFlutterSharedEventCoordinator(void) {
     double destinationLatitude = [destinationLatitudeNumber doubleValue];
     double destinationLongitude = [destinationLongitudeNumber doubleValue];
     CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-    NSString *modeStr = argsDict[@"mode"];
-    RadarRouteMode mode = RadarRouteModeCar;
-    if ([modeStr isEqualToString:@"FOOT"] || [modeStr isEqualToString:@"foot"]) {
-        mode = RadarRouteModeFoot;
-    } else if ([modeStr isEqualToString:@"BIKE"] || [modeStr isEqualToString:@"bike"]) {
-        mode = RadarRouteModeBike;
-    } else if ([modeStr isEqualToString:@"CAR"] || [modeStr isEqualToString:@"car"]) {
+    RadarRouteMode mode = [RadarFlutterPlugin routeModeForValue:argsDict[@"mode"]];
+    if (mode == 0) {
         mode = RadarRouteModeCar;
     }
     NSNumber *stepsNumber = argsDict[@"steps"];
@@ -722,7 +719,30 @@ RadarFlutterSharedEventCoordinator(void) {
         interval = 1;
     }
 
+    // The completion handler runs once per mocked step, so it can't reply;
+    // reply once the mock has started instead.
     [Radar mockTrackingWithOrigin:origin destination:destination mode:mode steps:steps interval:interval completionHandler:nil];
+    result(nil);
+}
+
+/// Parses a route mode wire value ("foot", "car", ...), or returns 0.
++ (RadarRouteMode)routeModeForValue:(id)value {
+    if (![value isKindOfClass:[NSString class]]) {
+        return 0;
+    }
+    NSString *modeStr = [(NSString *)value lowercaseString];
+    if ([modeStr isEqualToString:@"foot"]) {
+        return RadarRouteModeFoot;
+    } else if ([modeStr isEqualToString:@"bike"]) {
+        return RadarRouteModeBike;
+    } else if ([modeStr isEqualToString:@"car"]) {
+        return RadarRouteModeCar;
+    } else if ([modeStr isEqualToString:@"truck"]) {
+        return RadarRouteModeTruck;
+    } else if ([modeStr isEqualToString:@"motorbike"]) {
+        return RadarRouteModeMotorbike;
+    }
+    return 0;
 }
 
 - (void)startTrip:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -963,8 +983,9 @@ RadarFlutterSharedEventCoordinator(void) {
     if (radiusNumber != nil && [radiusNumber isKindOfClass:[NSNumber class]]) {
         radius = [radiusNumber intValue];
     }
-    NSArray *tags = argsDict[@"tags"];
-    NSDictionary *metadata = argsDict[@"metadata"];
+    // A null argument arrives as NSNull, which the SDK would crash on.
+    NSArray *tags = [argsDict[@"tags"] isKindOfClass:[NSArray class]] ? argsDict[@"tags"] : nil;
+    NSDictionary *metadata = [argsDict[@"metadata"] isKindOfClass:[NSDictionary class]] ? argsDict[@"metadata"] : nil;
     NSNumber *limitNumber = argsDict[@"limit"];
     int limit = 10;
     if (limitNumber != nil && [limitNumber isKindOfClass:[NSNumber class]]) {
@@ -976,12 +997,8 @@ RadarFlutterSharedEventCoordinator(void) {
         includeGeometry = [includeGeometryNumber boolValue];
     }
 
-
-    if (near != nil) {
-        [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeometry:includeGeometry completionHandler:completionHandler];
-    } else {
-        [Radar searchGeofences:completionHandler];
-    }
+    // A nil `near` searches around the device's current location.
+    [Radar searchGeofencesNear:near radius:radius tags:tags metadata:metadata limit:limit includeGeometry:includeGeometry completionHandler:completionHandler];
 }
 
 - (void)searchPlaces:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1167,19 +1184,14 @@ RadarFlutterSharedEventCoordinator(void) {
   double destinationLatitude = [destinationLatitudeNumber doubleValue];
   double destinationLongitude = [destinationLongitudeNumber doubleValue];
   CLLocation *destination = [[CLLocation alloc] initWithCoordinate:CLLocationCoordinate2DMake(destinationLatitude, destinationLongitude) altitude:-1 horizontalAccuracy:5 verticalAccuracy:-1 timestamp:[NSDate date]];
-  NSArray *modesArr = argsDict[@"modes"];
   RadarRouteMode modes = 0;
-  if (modesArr != nil) {
-      if ([modesArr containsObject:@"FOOT"] || [modesArr containsObject:@"foot"]) {
-          modes = modes | RadarRouteModeFoot;
+  id modesArr = argsDict[@"modes"];
+  if ([modesArr isKindOfClass:[NSArray class]]) {
+      for (id modeValue in (NSArray *)modesArr) {
+          modes = modes | [RadarFlutterPlugin routeModeForValue:modeValue];
       }
-      if ([modesArr containsObject:@"BIKE"] || [modesArr containsObject:@"bike"]) {
-          modes = modes | RadarRouteModeBike;
-      }
-      if ([modesArr containsObject:@"CAR"] || [modesArr containsObject:@"car"]) {
-          modes = modes | RadarRouteModeCar;
-      }
-  } else {
+  }
+  if (modes == 0) {
       modes = RadarRouteModeCar;
   }
   NSString *unitsStr = argsDict[@"units"];

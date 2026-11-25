@@ -22,8 +22,7 @@ enum RadarTrackingOptionsDesiredAccuracy implements RadarWireEnum {
   low('low'),
 
   /// The lowest power. Uses `PRIORITY_NO_POWER`. Android only. iOS treats it
-  /// as [medium], and `Radar.getLocation` treats it as the SDK default on both
-  /// platforms.
+  /// as [medium].
   none('none');
 
   const RadarTrackingOptionsDesiredAccuracy(this.wireValue);
