@@ -23,29 +23,6 @@ Future<void> main() async {
   runApp(MyApp(settings: settings));
 }
 
-void _onLocation(RadarLocationUpdate update) =>
-    console.logEvent('onLocation', describe(update));
-
-void _onClientLocation(RadarClientLocationUpdate update) =>
-    console.logEvent('onClientLocation', describe(update));
-
-void _onError(RadarErrorUpdate update) =>
-    console.logEvent('onError', describe(update));
-
-void _onLog(RadarLogUpdate update) => console.logEvent('onLog', update.message);
-
-void _onEvents(RadarEventsUpdate update) =>
-    console.logEvent('onEvents', describe(update));
-
-void _onToken(RadarTokenUpdate update) =>
-    console.logEvent('onToken', describe(update));
-
-void _onIpChanged(RadarIpChangedUpdate update) =>
-    console.logEvent('onIpChanged', describe(update));
-
-void _onSharingChanged(RadarSharingChangedUpdate update) =>
-    console.logEvent('onSharingChanged', describe(update));
-
 @pragma('vm:entry-point')
 Future<void> _onBackgroundUpdate(RadarUpdate update) async {
   switch (update) {
@@ -77,13 +54,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _ListenerDef {
-  final String name;
-  final StreamSubscription<Object?> Function() listen;
-
-  const _ListenerDef(this.name, this.listen);
-}
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.settings});
 
@@ -101,22 +71,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   final Map<String, StreamSubscription<Object?>> _subscriptions = {};
 
-  late final List<_ListenerDef> _listenerDefs = [
-    _ListenerDef('onLocation', () => Radar.onLocation.listen(_onLocation)),
-    _ListenerDef(
-      'onClientLocation',
-      () => Radar.onClientLocation.listen(_onClientLocation),
-    ),
-    _ListenerDef('onError', () => Radar.onError.listen(_onError)),
-    _ListenerDef('onLog', () => Radar.onLog.listen(_onLog)),
-    _ListenerDef('onEvents', () => Radar.onEvents.listen(_onEvents)),
-    _ListenerDef('onToken', () => Radar.onToken.listen(_onToken)),
-    _ListenerDef('onIpChanged', () => Radar.onIpChanged.listen(_onIpChanged)),
-    _ListenerDef(
-      'onSharingChanged',
-      () => Radar.onSharingChanged.listen(_onSharingChanged),
-    ),
-  ];
+  /// The listener streams the Listeners card toggles. Each enabled one logs
+  /// its updates to the console.
+  static final Map<String, Stream<RadarUpdate>> _listenerStreams = {
+    'onLocation': Radar.onLocation,
+    'onClientLocation': Radar.onClientLocation,
+    'onError': Radar.onError,
+    'onLog': Radar.onLog,
+    'onEvents': Radar.onEvents,
+    'onToken': Radar.onToken,
+    'onIpChanged': Radar.onIpChanged,
+    'onSharingChanged': Radar.onSharingChanged,
+  };
 
   @override
   void initState() {
@@ -187,8 +153,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       await Radar.setLogLevel(RadarLogLevel.info);
       await Radar.setAnonymousTrackingEnabled(false);
 
-      for (final def in _listenerDefs) {
-        _setListener(def, true);
+      for (final name in _listenerStreams.keys) {
+        _setListener(name, true);
       }
 
       await _refreshPermissions();
@@ -205,13 +171,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  void _setListener(_ListenerDef def, bool enabled) {
-    if (enabled == _subscriptions.containsKey(def.name)) return;
+  void _setListener(String name, bool enabled) {
+    if (enabled == _subscriptions.containsKey(name)) return;
     setState(() {
       if (enabled) {
-        _subscriptions[def.name] = def.listen();
+        _subscriptions[name] = _listenerStreams[name]!.listen(
+          (update) => console.logEvent(
+            name,
+            update is RadarLogUpdate ? update.message : describe(update),
+          ),
+        );
       } else {
-        unawaited(_subscriptions.remove(def.name)?.cancel());
+        unawaited(_subscriptions.remove(name)?.cancel());
       }
     });
   }
@@ -294,6 +265,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             child: ListView(
               padding: const EdgeInsets.only(top: 8, bottom: 16),
               children: [
+                const _LastLocationCard(),
                 for (int i = 0; i < sections.length; i++)
                   ApiSectionCard(
                     section: sections[i],
@@ -350,16 +322,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         leading: Icon(Icons.podcasts, color: theme.colorScheme.primary),
         title: Text('Listeners', style: theme.textTheme.titleSmall),
         subtitle: Text(
-          '${_subscriptions.length} of ${_listenerDefs.length} active',
+          '${_subscriptions.length} of ${_listenerStreams.length} active',
           style: theme.textTheme.bodySmall,
         ),
         children: [
-          for (final def in _listenerDefs)
+          for (final name in _listenerStreams.keys)
             SwitchListTile(
               dense: true,
-              title: Text(def.name, style: theme.textTheme.bodyMedium),
-              value: _subscriptions.containsKey(def.name),
-              onChanged: (value) => _setListener(def, value),
+              title: Text(name, style: theme.textTheme.bodyMedium),
+              value: _subscriptions.containsKey(name),
+              onChanged: (value) => _setListener(name, value),
             ),
         ],
       ),
@@ -839,4 +811,39 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ],
     ),
   ];
+}
+
+/// Shows the most recent location sent to the server.
+///
+/// [StreamBuilder] subscribes to [Radar.onLocation] when this widget is
+/// built and cancels when it's removed, so there's no subscription to manage.
+class _LastLocationCard extends StatelessWidget {
+  const _LastLocationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: StreamBuilder<RadarLocationUpdate>(
+        stream: Radar.onLocation,
+        builder: (context, snapshot) {
+          final update = snapshot.data;
+          return ListTile(
+            dense: true,
+            leading: Icon(Icons.my_location, color: theme.colorScheme.primary),
+            title: Text('Last location', style: theme.textTheme.titleSmall),
+            subtitle: Text(
+              update == null
+                  ? 'Waiting for onLocation'
+                  : '${update.location.latitude.toStringAsFixed(5)}, '
+                      '${update.location.longitude.toStringAsFixed(5)}'
+                      ' · ${update.user.source.name}',
+              style: theme.textTheme.bodySmall,
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

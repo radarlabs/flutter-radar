@@ -60,6 +60,20 @@ final subscription = Radar.onEvents.listen((update) {
 await subscription.cancel();
 ```
 
+Cancel a subscription when whatever owns it goes away, such as in a `State`'s `dispose`. To show the latest update in the UI, pass the stream to a `StreamBuilder`, which subscribes and cancels for you:
+
+```dart
+StreamBuilder<RadarLocationUpdate>(
+  stream: Radar.onLocation,
+  builder: (context, snapshot) {
+    final location = snapshot.data?.location;
+    return Text(location == null
+        ? 'Waiting for a location'
+        : '${location.latitude}, ${location.longitude}');
+  },
+)
+```
+
 The durable background handler and the `Radar.onX` streams are independent subscriptions:
 
 - The registered background handler is the durable event sink and can run in the primary Flutter engine or a headless engine.
