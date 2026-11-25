@@ -1,14 +1,34 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_radar/flutter_radar.dart';
 import 'package:flutter_radar/src/radar_background.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+const _location = {'latitude': 40.7, 'longitude': -73.9};
+
+/// A payload for each update type with the values both platforms always send.
+const _payloads = <String, Map<String, Object?>>{
+  'location': {
+    'location': _location,
+    'user': {
+      '_id': 'u1',
+      'location': {
+        'type': 'Point',
+        'coordinates': [-73.9, 40.7],
+      },
+    },
+  },
+  'clientLocation': {'location': _location},
+  'token': {'token': <String, Object?>{}},
+};
 
 MethodCall _backgroundCall({
   String method = 'location',
   Object? callbackHandle = 42,
-  Object? payload = const <String, dynamic>{},
+  Object? payload,
 }) {
+  payload ??= _payloads[method] ?? const <String, Object?>{};
   return MethodCall(method, {
     'callbackHandle': callbackHandle,
     'payload': payload,
@@ -48,38 +68,62 @@ void main() {
     });
   });
   group('handleRadarBackgroundMethodCall', () {
-    final eventTypes = {
-      'location': RadarBackgroundEventType.location,
-      'clientLocation': RadarBackgroundEventType.clientLocation,
-      'events': RadarBackgroundEventType.events,
-      'error': RadarBackgroundEventType.error,
-      'log': RadarBackgroundEventType.log,
-      'token': RadarBackgroundEventType.token,
-      'ipChanged': RadarBackgroundEventType.ipChanged,
-      'sharingChanged': RadarBackgroundEventType.sharingChanged,
+    final updateTypes = {
+      'location': isA<RadarLocationUpdate>(),
+      'clientLocation': isA<RadarClientLocationUpdate>(),
+      'events': isA<RadarEventsUpdate>(),
+      'error': isA<RadarErrorUpdate>(),
+      'log': isA<RadarLogUpdate>(),
+      'token': isA<RadarTokenUpdate>(),
+      'ipChanged': isA<RadarIpChangedUpdate>(),
+      'sharingChanged': isA<RadarSharingChangedUpdate>(),
     };
 
-    for (final entry in eventTypes.entries) {
+    for (final entry in updateTypes.entries) {
       test('delivers ${entry.key}', () async {
-        RadarBackgroundEvent? receivedEvent;
+        RadarUpdate? receivedUpdate;
         int? resolvedHandle;
 
         await handleRadarBackgroundMethodCall(
-          _backgroundCall(method: entry.key, payload: {'event': entry.key}),
+          _backgroundCall(method: entry.key),
           callbackResolver: (handle) {
             resolvedHandle = handle.toRawHandle();
 
-            return (RadarBackgroundEvent event) async {
-              receivedEvent = event;
+            return (RadarUpdate update) async {
+              receivedUpdate = update;
             };
           },
         );
 
         expect(resolvedHandle, 42);
-        expect(receivedEvent?.type, entry.value);
-        expect(receivedEvent?.payload, {'event': entry.key});
+        expect(receivedUpdate, entry.value);
       });
     }
+
+    test('parses the payload into a typed update', () async {
+      RadarUpdate? receivedUpdate;
+
+      await handleRadarBackgroundMethodCall(
+        _backgroundCall(
+          method: 'clientLocation',
+          payload: {
+            'location': {'latitude': 40.7, 'longitude': -73.9, 'accuracy': 5.0},
+            'stopped': true,
+            'source': 'BACKGROUND_LOCATION',
+          },
+        ),
+        callbackResolver:
+            (_) => (RadarUpdate update) async {
+              receivedUpdate = update;
+            },
+      );
+
+      final update = receivedUpdate as RadarClientLocationUpdate;
+      expect(update.location.latitude, 40.7);
+      expect(update.location.accuracy, 5.0);
+      expect(update.stopped, isTrue);
+      expect(update.source, RadarLocationSource.backgroundLocation);
+    });
 
     test('waits for the callback to complete', () async {
       final callbackStarted = Completer<void>();
@@ -89,7 +133,7 @@ void main() {
       final delivery = handleRadarBackgroundMethodCall(
         _backgroundCall(),
         callbackResolver: (_) {
-          return (RadarBackgroundEvent event) async {
+          return (RadarUpdate update) async {
             callbackStarted.complete();
             await callbackCanFinish.future;
           };
@@ -166,7 +210,7 @@ void main() {
         handleRadarBackgroundMethodCall(
           _backgroundCall(),
           callbackResolver: (_) {
-            return (RadarBackgroundEvent event) async {
+            return (RadarUpdate update) async {
               throw error;
             };
           },

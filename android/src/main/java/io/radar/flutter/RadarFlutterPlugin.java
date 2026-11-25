@@ -311,9 +311,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
                     case "startTracking":
                         startTracking(call, result);
                         break;
-                    case "startTrackingCustom":
-                        startTrackingCustom(call, result);
-                        break;
                     case "startTrackingVerified":
                         startTrackingVerified(call, result);
                         break;
@@ -716,7 +713,7 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
             }
         };
 
-        String accuracy = call.argument("accuracy");
+        String accuracy = call.argument("desiredAccuracy");
         if (accuracy == null) {
             Radar.getLocation(callback);
         } else if (accuracy.equals("high")) {
@@ -789,22 +786,6 @@ public class RadarFlutterPlugin implements FlutterPlugin, ActivityAware, Request
     }      
 
     private static void startTracking(MethodCall call, Result result) {
-        String preset = call.argument("preset");
-        if (preset == null) {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        } else if (preset.equals("continuous")) {
-            Radar.startTracking(RadarTrackingOptions.CONTINUOUS);
-        } else if (preset.equals("responsive")) {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        } else if (preset.equals("efficient")) {
-            Radar.startTracking(RadarTrackingOptions.EFFICIENT);
-        } else {
-            Radar.startTracking(RadarTrackingOptions.RESPONSIVE);
-        }
-        result.success(true);
-    }
-
-    private static void startTrackingCustom(MethodCall call, Result result) {
         HashMap optionsMap = (HashMap)call.arguments;
         JSONObject optionsJson = new JSONObject(optionsMap);
         RadarTrackingOptions options = RadarTrackingOptions.fromJson(optionsJson);

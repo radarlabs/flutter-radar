@@ -5,11 +5,11 @@ import 'package:flutter_radar/flutter_radar.dart';
 import 'package:flutter_radar/src/radar_background.dart' as background;
 import 'package:flutter_test/flutter_test.dart';
 
-RadarBackgroundEvent? receivedBackgroundEvent;
+RadarUpdate? receivedBackgroundUpdate;
 
 @pragma('vm:entry-point')
-Future<void> testBackgroundHandler(RadarBackgroundEvent event) async {
-  receivedBackgroundEvent = event;
+Future<void> testBackgroundHandler(RadarUpdate update) async {
+  receivedBackgroundUpdate = update;
 }
 
 Future<void> sendClientLocationEvent() async {
@@ -25,7 +25,7 @@ Future<void> sendClientLocationEvent() async {
             'payload': {
               'location': {'latitude': 47.0, 'longitude': -122.0},
               'stopped': false,
-              'source': 'background',
+              'source': 'BACKGROUND_LOCATION',
             },
           }),
         ),
@@ -42,7 +42,7 @@ void main() {
 
   setUp(() {
     receivedCall = null;
-    receivedBackgroundEvent = null;
+    receivedBackgroundUpdate = null;
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
@@ -80,7 +80,7 @@ void main() {
     test('rejects closures before calling native', () async {
       var capturedValue = 0;
 
-      final handler = (RadarBackgroundEvent event) async {
+      final handler = (RadarUpdate update) async {
         capturedValue++;
       };
 
@@ -121,15 +121,11 @@ void main() {
 
       await sendClientLocationEvent();
 
-      expect(
-        receivedBackgroundEvent?.type,
-        RadarBackgroundEventType.clientLocation,
-      );
-      expect(receivedBackgroundEvent?.payload, {
-        'location': {'latitude': 47.0, 'longitude': -122.0},
-        'stopped': false,
-        'source': 'background',
-      });
+      final update = receivedBackgroundUpdate as RadarClientLocationUpdate;
+      expect(update.location.latitude, 47.0);
+      expect(update.location.longitude, -122.0);
+      expect(update.stopped, isFalse);
+      expect(update.source, RadarLocationSource.backgroundLocation);
     });
   });
 
@@ -147,7 +143,7 @@ void main() {
 
       await sendClientLocationEvent();
 
-      expect(receivedBackgroundEvent, isNull);
+      expect(receivedBackgroundUpdate, isNull);
     });
 
     test(
@@ -176,10 +172,7 @@ void main() {
 
         await sendClientLocationEvent();
 
-        expect(
-          receivedBackgroundEvent?.type,
-          RadarBackgroundEventType.clientLocation,
-        );
+        expect(receivedBackgroundUpdate, isA<RadarClientLocationUpdate>());
       },
     );
   });
